@@ -1,0 +1,91 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by T-Engine Forum at 2011/09/08.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	SYSCONF (T-Engine/EM1D-512)
+#
+#	System configuration
+#
+
+#
+# Use SCTAG_XXX as a parameter of _tk_get_cfn().
+# SCTAG_XXX is defined in <sys/sysdepend/tef_em1d/rominfo.h>.
+#
+
+#
+#	Product information
+#
+TSysName	T-Kernel	# System name
+
+#
+#	Kernel version information for tk_ref_ver(T_RVER*)
+#
+Maker		0x0000		# = "T-Engine Forum"
+ProductID	0x0000		# Kernel Identifier
+SpecVer		0x7200		# = "T-Kernel" + "Ver 2.00"
+ProductVer	0x0201		# Product Version
+ProductNo	0x0000 0x0000 0x0000 0x0000
+				# Product Number [0]-[3]
+
+#
+#	T-Kernel/OS
+#
+TMaxTskId	150	# Maximum task ID
+TMaxSemId	100	# Maximum semaphore ID
+TMaxFlgId	100	# Maximum event flag ID
+TMaxMbxId	20	# Maximum mail box ID
+TMaxMtxId	100	# Maximum mutex ID
+TMaxMbfId	20	# Maximum message buffer ID
+TMaxPorId	50	# Maximum rendezvous port ID
+TMaxMpfId	10	# Maximum fixed size memory pool ID
+TMaxMplId	10	# Maximum variable size memory pool ID
+TMaxCycId	20	# Maximum cyclic handler ID
+TMaxAlmId	40	# Maximum alarm handler ID
+TMaxResId	60	# Maximum resource group ID
+TMaxSsyId	50	# Maximum sub system ID
+TMaxSsyPri	16	# Maximum sub system priority
+
+TSysStkSz	2048	# Default system stack size (byte)
+TSVCLimit	1	# SVC protection level
+TTimPeriod	10	# Timer interval (msec)
+
+#
+#	T-Kernel/SM
+#
+TMaxRegDev	32	# Maximum number of devices registration
+TMaxOpnDev	64	# Maximum number of devices open
+TMaxReqDev	64	# Maximum number of device requests
+TDEvtMbfSz	1024 64	# Event notification message buffer size (byte),
+			# Maximum length of message (byte)
+
+#
+#	Task Event(1-8)
+#
+TEV_MsgEvt	1	# Message management : Receive message
+TEV_MsgBrk	2	# Message management : Release of an message waiting state
+TEV_GDI		3	# GDI interface
+TEV_FFLock	4	# Release of an FIFO lock waiting state
+
+#
+#	Segment manager
+#
+RealMemEnd	0x40000000	# RAM bottom address (logical address)
+
+#
+#	Exception/Interrupt stack
+#
+AbtStkSz	64		# Abort(MMU)
+UndStkSz	64		# Undefined instruction
+IrqStkSz	512		# IRQ interrupt
+FiqStkSz	128		# FIQ interrupt

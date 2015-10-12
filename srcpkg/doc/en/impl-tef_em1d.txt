@@ -1,0 +1,2117 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+        tef_em1d Implementation Specifications
+==============================================================================
+                                                               Version 1.00.00
+1. Overview
+
+This specifications describe the implementation that is specific to the
+T-Engine reference board ("tef_em1d" hereafter) relating to T-Monitor,
+T-Kernel, and device drivers.
+
+2. Overall Implementation Specification
+
+2.1 Register Name
+
+      Most register names of the ARM processor follow the convention of "ARM Architecture
+      Reference Manual (ARMDDI 0406)". Especially, the registers of the system
+      control coprocessor may be represented by the register specification in
+      the form as shown below.
+
+              CPn.CRn.opc1.CRm.opc2
+
+              CPn     Coprocessor number
+              CRn     Coprocessor register specification
+              CRm     Additional coprocessor register specification
+              opc1    Operation code 1
+              opc2    Operation code 2
+
+      Some examples are given below:
+
+      SCTLR   (CP15.c1.0.c0.0)        System control register
+      CPACR   (CP15.c1.0.c0.2)        Coprocessor access control register
+      TTBR0   (CP15.c2.0.c0.0)        Translation table base register 0
+      TTBR1   (CP15.c2.0.c0.1)        Translation table base register 1
+      TTBCR   (CP15.c2.0.c0.2)        Translation table base control register
+      PRRR    (CP15.c10.0.c2.0)       Primary region remap register
+      NMRR    (CP15.c10.0.c2.1)       Normal memory remap register
+
+2.2 Processor Settings
+
+  (1) MMU
+
+      MMU shall have the following settings.
+      This settings should be set by T-Monitor at system startup and left 
+      unchanged (must not be changed) thereafter.
+
+   (a) SCTLR.AFE [29] = 1
+      Enables the access flag of the page table.
+
+   (b) SCTLR.TRE [28] = 1
+      Enables the remap of the TEX memory attribute.
+
+   (c)  PRRR = 0x000a8aa4
+
+   (d)  NMRR = 0x44e048e0
+      Allocates the remap of the memory attributes as shown below.
+
+      TEX[0] C B      Memory type  Internal cache  External cache
+           0 0 0      Strongly-order  None            None
+           0 0 1      Device          None            None
+           0 1 0      Normal          WT-NA           WT-NA
+           0 1 1      Normal          WB-NA           WB-NA
+           1 0 0      Normal          None            None
+           1 0 1      Normal          WT-NA           WB-A
+           1 1 0      (Not used)
+           1 1 1      Normal          WB-A            WB-A
+
+              WT-NA   Write-through, no allocate on write
+              WB-NA   Write-back, no allocate on write
+              WB-A    Write-back, allocate on write
+
+  (2) Security
+
+      The processor shall always work in secure state. The system does not use it in 
+      non-secure state (it never goes to non-secure state). Therefore, the 
+      monitor mode of the ARM processor modes is not used.
+
+      Various registers used in non-secure state are not specifically initialized.
+
+2.3 Memory Map
+
+  (1) Overall
+
+          Local address                         Mode
+           0x00000000 +=======================+       ---
+                      |Task space             |        |  Virtual memory (Reserved)
+           0x10000000 +=======================+       ---
+                      |Peripheral device      | D RW-
+                      |(including unused area)|
+           0x30000000 +-----------------------+
+                      |RAM             (64MB) | C RWX
+                      |(including unused area)|
+           0x40000000 +-----------------------+
+                      |Peripheral device      | D RW-
+                      |(including unused area)|         Physical address
+           0x70000000 +-----------------------+       --- 0x00000000
+                      |ROM             (32MB) | C R-X  |  Mapping NOR Flash (*1)
+           0x72000000 +-----------------------+       --- 0x02000000
+                      |(Reserved)             |
+           0x80000000 +=======================+       ---
+                      |Used for program map   |        |
+           0x90000000 +-----------------------+        |  Virtual memory (Reserved)
+                      |Used for memory map    |        |
+           0xa0000000 +=======================+       ---
+                      |Built-in SRAM (128KB)  | N RWX
+                      |(including unused area)|
+           0xb0000000 +-----------------------+
+                      |Peripheral device      | D RW-
+                      |(including unused area)|
+           0xd0000000 +=======================+       ---
+                      |Shared memory space    |        |  Virtual memory (Reserved)
+           0xf0000000 +=======================+       ---
+                      |Built-in Boot ROM      | N R--
+                      |(including unused area)|
+           0xffffffff +-----------------------+
+
+      Mode
+        Memory type/Cache attribute
+          C   Cache ON   Normal memory/Write-back cache, Write allocate
+          N   Cache OFF  Normal memory/Non-cacheable
+          D   Device        Device memory / Non-cacheable
+
+        Access attribute ("-" means the attribute is turned off)
+          R   Read enabled
+          W   Write enabled
+          X   Execution enabled
+
+      - The areas specified as virtual memory are currently unused and 
+        reserved.
+        The other areas are mapped as logical address = physical address, 
+        and their mappings do not change dynamically.
+
+        (*1) Note that the area for NOR Flash, which would be hidden in the 
+             task space if logical address is set to physical address, is 
+             not mapped as logical address = physical address but is mapped 
+             by moving it as the memory map shown above. This mapping does not 
+             change dynamically.
+
+        Addresses in this specifications means logical addresses unless 
+        otherwise stated.
+
+      - At startup (initialization), the areas other than the virtual memory 
+        are mapped by T-Monitor, and the MMU and caches are enabled.
+        The unused and virtual memory areas are not mapped and made 
+        inaccessible.
+        The other areas are set as the modes shown in the above figure.
+        These mappings are performed in a section (in 1 MB units). Domains are
+        all set to 0. Any user level accesses are disabled.
+
+      - The built-in SRAM and built-in Boot ROM are used at system startup
+        (at boot). After system startup, they are not used, and not managed by OS.
+        After system startup, the built-in SRAM can be used for any 
+        application.
+
+  (2) ROM details
+
+           0x70000000 +-----------------------+
+                      |Exception branch processing |
+                      |T-Monitor              |
+           0x70020000 +-----------------------+
+                      |ROM information        |
+           0x70020080 +-----------------------+
+                      |(Reserved)             |
+           0x70030000 +-----------------------+
+                      |ROM disk               | Not allocated in the initial state
+           0x70030000 +-----------------------+
+                      |T-Kernel               |
+                      +-----------------------+
+                      |(User area)            |
+           0x72000000 +-----------------------+
+
+      - The ROM disk area can be changed by setting the ROM information.
+
+  (3) RAM details
+
+           0x30000000 +-----------------------+
+                      |1st level              |
+                      |page table             |
+           0x30004000 +-----------------------+
+                      |Exception vector table |
+           0x30004400 +-----------------------+
+                      |System shared information |
+           0x30004440 +-----------------------+
+                      |T-Monitor              |
+                      |data/stack             |
+           0x30006000 +-----------------------+ <-- RAM_TOP
+                      |Used by OS             |
+           0x34000000 +-----------------------+ <-- RAM_END
+
+      - The following settings should be set by T-Monitor at system startup 
+        and left unchanged (must not be changed) thereafter.
+
+        VBAR  (CP15.c12.0.c0.0) = 0x70000000  Vector base address register
+        TTBR1 (CP15.c2.0.c0.1)  = 0x30000009  Translation table base register 1
+        TTBCR (CP15.c2.0.c0.2)  = 0x00000004  Translation table base control
+                                  register
+
+        Only the secure state registers are set, and the non-secure state ones
+        are not set. The vector base address register in the monitor mode, 
+        MVBAR (CP15.c12.0.c0.1), is not set either.
+
+      - RAM_TOP/RAM_END is managed and set in the system shared information by
+        T-Monitor.
+        The area between RAM_TOP and RAM_END is managed by OS. OS retrieves 
+        these addresses from the system shared information.
+
+2.4 Exception Vector Table
+
+                                                 Vector number
+           0x30004000 +-----------------------+
+                      |Default handler        |       0
+                      |Undefined instruction  |       1
+                      |Pre-fetch abort        |       2
+                      |Data abort             |       3
+           0x30004010 +-----------------------+
+                      |Supervisor SVC 4       |       4
+                      |call          :        |       |
+                      |           SVC 28      |       28
+           0x30004074 +-----------------------+
+                      |Debug abort Instruction|       29
+                      |                   data|       30
+           0x3000407c +-----------------------+
+                      |Fast interrupt FIQ     |       31
+           0x30004080 +-----------------------+
+                      |Interrupt      IRQ 0   |       32
+                      |                :      |       |
+                      |               IRQ 95  |       127
+           0x30004200 +-----------------------+
+                      |GPIO interrupt port 0  |       128
+                      |                :      |       |
+                      |               port 127|       255
+           0x30004400 +-----------------------+
+
+      - The default handler is called when an exception or interrupt occurs 
+        with no handler registered. NULL means absence of registration.
+      - The vector number is used as the interrupt definition number (dintno)
+        of tk_def_int().
+      - The vector number is used as the SVC instruction number
+        (immediate value).
+      - IRQs 0 to 95 correspond to INTs 0 to 95 of the interrupt controller
+        (AINT).
+
+2.5 ROM Information
+
+      typedef struct {
+              FP      kernel;         /* OS start address */
+              UB      *sysconf;       /* Top of SYSCONF */
+              UB      *devconf;       /* Top of DEVCONF */
+              void    *userarea;      /* Top of RAM user area */
+              FP      userinit;       /* User initialization program address */
+              FP      resetinit;      /* Reset initialization program address */
+              VW      rsv[10];        /* Reserved (always 0) */
+              UW      rd_type;        /* ROM disk kind */
+              UW      rd_blksz;       /* ROM disk block size */
+              UW      rd_saddr;       /* ROM disk start address */
+              UW      rd_eaddr;       /* ROM disk end address */
+              VW      rsv2[12];       /* Reserved (always 0) */
+      } RomInfo;
+
+        kernel        Specifies the T-Kernel start address.
+                      T-Monitor starts OS by jumping to this address.
+                      Use NULL when T-Kernel is not stored in ROM.
+
+        sysconf       Specifies the address of ROM in which SYSCONF is stored.
+                      Use NULL when this is not stored in ROM.
+
+        devconf       Specifies the address of ROM in which DEVCONF is stored.
+                      Use NULL when this is not stored in ROM.
+
+        userarea      Specifies the top address of the user area in RAM that
+                      is excluded from the OS management. Normally specifies
+                      the end of the RAM reserved area, 0x40000000.
+                      The lower value of this address and the end
+                      (upper) address of the actual RAM area is used as RAM_END.
+
+        userinit      Specifies the entry address of the initialization 
+                      program created by the user.
+                      After OS starts, the program registered here is 
+                      executed.
+                      When NULL is specified, no user initialization program 
+                      is executed.
+                      NULL is usually specified since the user 
+                      initialization program is not required generally.
+
+        resetinit     Specifies the entry address of the reset initialization
+                      program created by the user.
+                      After the reset is processed, the program registered
+                      here is executed.
+                      When NULL is specified, no reset initialization program
+                      is executed.
+                      This is specified when the hardware initialization 
+                      processing for the extended board, etc. is needed before
+                      starting OS.
+
+      rd_xxxx specifies the ROM disk in ROM. If it does not exist, set all to 0.
+
+        rd_type       Disk type (1 : ROM disk (write-protect))
+        rd_blksz      Disk block size (normally 512)
+        rd_saddr      Start address of ROM disk area
+        rd_eaddr      End address of ROM disk area (+1)
+
+2.6 System Shared Information
+
+      typedef struct {
+      (*2)    void    *ramtop;        /* Top of RAM free space (RAM_TOP) */
+      (*2)    void    *ramend;        /* End of RAM free space (+1) (RAM_END) */
+              UB      *sysconf;       /* Top of SYSCONF */
+              UB      *devconf;       /* Top of DEVCONF */
+              W       taskindp;       /* Task-independent portion flag */
+              UW      taskmode;       /* Task mode flag */
+              VW      osrsv[4];       /* Used by OS */
+              VW      rsv[6];         /* Reserved */
+      } SysCommonInfo;
+
+      (*2) means the information set in T-Monitor.
+
+        taskindp      Is used as the task-independent portion flag by T-Kernel/OS.
+                      = 0 : Task portion
+                      > 0 : Task-independent portion
+
+        taskmode      Is used as the task mode flag by T-Kernel/OS.
+
+                       31     18 17 16 15      2 1   0
+                      +---------+-----+---------+-----+
+                      | Reserved (0) | PPL | Reserved (0) | CPL |
+                      +---------+-----+---------+-----+
+                      CPL     Current protection level
+                      PPL     Previous protection level
+
+  (1) T-Monitor
+
+      Initializes the system shared information at system startup and boot start.
+
+        ramtop, ramend Specifies the top address and end addresses of the RAM free space. ( ramend -
+                      ramtop ) is the size of the free space.
+
+      Clears all the other system shared information to 0.
+
+  (2) T-Kernel startup processing
+
+      At the beginning of the startup processing, the following set up is performed:
+
+        sysconf   address of SYSCONF retrieved from the ROM information
+        devconf   address of DEVCONF retrieved from the ROM information
+        ramtop    address of RAM, excluding the area consumed as the data area of T-Kernel
+
+2.7 System Configuration Definition (SYSCONF)
+
+      The stack size (in bytes) for each exception mode is specified in SYSCONF.
+      These stacks for the exception modes do not need a large space since they 
+      are usually used only for the entry and exit of the handler.
+
+                      Normal setting value
+        AbtStkSz      64              # Abort (MMU)
+        UndStkSz      64              # Undefined instruction exception
+        IrqStkSz      512             # Interrupt (IRQ)
+        FiqStkSz      128             # Fast interrupt (FIQ)
+
+      These stacks are allocated by OS. The supervisor (SVC) stack is not 
+      specified here since it is a system stack.
+
+      T-Monitor does not use these stacks. T-Monitor uses its own stack internally.
+
+      At startup (initialization), T-Monitor sets a stack area with a minimum
+      size of 4 words, which is used for the exception branch processing, for
+      each stack pointer R13 in the exception modes.
+      These stacks are used only before OS starts up.
+
+2.8 Supervisor Call Allocation
+
+      SVC 4           T-Monitor service call                  (T-Monitor)
+      SVC 5           Reserved
+      SVC 6           T-Kernel system call or extended SVC    (T-Kernel)
+      SVC 7           tk_ret_int() system call                (T-Kernel)
+      SVC 8           Task dispatcher                         (T-Kernel)
+      SVC 9           Debugger support function               (T-Kernel)
+      SVC 10          Return from task exception              (T-Kernel)
+      SVC 11          Process kill termination request        (Extension)
+      SVC 12 to 27    Reserved
+
+2.9 Protection Level
+
+      Protection Level      Processor mode
+          0           SVC: Supervisor mode, and all the modes other than USR and SYS
+          1           SYS: System mode
+          2           SYS: System mode
+          3           USR: User mode
+
+      In system mode (SYS), there is no practical difference between protection levels 1 and 2.
+      There is no difference between protection levels by MMU because there are only two levels, privilege and user, in the memory protection by 
+      MMU, and all of the protection levels 0 to 2 result in privileged mode.
+
+2.10 Stack
+
+  (1) User stack/system stack
+
+      The user mode (USR) and system mode (SYS) stacks are used as 
+      user stack, and the supervisor mode (SVC) stack is used as 
+      system stack.
+
+      User stack        R13_usr
+      System stack      R13_svc
+
+  (2) Interrupt stack
+
+      In addition to the user stack/system stack, there is the interrupt stack
+      independent of tasks. A stack in any exception mode other than the 
+      supervisor mode (SVC) is called as interrupt stack. A separate 
+      stack area is allocated to such a stack.
+
+      Interrupt stack         R13_abt, R13_und, R13_irq, R13_fiq
+
+2.11 Exception/Interrupt Handler
+
+      The exception branch processing routine is provided for jumping to
+      each handler by referring to the vector table. Except for fast interrupt
+      (FIQ), this branch routine sets information in registers and stacks 
+      before jumping to each handler. The set values varies depending on the
+      exception. However, in the ip (R12) register, a vector table address 
+      that is common to all the exceptions is set. By this vector table 
+      address, the vector number for a raised exception can be identified.
+
+              (ip - 0x30004000 ) / 4 = Vector number
+
+      When the control is transfered to the default handler, ip represents the vector table 
+      address for the raised exception rather than one for the default handler.
+
+      The jump to the exception handler is performed with the 
+      interrupt-disabled state (CPSR.I,F,A keep their states immediately after
+      the exception occurs). If the least significant bit of the handler 
+      address in the vector table is 1, switching to Thumb mode occurs because the BX 
+      instruction is used to jump to the exception handler.
+      Otherwise, switching doesn't occur, and ARM mode continues.
+
+      In the branch routine, some registers are used for the branch 
+      processing. These registers are saved in the stack as shown below. Since
+      the branch routine does not save other registers in the stack, they 
+      should be saved by handlers if necessary. When the control returns from the handler,
+      saved registers should be restored, and these registers must include
+      the registers saved by the branch routine.
+
+  (1) Fast interrupt (FIQ)
+
+      The handler set in the FIQ interrupt vector is unconditionally called.
+      Rather than a separate vector for each factor causing interrupts, 
+      the common handler is called for every cause.
+      No default handler is ever called. Therefore, when using FIQ interrupt, you must define a handler.
+
+      No registers are saved when a handler is called.
+      The content of R12_fiq register is destroyed since it is used for calling a handler.
+
+      Processor state when a handler is called
+              CPSR.F = 1      Fast interrupt disabled
+              CPSR.I = 1      Interrupt disabled
+              CPSR.A = 1      Abort exception disabled
+              CPSR.M = 17     FIQ: Fast interrupt mode
+
+  (2) Interrupt (IRQ)
+
+      A handler is called by determining the interrupt priority from the 
+      interrupt factor retrieved from the ACPU interrupt mask status register
+      (IT0_MST0,1,2) of the interrupt controller (AINT) and branching to the
+      handler with the highest priority.
+      The interrupt priorities are arranged in descending order of the 
+      interrupt factor numbers (INT 0 to 95). INT 95 (IRQ95) has the highest
+      priority, and INT 0 (IRQ0) has the lowest priority.
+      When interrupt factors do not exist, the handler for INT 95 (IRQ95) is
+      called.
+
+      For the GPIO interrupt (shown below), a further branching is done using the
+      interrupt factor from the GPIO port.
+
+              IRQ26   GIO6 Interrupt (GPIO port from  96 to 111)
+              IRQ27   GIO7 Interrupt (GPIO port from 112 to 127)
+              IRQ50   GIO0 Interrupt (GPIO port from   0 to 15)
+              IRQ51   GIO1 Interrupt (GPIO port from  16 to 31)
+              IRQ52   GIO2 Interrupt (GPIO port from  32 to 47)
+              IRQ53   GIO3 Interrupt (GPIO port from  48 to 63)
+              IRQ79   GIO4 Interrupt (GPIO port from  64 to 79)
+              IRQ80   GIO5 Interrupt (GPIO port from  80 to 95)
+
+      A handler is called by determining the interrupt priority by the 
+      interrupt factor retrieved from the input port interrupt maskable status
+      register (GIO_MST) and branching to the handler with the highest priority.
+      The interrupt priorities are arranged in descending order of the input
+      port numbers (port 0 to 127). The port 127 has the highest priority, and
+      the port 0 has the lowest priority. Since the GPIO interrupts are 
+      divided into 16-port groups as shown above, the priority is determined
+      within each group.
+      When interrupt factors do not exist, the handler for IRQ95 is called.
+      Note that the GPIO setting determines whether or not each port of
+      GPIO is used to cause interrupt.
+
+      Stack when a hander is called
+              +---------------+
+      sp  ->  |R3             |
+              |R12=ip         |
+              |R14=lr         | <- Return address from interrupt
+              |SPSR           |
+              +---------------+
+
+      Registers when a handler is called
+              ip = Vector table address
+              lr, r3 = Undefined
+
+      Processor state when a handler is called
+              CPSR.F = ?      Remains as when being interrupted
+              CPSR.I = 1      Interrupt disabled
+              CPSR.A = 1      Abort exception disabled
+              CPSR.M = 18     IRQ: Interrupt mode
+
+  (3) Other exceptions (SVC,ABT,UND)
+
+      Stack when a handler is called
+              +---------------+
+      sp  ->  |R12=ip         |
+              |R14=lr         | <- Return address
+              |SPSR           |
+              +---------------+
+
+      Return address
+      SVC        address of the following instruction that follows the SVC instruction
+      ABT        address of the aborted instruction
+      UND        address of the instruction that follows the undefined isntruction
+
+      Registers when a handler is called
+              ip = Vector table address
+              lr = Undefined
+
+      Processor state
+              CPSR.F = ?      Remains as when exception occurs
+              CPSR.I = 1      Interrupt disabled
+              CPSR.A = ?      SVC,UND: Remains as when exception occurs
+                       1      ABT: Abort exception disabled
+              CPSR.M = 19     SVC: Supervisor mode
+                       23     ABT: Abort mode
+                       27     UND: Undefined instruction exception mode
+
+   (a) Abort exception (ABT)
+
+      For the pre-fetch abort and data abort, if a debug event is represented
+      by the fault status register (IFSR,DFSR), the debug abort
+      (instruction or data) handler is called.
+      Otherwise, the pre-fetch abort or data abort handler is called.
+
+2.12 System Call
+
+      The convention for register saving and argument passing comply with
+      that of the C language function call.
+      Basic register assignment in C language program is as follows:
+
+      R0 to R3, R12 = ip  temporary registers
+      R4 to R10           permanent registers
+      R11 = fp            frame pointer
+      R13 = sp            stack pointer
+      R14 = lr            link register (Function return address)
+      R15 = pc            program counter
+
+      Arguments    R0 to R3
+      Return code  R0
+
+      Temporary registers are destroyed by a function call. Other registers
+      are saved.
+      Stack is managed using the FD (Full Descending) method.
+
+      Before executing the SVC instruction in a mode other than USR (User mode) 
+      and SYS (System mode), the R14_svc register must be saved in advance 
+      because its content is destroyed by SVC instruction.
+      In principle, the SVC instruction can be used in the following modes:
+
+              USR: User mode
+              SYS: System mode
+              SVC: Supervisor mode
+
+     The SVC instruction needs to be executed as follows:
+
+              stmfd   sp!, {lr}
+              svc     #
+              ldmfd   sp!, {lr}
+
+      For USR and SYS modes, lr does not need to be saved, but in order to call
+      the SVC instruction in the same uniform manner irrespective of modes, the above
+      calling sequence shall be used normally.
+
+      If the SVC instruction is used in a mode other than USR, SYS, and SVC
+      modes, R14_svc needs to be saved using whatever method selected.
+
+  (1) T-Monitor service call
+
+      R12=ip  function codes
+      R0      first argument
+      R1      second argument
+      R2      third argument
+      R3      fourth argument
+      SVC 4
+      R0      return code
+
+      Up to four arguments can be used.
+      The T-Monitor service call is invoked by SVC 4 with the arguments and 
+      function code set in registers as shown above.
+
+  (2) T-Kernel system call
+
+      R12=ip  Function code (< 0)
+      R0      first argument
+      R1      second argument
+      R2      third argument
+      R3      fourth argument
+      R4      pointer to the area where fifth and subsequent arguments are
+              saved
+              fifth and subsequent arguments use the stack
+                      +---------------+
+                R4 -> |Fifth argument |
+                      +---------------+
+      SVC 6
+      R0      return code
+
+      Fourth and preceding arguments are set in the registers, and fifth and
+     latter arguments are pushed on the stack. Then T-Kernel system call is
+     invoked by using SVC 6.
+      The T-Kernel/DS system call is handled similarly, but SVC 9 is used instead.
+
+  (3) Extended SVC
+
+      R12=ip  function code ( >= 0)
+      R0      pointer to the argument packet
+      SVC 6
+      R0      return code
+
+      All arguments are stored in a packet, and the address of the packet is set in
+      the R0 register. Then the extended SVC is invoked by using SVC 6.
+      The packet is usually created on the stack but may be created in another
+      place. The number and type of arguments are not limited since they are
+      inside a packet.
+
+2.13 Boot
+
+      Startup is done in the following steps.:
+
+      1. T-Monitor initializes hardware.
+      2. T-Monitor initializes the exception vector table and system shared
+         information.
+      3. T-Monitor jumps to the OS startup address specified by `kernel' in the
+         ROM information to transfer the control to OS and start the system.
+
+  (1) T-Monitor boot processing
+
+   (a) Exception vector table setting
+
+      The following vectors are set so that T-Monitor itself can process them.
+      Other vectors are set to NULL so that the default handler will be started.
+
+      Vector number
+            0         Default handler
+            4         T-Monitor service call                    (SVC 4)
+           29         Debug abort (Instruction)
+           30         Debug abort (Data)
+          136         Abort switch (SW1)                        (GPIO port 8) 
+
+           58         GIO6: GPIO interrupt branch processing    (IRQ26)
+           59         GIO7: GPIO interrupt branch processing    (IRQ27)
+           82         GIO0: GPIO interrupt branch processing    (IRQ50)
+           83         GIO1: GPIO interrupt branch processing    (IRQ51)
+           84         GIO2: GPIO interrupt branch processing    (IRQ52)
+           85         GIO3: GPIO interrupt branch processing    (IRQ53)
+          111         GIO4: GPIO interrupt branch processing    (IRQ79)
+          112         GIO5: GPIO interrupt branch processing    (IRQ80)
+
+      The default handler displays the exception information and then displays
+      the T-Monitor prompt to wait for a command input.
+
+   (b) OS startup
+
+      OS can be started up by referring to the OS startup address stored in
+      `kernel' in the ROM information and jumping to the address if the address
+      is not NULL.
+      If the OS startup address is NULL, ROM startup is not done, and 
+      T-Monitor waits for a command input.
+
+      When the control is transferred to OS, the CPU state is as follows and
+      allows T-Monitor service calls.
+
+              CPSR.I = 1      Interrupt disabled
+              CPSR.F = 1      Fast interrupt disabled
+              CPSR.A = 0      Abort exception enabled
+              CPSR.T = 0      ARM mode
+              CPSR.M = 19     SVC: Supervisor mode
+              R13_svc (sp)    Monitor stack
+              R0              0 (indicates ROM startup)
+              Other general registers are undefined
+
+              Cache memory
+              - Cache is turned off (SCTLR.C=0, I=0, Z=0)
+              - All the cache content is invalid
+
+      The stack pointer, R13_svc (sp) points the T-Monitor stack area
+      (Monitor stack). During OS startup, this monitor stack is used. 
+      The T-Monitor service call is invoked while sp points to the Monitor stack.
+      Note that the Monitor stack used by the OS startup shall be 2 KB or
+      less.
+
+2.14 User Initialization Program
+
+      The user initialization program is a user-defined routine located on ROM
+      to start or end a user-created program, etc. The user initialization
+      program is called from the initialization startup task in the following
+      format:
+
+              INT  userinit( INT ac, UB **av )
+
+              ac             = 0     at system startup
+                             = -1    at system end
+
+              return code    1       start usermain
+                             0       system shutdown (Power off)
+                             -1      reset (Restart)
+
+      At system startup, it is called with ac = 0. At system end, it is
+      called with ac = -1. In the call at end (ac = -1), return code is
+      ignored.
+      It is processed as follows:
+
+                fin = userinit(0, NULL);
+                if ( fin > 0 ){
+                        fin = usermain();
+                }
+                userinit(-1, NULL);
+
+      The user initialization program is executed in the context of the
+      initialization startup task. The task priority is 138. The stack
+      consumption by the user initialization program shall be 4 KB or less.
+
+      There are two options after startup processing of the user program.
+        (A) Wait for the end of the user program, and then retur from 
+            userinit().
+        (B) Return from userinit() without waiting for the end of the user
+            program.
+
+      In either case, the next processing can be selected by the return code
+      from userinit().
+
+2.15 Reset Initialization Program
+
+      The reset initialization program is a user-defined routine inside
+      ROM to initialize hardware such as the extended board immediately after
+      reset. The reset initialization program is called at the end of reset
+      processing by T-Monitor in the following format:
+
+              void resetinit( void )
+
+      The stack consumption by the reset initialization program shall be 2 KB
+      or less.
+
+2.16 Exception/Interrupt Handler Entry Routine
+
+      Please see the following files:
+
+              monitor/hwdepend/tef_em1d/src/eitent.S
+              include/tk/sysdepend/tef_em1d/sysdef_depend.h
+              include/tk/sysdepend/tef_em1d/asm_depend.h
+
+3. T-Monitor Implementation Specification
+
+3.1 Register Command
+
+      The register command supports the following registers:
+
+   (a) General registers (G)
+
+      R0, R1, R2, R3, R4, R5, R6, R7,
+      R8, R9, R10/SL, R11/FP, R12/IP, R13/SP, R14/LR, R15/PC
+      R8_USR, R9_USR, R10_USR, R11_USR, R12_USR, R13_USR, R14_USR
+      R8_FIQ, R9_FIQ, R10_FIQ, R11_FIQ, R12_FIQ, R13_FIQ, R14_FIQ
+      R13_IRQ, R14_IRQ
+      R13_SVC, R14_SVC
+      R13_ABT, R14_ABT
+      R13_UND, R14_UND
+
+      * The monitor mode registers (R13_MON, R14_MON) are not supported
+
+   (b) Control/System registers (C)
+
+      CPSR, SPSR
+      SPSR_FIQ, SPSR_IRQ, SPSR_SVC, SPSR_ABT, SPSR_UND
+      SCTLR, TTBR0, TTBR1, TTBCR, DACR, DFSR, IFSR, DFAR, IFAR, CTXIDR
+
+              * The following system control coprocessor registers
+                (CP15.CRn.opc1.CRm.opc2) are supported:
+
+              SCTLR   (CP15.c1.0.c0.0)        System control register
+              TTBR0   (CP15.c2.0.c0.0)        Translation table base register 0
+              TTBR1   (CP15.c2.0.c0.1)        Translation table base register 1
+              TTBCR   (CP15.c2.0.c0.2)        Translation table base control register
+              DACR    (CP15.c3.0.c0.0)        Domain access control register
+              DFSR    (CP15.c5.0.c0.0)        Data fault status register
+              IFSR    (CP15.c5.0.c0.1)        Instruction fault status register
+              DFAR    (CP15.c6.0.c0.0)        Data fault address register
+              IFAR    (CP15.c6.0.c0.2)        Instruction fault address register
+              CTXIDR  (CP15.c13.0.c0.1)       Context ID register
+
+      * The monitor mode register (SPSR_MON) is not supported
+
+3.2 Break Point Command
+
+      The following break attribute is supported:
+
+      S :     Software breakpoints
+              Breaks immediately before executing the instruction at
+              <break address>.
+
+    - Up to 8 software breakpoints
+    - Breakpoint setting at the odd address is assumed to be Thumb 
+      instruction. Note that Thumb-2 instruction is not supported.
+    - If ICE is connected, the breakpoint operation is not guaranteed
+
+3.3 Trace (Step/Next) Command
+
+      All the breakpoints are disabled during trace execution.
+      If SVC instruction is encountered during trace execution, destination of
+      SVC is not traced.
+      The next instruction to be executed is not disassembled, and memory dump
+      is displayed, instead.
+
+3.4 Back Trace, Disassemble Command
+
+      Not supported.
+
+3.5 Disk Command
+
+      This cannot be used since the disk device is not supported.
+
+3.6 Kill Command
+
+      This terminates the monitor and executes SVC 11.
+      Nothing is done when the SVC 11 handler is not set.
+
+    - Handler for SVC11 is assumed to be set in the T-Kernel Extension.
+
+      * Kill command forcibly terminates a process from T-Monitor.
+        A process is implemented in T-Kernel Extension. Hence the
+        processing to kill a process is performed inside a handler within 
+        T-Kernel Extension.
+
+3.7 WriteROM Command
+
+      Content on RAM can be written to NOR Flash ROM by using the following
+      WriteROM command:
+
+      WriteROM(WROM) rom_addr, data_ram_addr, block_count : Write Flash ROM
+      blocks
+              rom_addr      : 0x70000000 - 0x71FE0000
+              data_ram_addr : 0x30020000 - 0x33FE0000
+              block_count   : 1 - 0x100 (1 block = 128KB)
+
+    - Writing is done in 128 KB blocks, and the Flash ROM address must be at
+      128 KB boundary.
+    - If T-Monitor area (0x70000000 to 0x7001FFFF) is specified, 
+      message is displayed for confirmation, the system is reset and restarted after rewriting.
+
+3.8 FlashLoad Command
+
+      S-Format data can be loaded and written to NOR Flash ROM by using the
+      following FlashLoad command:
+
+      FlashLoad(FLLO) [attr] : Load S-Format Data & Write Flash ROM
+              attr: X  Use XMODEM protocol
+                    E  Fill write blocks with 0xFF
+                       Default : Overwrite original Flash ROM Image
+
+    - If X is specified, S-Format data load is done using XMODEM protocol.
+      Otherwise, it is done without high-level protocol.
+    - If E is specified, 0xFF is written to the non-loaded portion in the
+      128 KB block. Otherwise, the non-loaded portion remains unchanged.
+
+3.9 DIP Switch
+
+                                              OFF             ON
+      --------------------------------------------------------------------
+      SW-1    BOOTSEL0                        OFF             -
+      SW-2    BOOTSEL1                        OFF             -
+      SW-3    BOOTSEL2                        OFF             -
+      SW-4    Startup selection               Automatic boot  Monitor startup
+
+      SW-4 selects automatic boot (OS startup) with OFF, and monitor startup
+      without boot with ON.
+
+      The other switches must be set as shown above.
+
+3.10 Search Order of Device to Be Started Up
+
+      When starting with the DIP switch SW-4 set to ON, T-Monitor is started
+      up.
+      When SW-4 is set to OFF, a program (RomInfo.kernel) on ROM is started up
+      if it is set, or T-Monitor is started up otherwise.
+
+3.11 Console
+
+      UART0 is used as the serial port for the T-Monitor console.
+      The communication parameters are as follows:
+
+              Baud rate       115,200 bps
+              Data length     8 bit
+              Stop bit        1 bit
+              Parity          None
+              Flow control    XON/XOFF
+
+3.12 T-Monitor Service Call
+
+      The convention for register saving and argument passing comply with
+      that of the C language function call.
+      Up to four arguments can be used.
+
+      T-Monitor service call is invoked by SVC 4 with the function code set in
+      R12/IP.
+
+      All interrupts are masked during the service call execution. The
+      dedicated stack area in T-Monitor is used as the stack.
+
+      R12/IP  Function codes
+      R0      first argument
+      R1      second argument
+      R2      third argument
+      R3      fourth argument
+      SVC     4
+      R0      return code
+
+      Function codes
+      0       Enter T-Monitor         Enter the monitor
+      1       Get Character           Input 1 character from console
+      2       Put Character           Output 1 character to console
+      3       Get Line                Input 1 line from console
+      4       Put String              Output string to console
+      5       Execute Command         Execute monitor command
+      6                               (Reserved)
+      7                               (Reserved)
+      8                               (Reserved)
+      9       System Exit             System exit
+      255     Extension SVC           Extended service function
+
+3.13 T-Monitor Extended Service Call
+
+      tm_extsvc(INT fno, INT p1, INT p2, INT p3)
+
+      fno                     Function
+      -----------------------------------------------------------------
+      0x00    Retrieve baud rate at debug port
+              p1 to p3:        Not used
+              Return value:    115200
+
+      0x01    Retrieve ROM disk information
+              p1:             Area to store the ROM disk information pointer
+              p2 to p3:       Not used
+              Return value:   0: OK, < 0: Error
+
+              The following addresses on ROM are stored at p1:
+
+              p1 -->  UW      rd_type;   /* ROM disk kind */
+                      UW      rd_blksz;  /* ROM disk block size */
+                      UW      rd_saddr;  /* ROM disk start address */
+                      UW      rd_eaddr;  /* ROM disk end address */
+
+      0x04    (Reserved)
+
+      0x10    Retrieve DIP SW state
+              p1 to p3:       Not used
+              Return value:    bit 0 to 4  : Undefined
+                              bit 5       : SW-4 Startup selection   (0: OFF 1: ON)
+                              bit 6 to 31 : Undefined
+
+      0x11    (Reserved)
+
+      0x20    Write to NOR Flash ROM
+              p1:             Flash ROM address (Written destination)
+                              0x7###0000, ### = 000 - 1FE
+              p2:             RAM address (Written data)
+                              0x3###0000, ### = 002 - 3FE
+              p3:             Number of written blocks (1 block = 128 KB)
+                              0x01 to 0x100
+              Return value:     0: OK, < 0 Error
+
+              - Writing is done in 128 KB blocks, and the Flash ROM address
+                must be at 128 KB boundary.
+              - If T-Monitor area (0x70000000 to 0x7001FFFF) is specified, 
+                message is displayed for confirmation, the system is 
+                reset and restarted after rewriting.
+
+3.14 Clock Initialization
+
+      T-Monitor sets the following ASMU registers for EM1-D512 at
+      startup:
+
+              Register                Setting value
+              AUTO_FRQ_CHANGE         0x00000000
+              PLL1CTRL0               0x00000079
+              PLL1CTRL1               0x00000000
+              PLL2CTRL0               0x00000061
+              PLL2CTRL1               0x00000000
+              CLK_MODE_SEL            0x00000001
+              NORMALA_DIV             0x00244200
+              DIVU70SCLK              0x00000000
+              DIVU71SCLK              0x00000000
+              DIVU72SCLK              0x00000000
+              DIVLCDLCLK              0x00000004
+              DIVIICSCLK              0x00530053
+              DIVTIMTIN               0x00000003
+              DIVSP0SCLK              0x00000074
+              TI0TIN_SEL              0x00000000
+              TI1TIN_SEL              0x00000000
+              TI2TIN_SEL              0x00000000
+              TI3TIN_SEL              0x00000000
+              TIGnTIN_SEL             0x00000000
+              AHBCLKCTRL0             0x00000000
+              AHBCLKCTRL1             0x00000000
+              APBCLKCTRL0             0x00000000
+              APBCLKCTRL1             0x00000000
+              CLKCTRL                 0x00000000
+              GCLKCTRL0ENA            0xffffffff (0x00000000 after GCLKCTRL0 is set)
+              GCLKCTRL0               0xffffffff
+              GCLKCTRL1ENA            0xffffffff (0x00000000 after GCLKCTRL1 is set)
+              GCLKCTRL1               0xffffffff
+              GCLKCTRL2ENA            0xffffffff (0x00000000 after GCLKCTRL2 is set)
+              GCLKCTRL2               0xffffffff
+              GCLKCTRL3ENA            0xffffffff (0x00000000 after GCLKCTRL3 is set)
+              GCLKCTRL3               0xffffffff
+              RESETREQ0ENA            0xffffffff (0x00000000 after RESETREQ0 is set)
+              RESETREQ0               0xffffffe7
+              RESETREQ1ENA            0xffffffff (0x00000000 after RESETREQ1 is set)
+              RESETREQ1               0xffffffff
+              RESETREQ2ENA            0xffffffff (0x00000000 after RESETREQ2 is set)
+              RESETREQ2               0xffffffff
+              RESETREQ3ENA            0xffffffff (0x00000000 after RESETREQ3 is set)
+              RESETREQ3               0xffffffff
+
+      These values result in the clocks as follows. Clocks
+      are supplied for all the modules, and all the reset state of modules 
+      other than DSP are released.
+
+              PLL1: 499.712 MHz
+                  ACPU:       PLL1/1          499.712 MHz
+                  ADSP:       PLL1/1          499.712 MHz
+                  HBUS:       PLL1/3          166.571 MHz
+                  LBUS:       PLL1/6           83.285 MHz
+                  FLASH:      PLL1/6           83.285 MHz
+                  MEMC:       PLL1/3          166.571 MHz
+
+              PLL2: 401.408 MHz
+                  LCD_LCLK:   PLL2/16          25.088 MHz
+
+              PLL3: 229.376 MHz
+                  U70_SCLK:   PLL3/1          229.376 MHz
+                  U71_SCLK:   PLL3/1          229.376 MHz
+                  U72_SCLK:   PLL3/1          229.376 MHz
+                  Txx_TIN:    PLL3/8           28.672 MHz
+                  IIC_SCLK:   PLL3/48           4.779 MHz
+                  SP0_SCLK:   PLL3/128          1.792MHz
+
+      The clock always operates in Normal Mode A, other modes are not supported. 
+      Automatic frequency  switch function is not used, and is not supported.
+
+      Device drivers should handle the module power, reset operation, and clock divide
+      ratio and clock gate used by the modules on their own if necessary.
+
+3.15 Pin Multiplexer Initialization
+
+      T-Monitor sets the following pin multiplexers for EM1-D512 at startup:
+
+              Register                Setting value
+              CHG_L1_HOLD             0x00000000
+              CHG_CTRL_AB0_BOOT       0x00000001
+              CHG_PINSEL_G0           0x55400C00
+              CHG_PINSEL_G16          0x55555555
+              CHG_PINSEL_G32          0x54555055
+              CHG_PINSEL_G48          0x55555555
+              CHG_PINSEL_G64          0xffc05555
+              CHG_PINSEL_G80          0x06556940
+              CHG_PINSEL_G96          0x55555555
+              CHG_PINSEL_G112         0x00000555
+              CHG_PINSEL_SP0          0x00000000
+              CHG_PINSEL_DTV          0x00000001
+              CHG_PINSEL_SD0          0x00000000
+              CHG_PINSEL_SD1          0x00000002
+              CHG_PINSEL_IIC2         0x00000000
+              CHG_PULL_G0             0x55055005
+              CHG_PULL_G8             0x00000005
+              CHG_PULL_G16            0x00000000
+              CHG_PULL_G24            0x00000000
+              CHG_PULL_G32            0x00550000
+              CHG_PULL_G40            0x00050000
+              CHG_PULL_G48            0x11111111
+              CHG_PULL_G56            0x11111111
+              CHG_PULL_G64            0x11111111
+              CHG_PULL_G72            0x00000005
+              CHG_PULL_G80            0x00400050
+              CHG_PULL_G88            0x55000444
+              CHG_PULL_G96            0x44444444
+              CHG_PULL_G104           0x04044444
+              CHG_PULL_G112           0x00000000
+              CHG_PULL_G120           0x00000000
+              CHG_PULL0               0x50000004
+              CHG_PULL1               0x15110600
+              CHG_PULL2               0x60000661
+              CHG_PULL3               0x00000000
+              GIO_E0_L                0x000001d9
+              GIO_E1_L                0x00000604
+              GIO_E0_H                0x00001030
+              GIO_E1_H                0x00000000
+              GIO_E0_HH               0xc0020100
+              GIO_E1_HH               0x00040200
+              GIO_OL_L                0x06040000
+              GIO_OL_HH               0x02000000
+              GIO_OH_HH               0x00040000
+
+      These result in the pin settings that support the following modules:
+
+              AB0(AsyncBus0)
+              LCD
+              SD0
+              PM0
+              UART0, UART1
+              IIC
+              USB
+              GPIO
+                      P0      In              DA9052(nIRQ)
+                      P2      Out/0           ML7037(/PDN)
+                      P3      In              microSD(CD)
+                      P4      In              Push-SW(SW4)
+                      P6      In              Push-SW(SW3)
+                      P7      In              Push-SW(SW2)
+                      P8      In              Push-SW(SW1)
+                      P9      Out/0           ML7037(PDN)
+                      P10     Out/0           Camera module (STBY)
+                      P36     In              MKY36(/INT0)
+                      P37     In              MKY36(/INT1)
+                      P44     In              LAN9221(IRQ)
+                      P72     In              MAX7324(/INT)
+                      P73     Out/0           LM4876(/SHUTDOWN)
+                      P81     In              LAN9221(PME)
+                      P82     Out/0           LCD
+                      P94     In              RTC(/TIRQ)
+                      P95     In              RTC(/AIRQ)
+
+3.16 LED Operation and Retrieval of DIP Switch State
+
+      To operate LEDs 5 to 8  and to retrieve the state of the DIP switch SW-4, 
+      IIC2 and port expander (MAX7324) connected to them are used.
+
+      Although photocouplers are connected to the port expander besides LEDs, 
+      they are not handled by T-Monitor.
+
+4. T-Kernel Implementation Specification
+
+4.1 Use Thumb Instruction Set
+
+      To use the Thumb instruction set, the code must be programmed according
+      to "ARM/Thumb Interworking".
+      For C language programs, you need to specify the -mthumb-interwork -mthumb option
+      at compile time.
+
+      To specify the code written in the Thumb instruction set to run as a
+      task or handler, set the least significant bit of the address to 1. When
+      the ARM instruction set is used, set it to 0. It is usually set by the
+      linker automatically, and you do not have to be concerned about it.
+
+4.2 Determination of System State
+
+  (1) Task-independent portion
+     (exception, interrupt handler, time event handler)
+
+      Use the taskindp flag in the system shared information (SysCommonInfo)
+      to judge for it.
+
+      taskindp = 0    Task portion
+      taskindp > 0    Task-independent portion
+
+      This flag is set by T-Kernel/OS.
+
+  (2) Quasi-task portion (extended SVC handler)
+
+      Use a software-like flag in T-Kernel/OS to judge for it.
+
+4.3 Exceptions/Interrupts Used by T-Kernel/OS
+
+      Supervisor call (SVC instruction)
+      - T-Kernel system call or extended SVC  SVC 6
+      - tk_ret_int() system call              SVC 7
+      - Task dispatcher                       SVC 8
+      - Debugger support function             SVC 9
+      - Return from task exception            SVC 10
+
+      Interrupt
+      - TI0 timer interrupt                   IRQ 54
+
+4.4 System Call
+
+      The caller invokes the interface library in the form of C language
+      function call. The interface library is described below.
+
+      The system calls can only be called from the following modes:
+
+              USR: User mode
+              SYS: System mode
+              SVC: Supervisor mode
+
+      If you want to call a system call from other modes, you need to switch
+      the mode to the SVC mode or save R14_svc before calling it (in the
+      latter case, you need to restore R14_svc back to the original value after
+      returning from the system call).
+      Note that you must not switch the mode to the USR or SYS mode.
+
+      If you want to invoke a system call from the assembly language routine, 
+      you should call it via the interface library in the functional form 
+      as in the case of C language programming. 
+      Alternatively, you can call it directly by using an SVC instruction to
+      perform the processing equivalent to the interface library described
+      below.
+      As the register saving rule follows the C language rule, it is also
+      necessary to save the registers according to the C language rule when
+      the system call is invoked directly from the assembly language routine.
+
+  (1) T-Kernel/OS system call
+
+      ER tk_xxx_yyy(p1, p2, p3, p4, p5)
+
+      The arguments are integers or pointers, and passed in the same manner as
+      with the function call in C language.
+
+              //      r0 =    p1
+              //      r1 =    p2
+              //      r2 =    p3
+              //      r3 =    p4
+              //      +---------------+
+              // sp ->|       p5      |
+              //      |       :       |
+              //      +---------------+
+      tk_xxx_yyy:
+              stmfd   sp!, {r4}       // Save r4
+              add     r4, sp, #4      // r4 = Parameter's position on the stack
+              stmfd   sp!, {lr}       // Save lr
+              ldr     ip, = Function code
+              svc     6
+              ldmfd   sp!, {lr}       // Restore lr
+              ldmfd   sp!, {r4}       // Restore r4
+              bx      lr
+
+  (2) Extended SVC
+
+      INT zxxx_yyy( .... )
+
+      Arguments are stored in a pacekt on the caller side, and the address of the packet
+      is stored in the R0 register before invocation.
+
+      zxxx_yyy:
+              stmfd   sp!, {r0-r3}    // Put register arguments on stack and 
+      wrap them into a packet
+              mov     r0, sp          // R0 = Address of the argument packet
+              stmfd   sp!, {lr}       // Save lr
+              ldr     ip, = Function code
+              svc     6
+              ldmfd   sp!, {lr}       // Restore lr
+              add     sp, sp, #4*4    // Discard arguments on the stack
+              bx      lr
+
+      This method of putting arguments in a packet is just an example. 
+      Arguments must be put in a packet appropriately according the
+      number of arguments and their types.
+
+  (3) T-Kernel/DS service call
+
+      ER td_xxx_yyy(p1, p2, p3, p4)
+
+      The arguments are four or less integers or pointers, and passed in the
+      same manner as with the function call in C language.
+
+              //      r0 =    p1
+              //      r1 =    p2
+              //      r2 =    p3
+              //      r3 =    p4
+      td_xxx_yyy:
+              stmfd   sp!, {lr}       // Save lr
+              ldr     ip, = Function code
+              svc     9
+              ldmfd   sp!, {lr}       // Restore lr
+              bx      lr
+
+4.5 Exception/Interrupt Handler
+
+      ER tk_def_int( UINT dintno, T_DINT *pk_dint )
+
+      typedef struct t_dint {
+              ATR     intatr;         /* Interrupt handler attribute */
+              FP      inthdr;         /* Interrupt handler address */
+      } T_DINT;
+
+      Specify the index number (0 to 255) of the vector table in dintno.
+
+      FIQ fast interrupt is handled differently from other
+      exceptions/interrupts. For details, see the explanation of FIQ fast
+      interrupt later in this document.
+
+      T-Kernel/OS does nothing for handling the interrupt controller. The
+      interrupt handler is responsible for handling the processing such as
+      clearing interrupts.
+
+      To enable multiple interrupts, you need to manipulate the interrupt mask
+      register of the interrupt controller (or the GPIO controller) to set the
+      controller to disable interrupts other than those allowed for multiple
+      interrupts. Especially, be careful not to cause the same interrupt to
+      reenter.
+      If you modify the interrupt mask of the interrupt controller
+      (or the GPIO controller), you need restore it before returning from the
+      interrupt handler.
+
+      The exception/interrupt handler enters one of the following processor
+      modes depending on the type of the exception/interrupt that occurred.
+
+              SVC: Supervisor mode
+              ABT: Abort mode
+              UND: Undefined instruction exception mode
+              IRQ: Interrupt mode
+              FIQ: Fast interrupt mode
+
+      However, when TA_HLNG is specified for a handler, the mode is automatically changed to
+      the SVC mode by a high-level language support routine. Therefore, 
+      regardless of which type of exception/interrupt occurred, the mode upon
+      entry into the user's interrupt handler is always the SVC mode.
+
+  (1) In the case of TA_HLNG being specified for the exception/interrupt handler
+
+      The format of an exception/interrupt handler is as follows.
+
+      void inthdr( UINT dintno, void *sp )
+
+      dintno  The index number of the vector table of the 
+              exception/interrupt that occurred
+              For the default handler, it is the index number of the
+              exception/interrupt that occurred, not the index number 
+              of the default handler.
+
+      sp      The pointer to the following information saved on the stack
+
+                      +---------------+
+                sp -> | R12=ip        |
+                      | R14=lr        | <- Return address
+                      | SPSR          |
+                      +---------------+
+
+              Return address
+              IRQ        Return address from interrupt
+              SVC        address of the next instruction that follows SVC instruction
+              ABT        address if the aborted instruction
+              UND        address of the next instruction that follows the undefined instruction
+
+    - The state of CPU upon entry into the exception/interrupt handler is as follows:
+
+              CPSR.F = ?      Remains as is when interrupt/exception occurs
+              CPSR.I = 1      Interrupt disabled
+              CPSR.A = 1      Abort exception disabled
+              CPSR.M = 19     SVC: Supervisor mode
+
+      Multiple interrupts are disabled. Setting CPSR.I to 0 can enable
+      multiple interrupts. In that case, the interrupt controller setting
+      should be modified appropriately.
+
+    - You return from the exception/interrupt handler by returnin from the function.
+
+    - The address of the high-level language support routine in T-Kernel/OS is
+      stored in the vector table, and the specified handler is called from the
+      high-level language support routine.
+
+  (2) In the case of TA_ASM being specified for the exception/interrupt handler
+
+    - The address of the specified exception/interrupt handler is directly stored
+      in the vector table. Therefore, the handler is directly called without
+      going through T-Kernel/OS.
+
+    - Not going through T-Kernel/OS means that the flag for determining the
+      task-independent portion is not updated. As the task-independent portion
+      is not identified as such, the following points need to be noted.
+
+      - If interrupts are enabled (CPSR.I = 0, and A = 0), there is a
+        possibility that task dispatching will occur. If task dispatching
+        occurs, the subsequent operations will be abnormal except when a
+        supervisor call exception caused by a SVC instruction occurs.
+      - When a system call is invoked, it will be processed as having been
+        called from a task portion.
+
+      Therefore, if it is necessary to issue a system call in a handler, or if
+      you want to enable interrupts, the flag for determining the
+      task-independent portion must be set as necessary.
+      It is also desirable to switch to the SVC mode in advance to issue a
+      system call. (See the above explanation of system call)
+
+      The flag for determining the task-independent portion can be set by
+      manipulating the `taskindp' flag in the system shared information. Note
+      that it must be performed in the interrupt disabled state
+      (CPSR.I = 1 and A = 1). It is also necessary to restore the flag before
+      exiting the interrupt handler.
+
+              taskindp++;     /* Enter the task-independent portion */
+
+              taskindp--;     /* Leave the task-independent portion */
+
+      As multiple interrupts may occur, taskindp must be set by
+      increment/decrement. Do not use, for example, taskindp = 0.
+
+    - To return from the exception/interrupt handler, use the tk_ret_int() 
+      system call or the EIT_RETURN macro (or the INT_RETURN or EXC_RETURN
+      macro depending on the processor mode). If you use the macro, the delayed
+      dispatch does not occur.
+      It is also possible to perform equivalent processing instead of
+      using the macro directly.
+
+    - Unlike other system calls, the tk_ret_int() system call is called
+      by a separate dedicated trap. It cannot be called in the same function form like other
+      system calls.
+
+              SVC     7       // tk_ret_int() call (not return)
+
+      Prior to calling tk_ret_int(), the stack must be configured 
+      in the following state.
+      It is also necessary to restore all registers except those
+      (R0 to R11) stored on the stack.
+      The exception mode must be restored to the mode of the
+      exception/interrupt that occurred (then current mode upon entry into the
+      handler). sp is the stack pointer (R13) for processing in the mode of the
+      exception/interrupt that occurred.
+
+                      +---------------+
+                sp -> | R14_svc       |
+                      | R12=ip        |
+                      | R14=lr        | <- Return address
+                      | SPSR          |
+                      +---------------+
+
+      In the above stack, R14_svc stores the value of the R14 register of the
+      SVC mode upon entry into the handler. Other values are saved by the
+      exception branch processing routine of T-Monitor.
+
+      If tk_ret_int() is called from other than an exception/interrupt
+      handler, the behavior is not guaranteed.
+
+      The macros ENTER_SVC_MODE for switching the mode to the SVC mode and
+      TK_RET_INT for calling tk_ret_int() are provided.
+
+  (3) FIQ Fast interrupt
+
+      The FIQ fast interrupt handler is executed outside the OS control.
+      FIQ is used for fast data transfer or other applications that does not
+      require the support of OS.
+
+      - The TA_HLNG attribute cannot be specified for the FIQ fast interrupt
+        handler.
+      - The FIQ fast interrupt handler cannot be exited by calling the
+        tk_ret_int() system call.
+      - None of system calls and extended SVCs can be called in the FIQ fast
+        interrupt handler.
+      - IRQ normal interrupts or abort exceptions must not be enabled in the
+        FIQ fast interrupt handler.
+
+      If you want to disable FIQ fast interrupts by using the CPSR.F flag
+      outside the FIQ fast interrupt handler itself, IRQ interrupts and abort
+      exceptions must also be disabled.
+      That is, you need to set CPSR.F=1, CPSR.I=1, and CPSR.A=1, and must not
+      enable either or both of IRQ and abort exception while FIQ is disabled.
+      In addition, none of system calls and extended SVCs can be called while
+      the FIQ interrupt is disabled.
+
+      Disabling FIQ is avoided in OS so that FIQ has faster interrupt
+      response than IRQ. These restrictions are the trade-off of such fast
+      interrupt response. If they are not properly adhered to, OS may malfunction.
+
+
+4.6 Task
+
+      ER tk_cre_tsk( T_CTSK *ctsk )
+
+      typedef struct t_ctsk {
+              void    *exinf;         /* Extended information */
+              ATR     tskatr;         /* Task attribute */
+              FP      task;           /* Task start address */
+              PRI     itskpri;        /* Initial task priority */
+              INT     stksz;          /* User stack size (in bytes) */
+              INT     sstksz;         /* System stack size (in bytes) */
+              void    *stkptr;        /* User stack pointer */
+              void    *uatb;          /* Task space page table */
+              INT     lsid;           /* Logical space ID */
+              ID      resid;          /* Resource ID */
+      } T_CTSK;
+
+  (1) Option specification
+
+      tskatr := (TA_ASM || TA_HLNG)
+              | [TA_SSTKSZ] | [TA_USERSTACK] | [TA_TASKSPACE] | [TA_RESID]
+              | (TA_RNG0 || TA_RNG1 || TA_RNG2 ||  TA_RNG3)
+              | [TA_FPU]
+
+    - TA_COPn is not used. As FPU(VFP) is not supported, TA_FPU = 0 holds.
+
+    - lsid is set into the context ID register (CONTEXTIDR(CP15.c13.0.c0.1)).
+      The valid range for lsid is 0 to 255.
+      uatb is set into the translation table base register 0
+      (TTBR0(CP15.c2.0.c0.0)).
+
+  (2) Task form
+
+      The task takes the following form for either TA_HLNG or TA_ASM option:
+
+      void task( INT stacd, void *exinf )
+
+      The state of registers when the task is started are as follows:
+
+      CPSR.F   = 0    Fast interrupt enabled
+      CPSR.I   = 0    Interrupt enabled
+      CPSR.A   = 0    Abort exception enabled
+      CPSR.T,J = 0,0  ARM mode      When the least significant bit 
+                                    of the task start address is 0
+                 1,0  Thumb mode    When the least significant bit 
+                                    of the task start address is 1
+      CPSR.M   = 16   USR: User mode            When TA_RNG3 is specified
+                 31   SYS: System mode          When TA_RNG1 to 2 is specified
+                 19   SVC: Supervisor mode      When TA_RNG0 is specified
+
+      R0 = stacd      Task start parameter
+      R1 = exinf      Task extended information
+      R13(sp)         Stack pointer
+
+      Other registers are undefined.
+
+      To exit a task, it is necessary to use tk_ext_tsk() or tk_exd_tsk().
+      A simple return does not exit the task. The correct behavior is 
+      not guaranteed after the return.
+
+4.7 Set/Get Task Registers
+
+      ER tk_set_reg( ID tskid, T_REGS *regs, T_EIT *eit, T_CREGS *cregs )
+      ER tk_get_reg( ID tskid, T_REGS *regs, T_EIT *eit, T_CREGS *cregs )
+
+      typedef struct t_regs {
+              VW      r[13];          /* General registers R0 to R12 */
+              void    *lr;             /* Link register R14 */
+      } T_REGS;
+
+      typedef struct t_eit {
+              void    *pc;             /* Program counter R15 */
+              UW      cpsr;           /* Program status register */
+              UW      taskmode;       /* Task mode flag */
+      } T_EIT;
+
+      typedef struct t_cregs {
+              void    *ssp;            /* System stack pointer R13_svc */
+              void    *usp;            /* User stack pointer R13_usr */
+              void    *uatb;           /* Task space page table address
+       */
+              UW      lsid;           /* Task logical space ID */
+      } T_CREGS;
+
+    - cpsr cannot be changed except in the flag fields
+      (excluding J and IT bits) (bit 31 to 27). Settings in other fields
+      (bit 26 to 0) are ignored.
+
+    - taskmode is same as the task mode flag stored in the system shared
+      information. It is treated as the register for holding the information
+      about memory access privilege.
+
+    - If you set the registers of the task in DORMANT state, the task start
+      parameter and task extended information are set to R0 and R1 by
+      tk_sta_tsk(), so the values set by tk_set_reg() will be discarded.
+
+4.8 Task Exception Handler
+
+      A task exception handler should have the dedicated entry routine for
+      saving/restoring the registers. For the entry routine, use the macro
+      TEXHDR_ENTRY.
+      You can perform an equivalent processing instead of using the macro directly.
+
+      State of the stack upon entry into the task exception handler
+
+              +---------------+
+        sp -> |texcd          | Exception code
+              |PC             | Return address from handler
+              |CPSR           | CPSR to be restored at return from handler
+              +---------------+
+
+4.9 System Call/Extended SVC Caller Information
+
+      The system call/extended SVC caller information passed to the hook
+      routine defined by td_hok_svc() is in the following form:
+
+      typedef struct td_calinf {
+              void    *ssp;    /* System stack pointer */
+              void    *r11;    /* Frame pointer upon entry */
+      } TD_CALINF;
+
+      ssp shows the position of the stack just after the exception branch
+      routine of T-Monitor is completed, and the content of the stack is as
+      follows:
+
+                      +---------------+
+               ssp -> |R12=ip         |
+                      |R14_svc=lr     | Return address from SVC
+                      |SPSR           | Processor mode of the caller
+                      +---------------+
+                      +---------------+
+           R13_xxx -> |R14_xxx=lr     | Return address from the interface library
+                      +---------------+                       
+
+      The return address from the system call/extended SVC is R14_svc.
+      However, they are usually called by using the interface library, so
+      R14_svc points the address of the interface library.
+
+      The return address from the interface library is R14_xxx. R13_xxx is a
+      stack pointer based on the processor mode of the caller, and the
+      processor mode of the caller can be found from SPSR. If the processor
+      mode of the original caller is SVC, ssp + 12 is equivalent to R13_xxx.
+      If you do not use the standard interface library, this may not be the case.
+
+4.10 CPU Interrupt Control
+
+      The CPU interrupt control macro functions shown below disable/enable the
+      CPSR.I and A flags.
+      They do not change the CPSR.F flag. That means they control the IRQ, i.e., 
+      normal interrupts, and abort exception interrupts, and they do not affect
+      the FIQ, i.e. fast interrupts.
+
+      DI( UINT intsts )       IRQ interrupt disabled
+      EI( UINT intsts )       IRQ interrupt enabled (restored to the previous state)
+
+4.11 Interrupt controller
+
+      The following library functions are provided to operate the interrupt
+      controllers:
+
+  (1) Value of interrupt vector (INTVEC)
+
+      #define IV_IRQ(n)       (  32 + (n) )   /* IRQ interrupt     0 to 95 */
+      #define IV_GPIO(n)      ( 128 + (n) )   /* GPIO interrupt    0 to 127 */
+
+      The value that can be specified as intvec in the interrupt controller
+      operation function is in the valid range of IRQ and GPIO interrupts.
+      If you specify an invalid value (outside the valid range), 
+      the subsequent correct behavior is not guaranteed.
+
+  (2) Set interrupt mode
+
+      void SetIntMode( INTVEC intvec, UINT mode )
+
+      Sets the interrupt specified by `intvec' for the mode specified by `mode'.
+      If an invalid mode is specified, the subsequent correct 
+      behavior is not guaranteed.
+
+      #define IM_ENA          0x0001  /* Interrupt line enabled */
+      #define IM_DIS          0x0000  /* Interrupt line disabled */
+      #define IM_INV          0x0002  /* Inverted polarity  */
+      #define IM_LEVEL        0x0200  /* Level */
+      #define IM_EDGE         0x0000  /* Edge */
+      #define IM_HI           0x0000  /* High level/rising edge */
+      #define IM_LOW          0x0100  /* Low level/falling edge */
+      #define IM_BOTH         0x0400  /* Both edges */
+      #define IM_ASYN         0x0800  /* Asynchronous */
+
+      For IRQ
+      mode := IM_ENA | IM_INV
+       or IM_DIS
+
+      For GPIO
+      mode := IM_ENA | IM_LEVEL | (IM_HI || IM_LOW) | IM_ASYN
+       or IM_ENA | IM_EDGE | (IM_HI || IM_LOW || IM_BOTH) | IM_ASYN
+       or IM_DIS
+
+      If IM_ENA is specified, the specified mode is set, interrupts are
+      disabled (DisableInt), and then the interrupt line is enabled.
+      If IM_DIS is specified, the interrupt line is disabled. For the disabled
+      interrupt line, no interrupt occurs even when interrupts are enabled
+      (EnableInt).
+      In the initial state, the interrupt lines are disabled (IM_DIS).
+
+      When the system is started, the setting of the interrupt
+      controller for the following GPIO interrupts is IM_ENA, which
+      means that the following interrupts are enabled (EnableInt).
+
+              IRQ26   GIO6 Interrupt (GPIO port  96 to 111)
+              IRQ27   GIO7 Interrupt (GPIO port 112 to 127)
+              IRQ50   GIO0 Interrupt (GPIO port   0 to 15)
+              IRQ51   GIO1 Interrupt (GPIO port  16 to 31)
+              IRQ52   GIO2 Interrupt (GPIO port  32 to 47)
+              IRQ53   GIO3 Interrupt (GPIO port  48 to 63)
+              IRQ79   GIO4 Interrupt (GPIO port  64 to 79)
+              IRQ80   GIO5 Interrupt (GPIO port  80 to 95)
+
+  (3) Enable interrupt
+
+      void EnableInt( INTVEC intvec )
+
+      Enables the interrupt specified by intvec.
+
+  (4) Disable interrupt
+
+      void DisableInt( INTVEC intvec )
+
+      Disables the interrupt specified by intvec.
+
+  (5) Clear interrupt request
+
+      void ClearInt( INTVEC intvec )
+
+      Clears the interrupt request specified by intvec.
+
+      Only an edge-triggered interrupt needs be cleared.
+
+  (6) Check for interrupt request
+
+      BOOL CheckInt( INTVEC intvec )
+
+      Check whether or not there is the interrupt request specified by intvec.
+      If there is an interrupt request, TRUE (other than 0) is returned.
+
+      The raw status register is probed to check for an interrupt request.
+
+4.12 I/O Port Access to Peripheral Device areas
+
+   The memory type mode setting for peripheral device areas is "Device".
+   Hence, if we use out_b(), out_h(), out_w(), and out_d() to these areas, 
+   the call returns before the completion of drain (i.e., the writing of data).
+   (See 2.3 Memory Map for peripheral device areas.)
+
+5. Device Driver Implementation Specification
+
+5.1 System Disk Driver
+
+  (1) Supported devices
+
+      This driver supports the following system disks:
+
+              - microSD card inserted into the microSD card slot
+              - ROM disk (NOR Flash)
+
+              Device name      Device
+              pcb             microSD card
+              rda             ROM disk (NOR Flash)
+
+      Only the following device supports subunits.
+
+              microSD card
+              * Up to four subunits
+
+      Accessing the microSD card uses the following resource of EM1-D512:
+
+              Media        Controller         GPIO for card detection
+              microSD      SDIA(SD0)          GPIO P3
+
+      The interrupts of SDIA (SDIx_SD_INT, SDIx_CC_INT) are not used.
+      It is assumed that the I/O pin setting and the clock setting that are
+      necessary to use SDIA and GPIO have been performed appropriately.
+
+      The ROM disk using FlashROM (NOR) uses the area defined in RomInfo as
+      disk.
+
+  (2) Hardware-dependent items (system disk driver)
+
+   (a) DEVCONF entries
+
+      The system disk driver refers to the following DEVCONF entries:
+
+      HdSpec  HD specification
+              xxNI xxxx xxxx xxxx xxxx
+              [Default: 0x00010000]
+
+              I : Automatically check for insertion of the ejectable disk media
+              N : Disable automatic ejection of the ejectable disk media
+
+      HdChkPeriod interval (msec)
+              Ejectable disk check interval
+              [Default: 3000]
+
+   (b) Master boot record access function
+
+      A special function is provided for accessing the master boot record of a
+      device that supports subunits (the physical unit only).
+
+      Attribute record number:       -999999 (R)
+
+      data:   UW              magic;
+              DiskBlock0      mboot;
+
+      magic = CH4toW('M','B','R','R') : Read from master boot record
+              CH4toW('M','B','R','W') : Write to master boot record
+                                        (write in read processing)
+
+      * CH4toW(c1, c2, c3, c4) is ( ((c4)<<24)|((c3)<<16)|((c2)<<8)|(c1) ).
+
+      * The subsequent correct behavior is not guaranteed if a partition 
+        in use is changed by writing to the master boot record.
+
+   (c) Partition (subunit) handling
+
+      For a device that supports subunits, always four partitions (subunits)
+      are registered in order to respond to dynamic changes of the partition
+      information. An attempt to open an empty partition results in the
+      E_NOMDA error.
+
+   (d) How to calculate CHS information
+
+      Generally, the total disk capacity that is calculated from the CHS is
+      less than the actual total disk capacity.
+
+      Cylinders (C)    Max. 1023
+      Heads (H)        Max. 255
+      Sectors (S)      Max. 63
+
+      - The maximum value of C is 1024, but normally the last cylinder is not
+        used.
+      - The maximum number of H is 256, but the usual number is 255.
+
+      The CHS information is determined as follows:
+
+      1. From the physical CHS information, the acceptable used 
+         CHS information is calculated
+         so as to keep the above limitations as follows
+        (pC, pH, pS : physical CHS information).
+              T = pC * pH * pS; C = pC; H = pH; S = pS;
+              while (C > 1024) {C >>= 1; H <<= 1;}
+              if (S > 63) S = 63;
+              if (H > 255) H = 255;
+              C = T / H / S;
+              if (C > 1023) C = 1023;
+
+      2. When a partition is already set, the CHS information is calculated
+         from the partition information.
+              S = Last sector of partition;
+              H = Last head of partition + 1;
+              C = T / H / S - 1;
+
+5.2 Clock Driver
+
+  (1) Supported devices
+
+      This driver supports SPI (SP0) of EM1-D512 and RTC (RX-4581NB)
+      connected to it. 
+      Besides RTC, an Audio CODEC (ML7037) and a power supply management
+      controller (DA9052) are connected to SP0, so this driver also offers the
+      interface for operating SPI.
+
+      The device name is "CLOCK".
+
+  (2) Hardware limitations (clock driver)
+
+      Non-volatile register (free register) is not supported.
+      RTC interrupt is not supported.
+
+   (a) DN_CKAUTOPWON:      Set/get the automatic power-on time (RW)
+
+      Not supported. An error (E_NOSPT) will be returned.
+
+   (b) DN_CKREGISTER:      Read/write a non-volatile register (RW)
+
+      Not supported. An error (E_NOSPT) will be returned.
+
+      As DN_CKAUTOPWON is not supported, events notification do not take place.
+
+  (3) Interface for operating SPI(SP0)
+
+      The RTC, the Audio CODEC, and the power supply management controller
+      that are connected to SPI (SP0) are operated by using the following
+      interface:
+
+      <device/em1d512/em1d512_iic.h>
+      ER      em1d512_spixfer(W cs, UB *xmit, UB *recv, W len)
+
+      This interface sends/receives data to/from the devices connected to
+      SPI(SP0).
+
+              cs:     target device for communiation
+                      0       Power supply management controller (DA9052)
+                      1       Audio CODEC (ML7037)
+                      2       RTC (RX-4581NB)
+
+              xmit:   address of the area that holds the sent data
+              recv:   address of the area to store the received data
+              len:    Number of sent/received data (byte)
+
+              Return code: E_OK or an error (E_IO, E_TMOUT, E_PAR)
+
+      This interface operates by using the SP0 interrupt, so it must not be
+      called in an interrupt handler or while interrupts are disabled. To wait
+      for an SP0 interrupt, use tk_slp_tsk ().
+
+5.3 Screen (Display Driver)
+
+  (1) Supported devices
+
+      This driver uses the LCD controller installed in EM1-D512. It uses the
+      MEMC-LCD DirectPath mode to operate the device without IMC
+
+      (image composer).
+      Besides the LCD controller, GPIO P82 and the White LED Driver of DA9052
+      are used to control the LCD lighting.
+      It is assumed that the I/O pin setting that is necessary to use LCD 
+      has been performed appropriately. The pixel clock used for display 
+      is generated by the screen driver by manipulating PLL2.
+
+  (2) Hardware-dependent items (screen driver)
+
+      The attribute data that can be used by the screen driver has restrictions.
+
+   (a) DN_SCRNO:            Get/set the display mode to be used (RW)
+
+      Only getting the display mode (R) is supported.
+
+   (b) DN_SCRUPDFN: Get the screen update function (R)
+
+      Not supported.
+      The function pointer is set to NULL.
+
+   (c) DN_SCRVFREQ: Set/get the vertical frequency of monitor (RW)
+
+      Not supported.
+      Get:            vfreq is set to 0.
+      Set:            the value of vfreq is ignored.
+
+   (d) DN_SCRBRIGHT:        Set/get the screen brightness (RW)
+   
+   (e) DN_SCRUPDRECT:       Update the screen display (W)
+ 
+   (f) DN_SCRADJUST:        Set/get the monitor timing adjustment (RW)
+   
+   (g) DN_SCRMEMCLK:        Set/get the clock of Video-RAM (RW)
+
+   (h) DN_SCRWRITE: Direct screen display (W)
+
+      Not supported. An error (E_NOSPT) is returned.
+
+   (i) Supported display mode
+
+      Only the following display mode is supported.
+
+              800 x 480, 16 bpp fixed
+
+   (j) Set the display mode
+
+      As the display mode is only set at system startup, the function of
+      dynamically setting it as attribute data is not supported.
+
+   (k) Set the vertical frequency (refresh rate)
+
+      The vertical frequency setting function is not supported.
+
+   (l) DEVCONF entries
+
+      The screen driver refers to the following DEVCONF entries:
+
+      VIDEOMODE       mode
+
+      This entry is reserved (must not be used).
+
+      VIDEOATTR       attr
+
+      This entry is reserved (must not be used).
+
+5.4 KB/PD Driver
+
+  (1) Supported devices
+
+              - Keypad
+              - Touch panel
+
+      The keypad uses GPIO P4(SW4), P6(SW3), and P7(SW2). The key ON/OFF is
+      detected by using these GPIO interrupts.
+      The A/D conversion value of the touch panel is obtained from the power
+      supply management controller (DA9052) by using the interface for
+      operating SPI (SP0) which is provided by the RTC driver. The
+      following values are set to the interrupt mask register of DA9052 
+      to allow only PEN_DOWN interrupts to occur. Interrupts from DA9052 
+      are raised as GPIO P0 interrupt.
+
+              R10(IRQ_MASK_A) 0xff
+              R11(IRQ_MASK_B) 0xbf
+              R12(IRQ_MASK_C) 0xff
+              R13(IRQ_MASK_D) 0xff
+
+  (2) Hardware-dependent items (KB/PD driver)
+
+   (a) DEVCONF entries
+
+      The real I/O driver (lowkbpd) refers to the following DEVCONF entries.
+
+      TEngTabletPar   X-bias X-span Y-bias Y-span PointerNoDisp ScanRate(off)
+                      ScanRate(on)
+              X-bias, X-span, Y-bias, and Y-span are the corrective parameters
+              which are used to normalize the coordinate data obtained from
+              the touch pad.
+              If PointerNoDisp is specified to 1, the pointer is not displayed
+              (MetaBut.nodsp = 1 is passed).
+              For ScanRate(off), specify the time, in milliseconds, until the
+              next pen touch detection is performed after the pen is released.
+              For ScanRate(on), specify the polling interval during pen touch
+              in milliseconds.
+
+              The default values; PointerNoDisp = 0, ScanRate(off) = 50,
+              ScanRate(on) = 50, and the values of X-bias, X-span, Y-bias, and
+              Y-span vary depending on the used LCD panel.
+
+      TEngUseTablet   Whether the touch panel can be used or not
+              If 1 is specified, the touch panel is used.
+              If 0 is specified, the touch panel is not used.
+
+              The default is 1.
+
+   (b) Notes on push button switches
+
+      The following shows the correspondence between the push button switches
+      and the scan codes:
+
+              SW2     SW3     SW4
+              ------------------------
+              0x6e    0x6d    0x6f
+
+5.5 RS-232C Driver
+
+  (1) Supported devices
+
+      This driver supports UART0, UART1, and UART2 built in EM1-D512.
+      It is assumed that the I/O pin setting and the clock setting that are
+      necessary to use these UARTs have been performed appropriately.
+
+      The RS-232C device names, the corresponding ports, and the used
+      resources are shown below.
+
+              Port name        Address                Interrupt
+              "rsa" (UART0)   0x50000000 to 0x5000ffff  IV_IRQ(9)
+              "rsb" (UART1)   0x50010000 to 0x5001ffff  IV_IRQ(10)
+              "rsc" (UART2)   0x50020000 to 0x5002ffff  IV_IRQ(11)
+
+      As the following signal lines are not output from the chip, the
+      functions related to these signal lines cannot (must not) be used.
+
+              UART0   RI, DSR, DTR, RTS, CTS
+              UART1   RI, DSR, DTR, RTS, CTS
+              UART2   RI, DSR, DTR
+
+  (2) Hardware-dependent items (RS driver)
+
+   (a) Attribute data
+
+      The attribute data that can be set by the RS driver, and the range of
+      parameters that can be set to the attribute data are shown below.
+
+   (b) DN_RSMODE:   Communication mode (RW)
+
+      The following mode is supported.
+
+              parity:         0: none, 1: odd, 2: even
+              datalen:        0:5 bits, 1:6 bits, 2:7 bits, 3:8 bits
+              stopbits:       0:1 bit, 1:1.5 bits, 2:2 bits
+              baud:           300 to 115200
+
+   (c) DN_RSFLOW:   Flow control (RW)
+
+      For UART0 and UART1, csflow and rsflow must be set to 0.
+
+   (d) DN_RSSTAT:   Line status (R)
+
+      As some of signal lines are not available, the following values have no
+      meaning:
+
+              UART0   CI(RI), CD(DCD), DR(DSR), CS(CTS)
+              UART1   CI(RI), CD(DCD), DR(DSR), CS(CTS)
+              UART2   CI(RI), CD(DCD), DR(DSR)
+
+  (3) Hardware-dependent items (Serial I/O driver)
+
+   (a) Correspondence between port numbers and devices
+
+      The following shows the correspondence of the port numbers
+      specified in serial_in(), serial_out(), and serial_ctl() of the serial
+      I/O driver and the devices denoted by the numbers.:
+
+              port    Device
+              0       UART0
+              1       UART1
+              2       UART2
+              3       Reserved
+
+   (b) Limitations on serial_ctl()
+
+      ER  There are restrictions on the specifications of kind and arg of serial_ctl
+      (W port, W kind, UW *arg).
+
+      <kind>          <arg>
+        DN_RSFLOW     RsFlow          Flow control
+
+              - See the section about DN_RSFLOW of the RS driver about setting RsFlow.
+
+      - DN_RSSTAT     RsStat          Get line status
+
+              - See the section about DN_RSSTAT of the RS driver about the obtained RsStat value.
+
+        RS_LINECTL    UW              Set control line ON/OFF
+
+              - Attempts to operate the signal lines by specifying the
+                followings make no sense.
+                      UART0   RSCTL_DTR, RSCTL_RTS
+                      UART1   RSCTL_DTR, RSCTL_RTS
+                      UART2   RSCTL_DTR
+
+END.

@@ -1,0 +1,199 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by T-Engine Forum
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by T-Engine Forum at 2012/11/07.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+GNU development environment and installation procedure (Cygwin)
+==============================================================================
+
+------------------------------
+1. Installing Cygwin system
+------------------------------
+
+Install Cygwin if the Cygwin system is not installed in the Windows
+yet.  Note that this development environment doesn't work correctly
+with the Cygwin version older than the 1.5 series.
+
+Log on the Windows as a user who has the administrator privilege to
+perform the Cygwin installation.
+
+Copy (save) the installation file develop\cygwin_d-1.7.7-1.zip of
+Cygwin onto the root of the drive to be installed (C:\, etc.).
+
+Next, right-click on the saved file on the Windows "Explorer," and
+execute "Expand all" of the menu.
+
+Then, there is an installer "setup.exe" in the expanded directory.
+Double-click on this "setup.exe" to start the installer.  Press 
+"Next (N)>" after the installer window opens.
+
+Select "Install from Local Directory" and press "Next (N)>."
+
+Specify where to put the root directory of Cygwin on the Windows.
+The default setting is C:\cygwin.  Set it to default if there is no
+problem.
+
+Select "All Users" for "Install For."  This is also the default
+setting.  Press "Next (N)>."
+
+Specify the directory that holds the expanded content of
+cygwin_d-1.7.7-1.zip for "Local Package Directory."  When "Next (N)>"
+is pressed, the file will be checked.
+
+After a while, the "Setup Alert" dialog is displayed when the Cygwin
+1.7 series is first installed.  When the Cygwin 1.7 series is
+installed, it overwrites the previous version of Cygwin in use. This
+may result in some adverse effects. Therefore, proceed after reading
+the WARNING carefully.
+
+Next, the selection screen of the installation packages is displayed.
+The installation begins if "Default" of "All () Default" is clicked,
+and the state is changed to "Install," and "Next (N)>" is pressed.
+
+When you are asked at the end whether icons need to be created for the
+desktop and the start menu, press "Completion" to exit the installer.
+
+The dialogu, "This program may have not been correctly installed", may
+be displayed according to the Windows version after the installation.
+In this case, press "This program has been properly installed."
+
+------------------------------
+2. Setting after Cygwin installation
+------------------------------
+
+Modify the batch file for starting Cygwin as the administrator who
+has installed Cygwin after the installation is completed.
+
+The root directory of Cygwin is C:\cygwin when it is seen from the
+Windows.  For instance, the directory represented as /usr on cygwin is
+the folder of C:\cygwin\usr when it is seen from the Windows Explorer.
+
+In the Cygwin default state, the file name is case-insensitive.
+However, as this may cause a trouble, change the configuration to the
+case-sensitive setting.  As a concrete procedure, open
+C:\cygwin\Cygwin.bat with the text editor. (This is the batch file to
+be executed to start Cygwin.)
+
+Add the following line 
+
+    set CYGWIN=check_case:strict
+
+before
+
+    bash --login -i
+
+in the batch file.
+
+Double-click on the "Cygwin" icon of desktop to start Cygwin after
+modifying the batch file.  The home directory is initialized during
+the first starup.
+
+Next, perl is configured so that it can be started by invoking
+/usr/local/bin/perl.  Provide the symbolic link from /usr/local/bin to
+/usr/bin/perl.
+
+	cd /usr/local/bin
+	ln -s /usr/bin/perl
+
+Input exit on the console to exit Cygwin. 
+
+If the user who has installed it and the user who actually uses it are
+different, start Cygwin by logging off from the Windows once, logging
+in again as a user who actually uses it, and double-clicking the
+"Cygwin" icon of desktop.  User's home directory is initialized during
+the first startup.
+
+Edit /home/username/.bashrc for ease of use to suit user's needs.
+
+This concludes the Cygwin installation.
+
+Delete the cygwin_d-1.7.7-1.zip file used for the installation as it
+is not needed after the installation is completed.
+
+------------------------------
+3. Creating a directory
+------------------------------
+
+Create the directory that holds the development environment.  In this
+document, it is assumed that the development environment is installed
+in /usr/local/tef_em1d.
+
+Example:
+    $ mkdir /usr/local/tef_em1d
+
+    * If GNU development environment for other T-Kernels has already
+      been installed, install this development environment in a
+      different directory.  If it is installed in the same directory,
+      it may cause a trouble.
+
+    * The administrator privilege is required to create
+      /usr/local/tef_em1d, as the owner of /usr/local is usually the
+      administrator who has installed Cygwin.  After creating
+      /usr/local/tef_em1d, set the owner and the permission
+      appropriately so that the user who does the T-Kernel development
+      work can access it.
+
+------------------------------
+4. Expanding the development environment package
+------------------------------
+
+GNU development environment package is now expanded in
+/usr/local/tef_em1d.
+
+First, copy the following .tar.gz files under the develop directory of
+this package onto the C:\cygwin\usr\local\ tef_em1d directory by using
+the Windows Explorer, etc.
+
+    te.Cygwin-i686.arm_2.1.0.1.tar.gz
+    te.Cygwin-i686.common.12.tar.gz
+
+Next, execute the following command on the Cygwin console, and expand
+each package.
+
+    Example:
+	$ cd /usr/local/tef_em1d
+        $ tar zxpf te.Cygwin-i686.arm_2.1.0.1.tar.gz
+        $ tar zxpf te.Cygwin-i686.common.12.tar.gz
+
+Delete the above *.tar.gz files as they are not needed after the
+package is expanded.
+
+------------------------------
+5. Setting environment variable
+------------------------------
+
+When the compilation and the build of the T-Kernel are done by not
+using Eclipse, but using only Cygwin, it is necessary to set the
+following environment variables.  Edit /home/username/.bashrc, and add
+the following commands in it.
+
+- Setting the environment variable GNU_BD and GNUARM_2 to do
+  compilation and build
+
+    Example: 
+        export GNU_BD=/usr/local/tef_em1d/tool/Cygwin-i686
+        export GNUARM_2=$GNU_BD/arm_2-unknown-tkernel
+
+- Setting the environment variable BD that shows the top directory of
+  the T-Kernel source
+
+    Example:
+        export BD=/usr/local/tef_em1d/tkernel_source
+
+  * Change the path names properly according to each one's
+    environment.  The setting to .bashrc will become effective at the
+    time of next restart.  Restart Cygwin if Cygwin is used
+    continuously after .bashrc is edited.  It is not necessary to set
+    the environment variables as above when Eclipse is used.
+
+[EOF]

@@ -1,0 +1,23 @@
+============================================================================
+■■■T-Kernel 2.0ソースコードパッケージ Ver 2.01.01 修正箇所
+								2011/10/14
+
+■ 資料の更新
+
+　○「T-Engine Reference Board  U00B0021-02 Hardware Manual」
+      hardware/tef_em1d/doc/en/TE_ReferenceBoard_HardwareManual.pdf
+	・資料を追加
+
+　○「Modification of T-Kernel 2.0 Source Code Package Ver 2.01.00」
+      srcpkg/changelog/en/Ver2.01.00.txt
+	・資料を追加
+
+　○「T-Engine リファレンスボードハードウェアマニュアルの再配布許諾について」
+      hardware/tef_em1d/doc/ja/License_for_Redistribution_of_T-EngineReferenceBoardHardwareManual.pdf
+      hardware/tef_em1d/doc/en/License_for_Redistribution_of_T-EngineReferenceBoardHardwareManual.pdf
+	・資料を追加
+
+
+■ ソースコードの更新はありません。
+									以上
+============================================================================

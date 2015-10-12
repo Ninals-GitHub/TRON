@@ -1,0 +1,27 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	tstdlib (included from sysmain)
+#
+
+# source files
+SRC	+= bitop.c
+
+# source file path
+VPATH   += ../../../tstdlib
+HEADER  += ../../../tstdlib
+
+# Manager and Driver objects
+I_OBJ	+=

@@ -1,0 +1,25 @@
+============================================================================
+- The following documents have been modified. -
+							October 14, 2011
+
+UPDATE OF DOCUMENTS:
+
+ * "T-Engine Reference Board  U00B0021-02 Hardware Manual"
+    hardware/tef_em1d/doc/ja/TE_ReferenceBoard_HardwareManual.pdf
+       - This document is added.
+
+ * "Modification of T-Kernel 2.0 Source Code Package Ver 2.01.00"
+    srcpkg/changelog/en/Ver2.01.00.txt
+       - This document is added.
+
+ * "License for Redistribution of T-Engine Reference Board Hardware Manual"
+      hardware/tef_em1d/doc/ja/License_for_Redistribution_of_T-EngineReferenceBoardHardwareManual.pdf
+      hardware/tef_em1d/doc/en/License_for_Redistribution_of_T-EngineReferenceBoardHardwareManual.pdf
+       - This document is added.
+
+
+UPDATE OF SOURCE CODE:
+
+ * No updates.
+
+============================================================================

@@ -1,0 +1,147 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+#
+#	makerules
+#		for GNU make
+#
+#	common standard rules (default rules)
+#
+#	environment variables:
+#
+#	mode	compile mode
+#		(empty)	: release version
+#		debug	: debug version
+#
+#	BD	development environment base directory
+#
+#	GNUs	cross development environment tool
+#	GNU_BD	GNU cross development environment tool base directory
+#
+#	this makerules needs:
+#	 * /usr/local/bin/make	GNU make version 3.78.1
+#	 * /usr/local/bin/perl	perl version 5.005_03
+#
+
+.EXPORT_ALL_VARIABLES:
+
+# ===== default settings ======================================================
+### environments ###
+ifndef BD
+  # default base directory
+  BD := /usr/local/te
+endif
+
+ifndef MACHINE
+  # target machine
+  MACHINE := $(firstword $(options))
+endif
+
+ifndef TETYPE
+  # target T-Engine type
+  TETYPE := std
+endif
+
+ifeq ($(origin mode), undefined)
+  # compile mode
+  mode := $(filter debug, $(options))
+endif
+
+# ===== directories ===========================================================
+#
+# COMMONLIB		common library
+# LIB_INSTALLDIR	library install directory
+# EXE_INSTALLDIR	executable install directory
+
+SUFFIX_LIB  =
+SUFFIX_INST =
+
+COMMONLIB = $(BD)/lib/build/$(TETYPE)_$(MACHINE)$(SUFFIX_LIB)
+LIB_INSTALLDIR = $(COMMONLIB)
+EXE_INSTALLDIR = $(BD)/bin/$(TETYPE)_$(MACHINE)$(SUFFIX_INST)
+
+# ===== common definition =====================================================
+
+#	CROSS_ARCH
+#		SunOS-sparc	Solaris Ultra
+#		SunOS-i386	Solaris x86
+#		Linux-i686	Linux x86
+#		FreeBSD-i386	FreeBSD x86
+#		Cygwin-i686	Cygwin x86
+#		unknown		unknown platform
+#	CCS
+#		ccs/ : exist /usr/ccs
+#		(empty) : no exist /usr/ccs
+#
+CROSS_ARCH := $(shell $(BD)/etc/platform)
+CCS := $(shell test -d /usr/ccs && echo ccs/)
+TOOL_ORIGIN = "environment" "command line"
+
+### others ###
+ETCBIN := $(GNU_BD)/etc
+RM	= rm -f
+CP	= cp
+PERL	= perl
+MKBTF	= $(ETCBIN)/mkbtf
+
+ifneq ($(shell test -x $(GNU_BD)/bin/cpp && echo exist), )
+  CPP = $(GNU_BD)/bin/cpp
+else
+  CPP =
+endif
+
+### header file ###
+HEADER		= $(BD)/include
+DATABOX_HEADER	= $(BD)/bappl/dbox
+
+### install common library ###
+$(LIB_INSTALLDIR)/%.so.$(LIB_VERSION): %.so.$(LIB_VERSION)
+	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+
+$(LIB_INSTALLDIR)/%.map: %.map
+	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+
+$(EXE_INSTALLDIR)/%.so.$(LIB_VERSION): %.so.$(LIB_VERSION)
+	$(EXE_INSTALL_STRIP)
+
+### install executable ###
+$(EXE_INSTALLDIR)/%: %
+	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
+
+define EXE_INSTALL_STRIP
+	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
+	$(STRIP) $@
+endef
+
+### build option ###
+CFLAGS =
+CPPFLAGS =
+ASFLAGS =
+LDFLAGS =
+
+# ===== system-dependent ======================================================
+
+include $(BD)/etc/sysdepend/$(TETYPE)_$(MACHINE)/makerules.sysdepend
+
+# ===== common definition =====================================================
+
+### install library ###
+$(LIB_INSTALLDIR)/%.a: %.a
+	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+  ifdef RANLIB
+	$(RANLIB) $@
+  endif
+
+$(LIB_INSTALLDIR)/%: %
+	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+
+# =============================================================================

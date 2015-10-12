@@ -1,0 +1,59 @@
+============================================================================
+"Modification of T-Kernel 2.0 Source Code Package Ver 2.01.02"
+							June 25, 2012
+
+- Modification of T-Kernel Ver 2.01.02 -
+
+----
+[K-20102-1]The start-up of T-Kernel for RAM load configuration has been modified.
+
+MODIFICATION:
+When T-Kernel (kernel-ram.sys) for RAM load configuration was linked, the same 
+start-up file as T-Kernel (kernel-rom.rom) for writing to ROM was linked.
+T-Kernel for RAM load configuration is not described in the instruction document, 
+but Makefile description for T-Kernel for RAM configuration has been modified.
+
+MODIFIED FILE(S):
+kernel/sysmain/src/Makefile.common
+kernel/sysmain/build_drv/Makefile.common
+
+
+[K-20102-2] The emulator program has been modified.
+
+MODIFICATION:
+ * The failure of RTC not operating is corrected. 
+ * The incorrect IRQ number assigned to the network controller is corrected.
+   IRQ172 was used for the target hardware, but IRQ127 was used for Qemu 
+   (It is now changed to IRQ172).
+ * Packet could not be received normally after the driver disposed the packet with 
+   the network controller. This is now fixed.
+   - Specifically, when the "Receive Data FIFO Fast Forward" function of LAN9221 
+     is used, the controller extended abnormal state.
+
+MODIFIED FILE(S):
+emulator/tef_em1d/bin/qemu-tef_em1d.exe
+emulator/tef_em1d/build/qemu-0.12.4-tef_em1d.tar.gz
+
+----
+UPDATE OF SOURCE CODE:
+ * The typos in the comments of the source code have been modified.
+	- The source code itself has not been changed.
+
+----
+UPDATE OF DOCUMENTS:
+
+ * "T-Kernel Build Manual Using Eclipse (for tef_em1d)"
+      srcpkg/doc/en/eclipse_guide.txt
+	- The explanation of "5.1 Build of Kernel for ROM" has been updated.
+
+ * "Instruction Manual for the emulator (QEMU-tef_em1d) for T-Engine reference board (tef_em1d)"
+      emulator/tef_em1d/readme_en.txt
+	- The parameter value in the explanation of "(c) Touch panel" in 
+	  "3. Peripheral devices" has been corrected.
+
+ * "Device driver build manual (for tef_em1d)"
+      srcpkg/doc/en/driver.txt
+	- The specification name in "1. Introduction" has been corrected.
+	- In correct indentations by TAB have been adjusted. 
+									EOT
+============================================================================

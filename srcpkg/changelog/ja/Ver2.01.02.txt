@@ -1,0 +1,65 @@
+============================================================================
+■■■T-Kernel 2.0ソースコードパッケージ Ver 2.01.02 修正箇所
+								2012/06/25
+
+■T-Kernel Ver 2.01.02 修正箇所
+
+----
+[K-20102-1]RAMロード用 T-Kernel のスタートアップを修正。
+
+【修正内容】
+RAMロード用 T-Kernel (kernel-ram.sys) のリンク時に、ROM 書込み用 T-Kernel 
+(kernel-rom.rom) と同じスタートアップファイルをリンクしていた。
+説明書の上では RAMロード用 T-Kernel を使用していないが、修正を行った。
+
+【修正ファイル】
+kernel/sysmain/src/Makefile.common
+kernel/sysmain/build_drv/Makefile.common
+
+
+[K-20102-2]エミュレータのプログラムを修正。
+
+【修正内容】
+・RTC が動作していなかった障害を修正。
+・ネットワークコントローラのIRQ番号が間違っていた障害を修正。
+  実機ではIRQ172だが、QemuではIRQ127を使用していた(IRQ172に変更)。
+・ネットワークコントローラで、ドライバがパケットの破棄処理をすると、
+  それ以降、パケットを正常に受信できなくなる障害を修正。
+   - 具体的には、LAN9221の "Receive Data FIFO Fast Forward" の
+     機能を使用すると異常状態に遷移してしまう。
+
+【修正ファイル】
+emulator/tef_em1d/bin/qemu-tef_em1d.exe
+emulator/tef_em1d/build/qemu-0.12.4-tef_em1d.tar.gz
+
+----
+■ ソースコードの修正
+
+　○ソースコードのコメントに含まれるtypoなどを修正
+	・ソースコード自体の変更はありません。
+
+----
+■ 資料の更新
+
+　○「EclipseによるT-Kernel構築説明書(tef_em1d用)」
+      srcpkg/doc/ja/eclipse_guide.txt
+	・「5.1 ROM用カーネルのビルド」の説明を更新
+
+　○「T-Engine リファレンスボード (tef_em1d) 用 エミュレータ (QEMU-tef_em1d) 説明書」
+      emulator/tef_em1d/readme.txt
+	・「3. 周辺デバイス」の「(c) タッチパネル」の説明にあるパラメータの値を訂正
+
+　○「デバイスドライバ構築説明書(tef_em1d用)」
+      srcpkg/doc/ja/driver.txt
+	・「1. はじめに」にある仕様書名を訂正
+
+　○「GNU開発環境・インストール手順(Cygwin)」
+      srcpkg/doc/ja/gcc_setup_guide_cygwin.txt
+	・「2. Cygwinインストール後の設定」にあるフォルダ指定の表記を調整
+	・「3. ディレクトリ作成」にあるフォルダ指定の表記を調整
+
+　○「tef_em1d実装仕様書」
+      srcpkg/doc/ja/impl-tef_em1d.txt
+	・「2.12 システムコール」にあるtypoを修正
+									以上
+============================================================================

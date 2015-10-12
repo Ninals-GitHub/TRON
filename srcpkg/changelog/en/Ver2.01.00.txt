@@ -1,0 +1,152 @@
+==================================================================
+"Modification of T-Kernel 2.0 Source Code Package Ver 2.01.00"
+						September 8, 2011
+
+- Modification of T-Kernel Ver 2.01.00 -
+
+----
+[K-201-1] The version number has been changed to Ver 2.01.00.
+
+MODIFICATION:
+ProductVer has been modified from 0x0200 to 0x0201.
+The version string has been modified from 2.00.00 to 2.01.00.
+
+MODIFIED FILE(S): 
+config/launch-ramkernel/src/sysdepend/tef_em1d/SYSCONF
+config/src/sysdepend/tef_em1d/SYSCONF
+kernel/sysmain/src/sysmain.h
+
+----
+
+[K-201-2] Error detection of tk_cre_mpl(), tk_get_mpl()
+
+ISSUE(S) IN THE PREVIOUS VERSION:
+If 0x7ffffff9 - 0x7fffffff is specified as blksz of tk_get_mpl(), it exits normally without error.
+
+This is because blksz for the internal processing becomes 0 (zero) and no error is detected as a result of the processing of rounding up blksz to allocation unit.
+
+The same applies to tk_get_mpl_u().
+
+pk_cmpl->mplsz of tk_cre_mpl() has the similar issue. If 0x7ffffff9 or above is specified, it exits normally without error. 
+
+MODIFICATION:
+Error is returned even in the above case now.
+
+MODIFIED FILE(S):
+kernel/tkernel/src/mempool.c
+
+----
+[K-201-3] tk_opn_dev(), tk_cls_dev() : The order relation between open processing and close processing
+
+ISSUE(S) IN THE PREVIOUS VERSION:
+If open/close processing is requested to the same device from multiple tasks, the temporal order relation between the exit of the open/close function of the device driver and the exit of tk_opn_dev() and tk_cls_dev() may not be as expected.
+
+A failure occurs if TDA_OPENREQ attribute is not specified.
+
+Examples of Failure:
+
+(A) If multiple tasks initiate open processing at a time
+    1. task1 calls tk_opn_dev().
+    2. openfn of device driver is called. (has not returned yet)
+    3. task2 calls tk_opn_dev().
+    4. As TDA_OPENREQ is not specified, openfn of device driver is not called.
+    5. tk_opn_dev() of task2 is complete.
+       openfn of the device driver of 2. is not complete at this point.
+  
+  Thus, tk_opn_dev() may finish before the processing of openfn of device driver is complete.
+
+(B) If a device is opened during close processing
+    1. task1 calls tk_cls_dev().
+    2. Before calling closefn of device driver, the processing switches to task2.
+    3. task2 calls tk_opn_dev().
+    4. openfn of device driver is called.
+    5. tk_opn_dev() of task2 is complete.
+    6. Switches to task1, and closefn of device driver is called.
+    7. tk_cls_dev() of task1 is complete.
+  
+  Thus, even if open processing is complete from user program's viewpoint, closefn may have been called at the end when viewed from the device driver.
+
+If TDA_OPENREQ is specified, there is no actual problem as open/close function of device driver is called every time.
+
+MODIFICATION: 
+To handle the above failure cases, open/close requests from other tasks are put to wait during open/close processing now.
+
+MODIFIED FILE(S): 
+kernel/sysmgr/src/device.c
+kernel/sysmgr/src/deviceio.c
+kernel/sysmgr/src/sysmgr.h
+
+----
+[K-201-4] tk_srea_dev(), tk_swri_dev() : Abort and wait for multiple requests 
+
+ISSUE(S) IN THE PREVIOUS VERSION:
+In the following situations in synchronous I/O (tk_srea_dev tk_swri_dev), requests to the device driver may be left incomplete. 
+
+ (A) When abort occurs in the middle of synchronous I/O processing, tk_wai_dev() for internal processing of synchronous I/O detects abort, which causes an error (E_ABORT), and the request may not be completed and returned. 
+
+ (B) When synchronous I/O is performed while another task is in the wait state for multiple requests by tk_wai_dev(), (because other requests cannot be in the waiting state at the same time during the wait for multiple requests) tk_wai_dev() for internal processing of synchronous I/O results in an error (E_OBJ), and the request may not be completed and returned.    
+
+MODIFICATION: 
+Processing of tk_srea_dev() and tk_swri_dev() has been modified so that the processing takes place correctly in the above situations. 
+
+MODIFIED FILE(S): 
+kernel/sysmgr/src/device.c
+kernel/sysmgr/src/deviceio.c
+kernel/sysmgr/src/sysmgr.h
+
+============================================================================
+- Modification of T-Monitor Ver 2.01.00 -
+
+----
+[M-201-1] The version number has been changed to Ver 2.01.00.
+
+MODIFICATION: 
+The version number has been changed form 2.00.00 to 2.01.00. 
+
+MODIFIED FILE(S): 
+monitor/tmmain/build/tef_em1d/Makefile
+
+----
+[M-201-2] Disabling interrupts from the touch panel when the exit command is executed 
+
+ISSUE(S) IN THE PREVIOUS VERSION:
+The system may reboot when the user touches the touch panel after executing exit. 
+
+MODIFICATION: 
+Processing at the time of power off has been rearranged. powerOff(), usbPower() and resetStart() have been added so that these functions are invoked when the power is turned off. 
+Additionally, the processing to disable interrupts from the touch panel has been added in powerOff(). 
+
+MODIFIED FILE(S): 
+monitor/hwdepend/tef_em1d/src/config.c
+monitor/hwdepend/tef_em1d/src/system.c
+
+----
+[M-201-3] Processing of cpuLED()
+
+Issue(s) in the previous version:
+cpuLED() for controlling GPIO connected to LED5 to LED8 may not behave the way the parameter intends depending on the lighting condition of LED. 
+
+cpuLED() is invoked only at the time of startup/exit of T-Monitor. Therefore, it does not cause any trouble in normal T-Monitor use. It may cause a problem in case such program that invokes cpuLED() is written by the user himself/herself. 
+
+MODIFICATION: 
+Processing of cpuLED() has been modified. 
+
+MODIFIED FILE(s): 
+monitor/hwdepend/tef_em1d/src/config.c
+
+============================================================================
+- Modification in a driver for T-Kernel -
+
+[D-201-1] The SPI polarity to be set by the clock driver
+
+ISSUE(S) IN THE PREVIOUS VERSION:
+The polarity of the CS line for Audio CODEC (SPI0:CS1) and the temperature sensor (SPI2:CS0) is not set correctly and access is not possible. 
+
+MODIFICATION: 
+Modification has been made so that the polarity is set to the correct value. 
+
+MODIFIED FILE(s): 
+drv/tef_em1d/clk/src/em1d512_spi.c
+
+[EOF]
+============================================================================

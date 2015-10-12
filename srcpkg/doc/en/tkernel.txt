@@ -1,0 +1,1033 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum (http://www.t-engine.org/) at 2011/XX/XX.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+        T-Kernel 2.0 Source Code Guide
+==============================================================================
+------------------------------------------------------------------------------
+1. Overview
+------------------------------------------------------------------------------
+
+This package contains the source code of T-Kernel/OS, T-Kernel/SM, and
+T-Kernel/DS that make up T-Kernel 2.0. It also contains the source code of
+T-Monitor and device drivers.
+
+This guide explains how to build and configure the source code of
+T-Kernel 2.0.  For details on how to build T-Monitor and device drivers, refer
+to "T-Monitor Build Manual" and "Device Driver Build Manual".
+
+T-Kernel supports the memory management using MMU. However, the actual memory
+management using MMU depends on the hardware. T-Kernel allows you to perform
+the memory management for each hardware type by replacing the memory
+management part. The published source code includes the hardware-independent memory
+management part that manages the physical memory without using MMU. Therefore,
+a program that operates on the T-Kernel built by using only the
+published source code operates in the physical memory address  space.
+Functions such as virtual memory cannot be used. 
+
+A user program should operate at the protection level 0 or 1 because it
+operates in the physical memory address space. In principle, the protection level 0
+is used for the system program (T-Kernel, device drivers, and so on), so it is
+recommended to operate a normal user program at the protection level 1.
+
+In the higher-level Extension of T-Kernel, the virtual memory is managed
+by using MMU. In order to do so, you can replace the memory management part
+of this source code with the memory management part for the Extension. The 
+memory management part is hardware-dependent.
+
+------------------------------------------------------------------------------
+2. Building T-Kernel and Verifying It on Actual Machine
+------------------------------------------------------------------------------
+
+--------------------------------------------------
+2.1 Procedures for Building T-Kernel
+--------------------------------------------------
+
+This section explains the procedures for building T-Kernel and generating the
+object files.
+Hereinafter, [TARGET] in a path name represents the directory of the target
+system (T-Engine).
+
+(1) Preparing development environment
+
+Follow the documents provided separately to install the development
+environment, and verify that the it can be used properly.
+
+It is reported that some CPUs do not work properly depending on the version of
+GNU tools used in the development environment. See the information provided for your
+CPU or systems.
+
+The specific procedure described below is an example of procedure for
+development via the Linux command line.
+For details of the procedure of development and debugging using Eclipse, refer to
+the explanation in "3. Program Build Method" in 
+"T-Kernel Build Manual Using Eclipse" (eclipse_guide.txt).
+
+(2) Preparing T-Kernel source code
+
+Create a directory for storing the T-Kernel source code in an arbitrary
+location, and expand all the source files there. Set the location of the root
+directory (tkernel_source directory) of the expanded source code to the
+environment variable ${BD}.
+
+The following command shows an example for storing the T-Kernel source code in
+/usr/local/tef_em1d/. "%" is the shell prompt.
+
+  % cd /usr/local/tef_em1d
+  % tar xvfz /XXX/YYY/tkernel_source.tar.gz
+  % export BD=/usr/local/tef_em1d/tkernel_source        (For bash)
+
+When you use Eclipse for development, you do not have to set the environment
+variable.
+
+(3) Building libraries for T-Kernel
+
+Move to the lib/build/[TARGET] directory. [TARGET] is the name of the target
+system.
+When you execute make command here, all the library files are created
+under the lib/build/[TARGET] directory.
+
+The following command is an example:
+
+  % cd ${BD}/lib/build/tef_em1d
+  % make
+
+If you have already created the libraries, this procedure is not required.
+
+(4) Building the Kernel
+
+Move to the kernel/sysmain/build/[TARGET] directory. [TARGET] is the name of
+the target system.
+You can execute  make command here to create the object file of kernel
+(kernel-rom.mot) under the kernel/sysmain/build/[TARGET] directory.
+
+The following command is an example:
+
+  % cd ${BD}/kernel/sysmain/build/tef_em1d
+  % make
+
+(5) Building configuration information file (config)
+
+Move to the config/build/[TARGET] directory. [TARGET] is the name of the
+target system.
+You can execute make command here to create the object file of RomInfo
+(rominfo.mot) under the config/build/[TARGET] directory.
+
+The following command is an example:
+
+  % cd ${BD}/config/build/tef_em1d
+  % make
+
+When make is executed, SYSCOINF and DEVCONF are converted first to sysconf.c and
+devconf.c, then compiled, and finally linked to the object file of Rominfo.
+For details of the configuration information file (config), refer to the
+implementation specification of your system.
+
+  * The sysconf.c and devconf.c files contained in the package are for
+    reference only. For details, refer to "7. config Directory".
+
+--------------------------------------------------
+2.2 Testing on Actual Machine
+--------------------------------------------------
+
+The way to write the ROM image to the actual machine and the way to test the
+T-Kernel on the actual machine depend on the hardware (machine).
+For the procedure for using T-Engine reference board (tef_em1d), refer
+to
+"Transfer to the target machine and operation check procedure (for tef_em1d) "
+(target.txt).
+
+------------------------------------------------------------------------------
+3. Directory Structure
+------------------------------------------------------------------------------
+
+--------------------------------------------------
+3.1 Overview of Directory Structure
+--------------------------------------------------
+
+The published source code consists of multiple directories.
+The top directory consists of the following five directories:
+
+<directory structure>
+
+    kernel     T-Kernel main body
+
+    lib        Libraries
+               (including the interface library of system calls)
+
+    include    Various definition files (header files)
+
+    config     rominfo, SYSCONF, DEVCONF
+
+    etc        make rule, scripts, and others
+               There is no source code in this directory.
+
+--------------------------------------------------
+3.2 Source Directory and Build Directory
+--------------------------------------------------
+
+The lower directories are broadly classified into source and build
+directories.
+In principle, the source and build directories are named "src" and "build"
+respectively.
+
+The source directories contain source files.
+In the build directory, you execute make command to create the object
+files. The build directories contain makefiles (make rule definition files).
+They also store built object files.
+
+--------------------------------------------------
+3.3 Hardware-Dependent Part
+--------------------------------------------------
+
+The published source code is divided into directories to separate the
+hardware-dependent part. 
+In practice, there is also a part that you need to change when you actually develop an
+application and incorporate it into a product. This part is referred to as
+application-dependent part, and separated into its own directories to
+clarify the boundary, in a similar manner as is done for the hardware-dependent part.
+
+Thus, the source code of T-Kernel is divided into the following three parts:
+
+(1) Kernel basic part
+
+This part provides the basic functions of T-Kernel, which do not depend on the
+hardware or application.
+You do not need to change the Kernel basic part unless you want to change
+the functions of T-Kernel itself.
+
+(2) Hardware-dependent part
+
+This part needs to be changed depending on the hardware on which T-Kernel
+operates.
+Usually, you need to prepare the hardware-dependent part for each hardware
+(machine). You can port the program to a new hardware by changing only the
+hardware-dependent part.
+
+(3) Application-dependent part
+
+This part need to be changed depending on the higher-level software, such
+as the application, Extension, etc. which operates on T-Kernel.
+Usually, you need to prepare the application-dependent part for each
+product.
+Only the minimum required functions are implemented in the
+application-dependent part of the published T-Kernel.
+
+(4) Overview of directory structure
+
+The entire directory structure of the T-Kernel source is shown below.
+For the sake of simplicity, the source (src) and build (build) directories are
+omitted (the complete structure will be shown later).
+
+In this diagram, the directories whose name is enclosed within "< >" and their
+lower directories are hardware-dependent. The directories whose
+name is enclosed within "{ }" and their lower directories are the
+application-dependent. The others are the Kernel basic parts.
+
+In this diagram, the directories described as [TARGET] and [CPU] shall be
+replaced with the real name of the directories of the target system and the target CPU,
+respectively.
+
+Some directories contain a file named "_dmy". These files are provided to
+avoid empty directories, considering the use of archiver or CVS system. They
+are not required for the operation of T-Kernel or compiling.
+
+  kernel                              T-Kernel main body
+  |-- sysinit                             System initialization
+  |-- tkernel                             T-Kernel/OS
+  |-- sysmgr                              T-Kernel/SM
+  |-- sysmain                             System main
+  |-- <sysdepend>                         Hardware-dependent part
+  |   |-- <cpu>                              CPU-dependent part
+  |   |   `-- [CPU]
+  |   `-- <device>                           Device-dependent part
+  |       `-- [TARGET]
+  |-- <extension>                         Extension-related hardware-dependent part
+  |   |-- <memory>                           Memory management
+  |   |   `-- <nommu>                             No MMU
+  |   `-- <startup>                          Extension subsystem initialization
+  |       `-- <noext>                             No Extension subsystem
+  |-- tstdlib                             Standard libraries for Kernel link
+  |
+  `-- {usermain}                          User main
+
+  lib                                 Libraries
+  |-- libsvc                            T-Kernel system call I/F libraries
+  |   `-- <sysdepend>                         Hardware-dependent part
+  |       |-- <include>                           Common definition files
+  |       `-- [CPU]
+  |-- libtk                             T-Kernel function call libraries
+  |   `-- <sysdepend>                         Hardware-dependent part
+  |       `-- [TARGET]
+  |-- libtm                             T-Monitor service call I/F libraries
+  |   `-- <sysdepend>                         Hardware-dependent part
+  |       `-- [TARGET]
+  |-- crt                               Startup routines
+  |   |-- crt0                              Common startup routines
+  |   |   `-- <sysdepend>                         Hardware-dependent part
+  |   |       `-- [TARGET]
+  |   `-- crttk                     T-Kernel level program startup
+  |       `-- <sysdepend>                         Hardware-dependent part
+  |            `-- [TARGET]
+  `-- libstr                              Character string operation
+
+  include                            Definition files
+  |-- tk                                  T-Kernel related definition files
+  |   `-- <sysdepend>                         Hardware-dependent part
+  |       `-- [TARGET]
+  |-- sys                                 Definition file of system internal information
+  |   |-- <sysdepend>                         Hardware-dependent part
+  |   |   `-- [TARGET]
+  |   `-- svc                                 System call definition
+  |-- tm                                  T-Monitor related definition files
+  `-- device                              Device driver-related definition files
+
+  config                             Configuration information (RomInfo, SYSCONF, DEVCONF)
+  `-- <sysdepend>                         Hardware-dependent part
+       `-- [TARGET]
+
+------------------------------------------------------------------------------
+4. kernel Directory
+------------------------------------------------------------------------------
+
+The kernel directory stores the source code of the T-Kernel main body.
+
+--------------------------------------------------
+4.1 Directory Structure
+--------------------------------------------------
+
+The kernel directory has the following directory structure:
+
+  kernel
+  |-- sysinit                 System initialization (Kernel basic part)
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]
+  |   `-- src                     Source directory
+  |
+  |-- tkernel                 T-Kernel/OS(Kernel basic part)
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]
+  |   `-- src                     Source directory
+  |
+  |-- sysmgr                  T-Kernel/SM(Kernel basic part)
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]
+  |   `-- src                     Source directory
+  |
+  |-- sysmain                 System main (Kernel basic part)
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]         <- Directory for executing make
+  |   `-- src                     Source directory
+  |
+  |-- sysdepend               Hardware-dependent part
+  |   |-- cpu                     CPU-dependent part
+  |   |   `-- [CPU]
+  |   `-- device                  Device-dependent part
+  |       `-- [TARGET]
+  |
+  |-- extension               Extension-related hardware-dependent part
+  |   |-- memory                  Memory management part
+  |   |   `-- nommu                   Memory management without MMU
+  |   `-- startup                 Extension related subsystem initialization
+  |       `-- noext                   No Extension subsystem
+  |
+  |-- tstdlib                 Standard libraries for Kernel link
+  |
+  `-- usermain                User main (application-dependent part)
+
+In the directory structure shown above, the directories described as
+[TARGET] and [CPU] shall be replaced with the real name of the directories of the target system
+and the target CPU, respectively.
+
+--------------------------------------------------
+4.2 Kernel Basic Part Under the kernel Directory
+--------------------------------------------------
+
+The Kernel basic part under the kernel directory consists of five
+subdirectories: sysinit, tkernel, sysmgr, sysmain, and tstdlib. The source code
+of the Kernel basic part is stored in the src directory under each
+directory.
+
+(1) sysinit directory
+
+T-Kernel initialization/stop processing routine.
+
+(2) tkernel directory
+
+Source code of T-Kernel/OS.
+
+(3) sysmgr directory
+
+Source code of T-Kernel/SM (excluding the parts implemented in libraries).
+
+(4) sysmain directory
+
+Build directory for the entire T-Kernel.
+You can create the object files for T-Kernel by creating the directory for the
+target system to build under the sysmain/build directory, and then executing make command in that directory.
+
+(5) tstdlib directory
+
+Source code of the standard library functions (primarily bit operation-related)
+used in T-Kernel.
+
+The build directories under the other directories 
+(sysinit, tkernel, and sysmgr) are used for each module in the process of
+building the entire T-Kernel.
+
+--------------------------------------------------
+4.3 Hardware-Dependent Part Under kernel Directory
+--------------------------------------------------
+
+The hardware-dependent part under the kernel directory consists of two
+subdirectories: sysdepend and extension. The hardware-dependent part depends
+on the target hardware and system configuration, and needs to be changed when
+you port T-Kernel.
+Each directory is explained below.
+
+(1) sysdepend directory
+
+Hardware-dependent source code. This directory consists of the
+following two subdirectories:
+
+  sysdepend/cpu directory
+        Source code that depends on the CPU of the target system.
+        You create the directory for the target CPU under this directory to
+        store the appropriate source code.
+
+  sysdepend/device directory
+        Source code that depends on the hardware other than the CPU of the
+        target system.
+        You create the directory for the target system under this directory to
+        store the appropriate source code.
+
+The CPU-dependent part is separated from  the  CPU-independent, but hardware-dependent part in order to facilitate the porting to a system
+that uses the same CPU but different hardware. For the same CPU, you
+only need to change the source code under sysdepend/device, but not under
+sysdepend/cpu. 
+
+(2) extension directory
+
+Hardware-dependent part related to the higher-level software, such as T-Kernel
+Standard Extension. This directory consists of the following two subdirectories:
+
+  extension/memory directory
+        Memory management part. It is separated from other parts
+        because the memory management part depends on 
+        the hardware functions such as MMU and is related to the
+        higher-level Extension functions such as process
+        management. It is also possible to support different memory
+        management model by changing the memory management part. 
+        You create the directory for the memory management part of the
+        target system under this directory to store the appropriate source
+        code.
+        In the published source code, the source code for the memory management part of
+        a system that runs only in real memory address space without using MMU, is stored in
+        the extension/memory/nommu directory.
+
+  extension/startup directory
+        Startup/stop processing part of the program that is part of
+        the Extension. This part executes the startup/stop processing
+        of the subsystem and device drivers that are primarily used in
+        the Extension. 
+        You create the directory for the target Extension under this
+        directory to store the appropriate source code.
+        In the standard published T-Kernel source code, the source code for
+        the Extension startup/stop processing part on a system that runs only
+        with T-Kernel without using the Extension, is stored in the
+        extension/startup/noext directory.
+
+--------------------------------------------------
+4.4 Application-Dependent Part Under kernel Directory
+--------------------------------------------------
+
+The application-dependent part under the kernel directory contains only the
+usermain directory.
+The usermain directory is explained below.
+
+(1) usermain directory
+
+User program. Usually, the source code of programs executed by the initial task of the
+application, and the source code for setting the creation parameters
+of initial task itself are stored in this directory. 
+The published source code includes a program that only
+demonstrates outputting characters to the console by using the monitor
+service function of T-Monitor.  
+
+------------------------------------------------------------------------------
+5. lib Directory
+------------------------------------------------------------------------------
+
+The lib directory stores the source code of libraries used in T-Kernel
+and user programs.
+
+--------------------------------------------------
+5.1 Directory Structure
+--------------------------------------------------
+
+The lib directory has the following directory structure:
+
+  lib
+  |-- libsvc                T-Kernel system call I/F libraries
+  |   |-- build                   Build directory
+  |   |   `-- [CPU]
+  |   `-- src                     Source directory
+  |       `-- sysdepend               Hardware-dependent part
+  |           |-- include                 Common definition files
+  |           `-- [CPU]
+  |
+  |-- libtk                 T-Kernel function call libraries
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]
+  |   `-- src                     Source directory
+  |       `-- sysdepend               Hardware-dependent part
+  |           `-- [TARGET]
+  |
+  |-- libtm                 T-Monitor service call I/F libraries
+  |   |-- build                   Build directory
+  |   |   `-- [TARGET]
+  |   `-- src                     Source directory
+  |       `-- sysdepend               Hardware-dependent part
+  |           `-- [TARGET]
+  |
+  |-- crt                   Startup routines
+  |   |-- crt0                    Common startup routines
+  |   |   |-- build                   Build directory
+  |   |   |   `-- [TARGET]
+  |   |   `-- src                     Source directory
+  |   |       `-- sysdepend               Hardware-dependent part
+  |   |            `-- [TARGET]
+  |   |
+  |   `-- crttk             T-Kernel level program startup
+  |       |-- build                   Build directory
+  |       |   `-- [TARGET]
+  |       `-- src                     Source directory
+  |           `-- sysdepend               Hardware-dependent part
+  |                `-- [TARGET]
+  |
+  |-- libstr                Character string operation
+  |   |-- build                   Build directory
+  |   |   `-- [CPU]
+  |   `-- src                     Source directory
+  |
+  `-- build                 Build directory (all libraries)
+      `-- [TARGET]       <- Directory for executing make
+
+In the directory structure shown above, the directories described as 
+[TARGET] and [CPU] shall be replaced with the real name of the directories
+of the target system and the target CPU, respectively. 
+
+--------------------------------------------------
+5.2 Description of Directories
+--------------------------------------------------
+
+The directories under the lib directory are explained below.
+
+(1) libsvc directory
+
+This is the interface library of T-Kernel system calls.
+The interface library is created for each CPU. The directory for the
+target CPU is created under the src/sysdepend directory to store the
+source code. 
+The build directory is the directory for building. The created libsvc
+library is linked to a user program and used as necessary.  
+
+(2) libtk directory
+
+The function libraries provided by T-Kernel.
+The source code is stored in the src directory. The source code immediately under the
+src directory is the Kernel basic part and does not need to be changed. For
+the hardware-dependent part, the directory for the target system is created
+under the src/sysdepend directory to store the source code.
+The build directory is the directory for building. The created libtk
+library is linked to a user program and used as necessary. 
+
+(3) libtm directory
+
+The interface library of T-Monitor system calls.
+The source code is stored in the src directory. The source code
+immediately under the src directory is the Kernel basic part and does
+not need to be changed. For the hardware-dependent part, the directory
+for the target system is created under the src/sysdepend directory to
+store the source code.
+The build directory is the directory for building. The createdd libtm library is
+linked to a user program and used as necessary.
+
+(4) crt directory
+
+The startup routine libraries. This directory consists of the following two
+subdirectories:
+
+  crt/crt0 directory
+        Common startup routines. They are used as the startup routines for all
+        user programs.
+
+  crt/crttk directory
+        Startup routines for the program that uses the T-Kernel functions. 
+        They are primarily used as the startup routine for a system such as
+        device drivers and system managers.
+
+For the hardware-dependent part of the startup routine, the directory for
+the target system is created under the src/sysdepend directory of each
+directory mentioned above to store the source code.
+
+(5) libstr directory
+
+Source code of the standard library function
+(primarily character string operation-related) used in T-Kernel and libraries.
+
+(6) build directory
+
+Build directory for all libraries.
+You can create the object file for all libraries by creating the directory for
+the target system to build under the lib/build directory, and executing 
+make command in that directory.
+
+------------------------------------------------------------------------------
+6. include Directory
+------------------------------------------------------------------------------
+
+The include directory stores various definition files (header files) used in
+T-Kernel and user programs.
+Since this directory has the definition files only, objects will not be
+created.
+
+--------------------------------------------------
+6.1 Directory Structure
+--------------------------------------------------
+
+The include directory has the following directory structure:
+
+  include
+  |-- tk                      T-Kernel related definition files
+  |   `-- sysdepend               Hardware-dependent part
+  |       `-- [TARGET]
+  |
+  |-- sys                     Definition file of system internal information
+  |   |-- sysdepend               Hardware-dependent part
+  |   |   `-- [TARGET]
+  |   `-- svc                     System call definition
+  |
+  |-- device                  Device driver-related definition files
+  |
+  `-- tm                      T-Monitor related definition files
+
+The directories described as [TARGET] above shall be replaced with the
+real name of the directory of the target system.
+
+--------------------------------------------------
+6.2 Description of Directories
+--------------------------------------------------
+
+The directories under the include directory are explained below.
+
+(1) Immediately under the include directory
+
+Commonly used type definition files are stored immediately under the include
+directory.
+All the files immediately under the include directory belong to the
+the kernel basic part. 
+
+(2) tk directory
+
+T-Kernel related definition files are stored.
+Files immediately under the tk directory belong to the kernel basic part.
+The directory for the target system is created under the sysdepend
+directory to store the hardware-dependent part. In principle,
+definition files under the sysdepend directory are used (included) in
+definition files at higher levels. A user program does not need to
+directly use definition files in the hardware-dependent part.
+
+(3) sys directory
+
+Definition files about the T-Kernel system internal information are stored.
+These files are used in system programs such as subsystem and libraries.
+Normally, these files are not used by application programs.
+Files immediately under the sys directory belong to the kernel basic part.
+The hardware-dependent part is stored in the following two directories
+under the sys directory:
+
+  sys/sysdepend directory
+        Definition files for the hardware-dependent part in the system
+        information.
+        The directory for the target system is created under the sysdepend
+        directory to store individual definition files. In principle,
+        definition files under the sysdepend directory are used (included) in
+        definition files at higher levels.
+        A user program does not need to directly use definition files in the
+        hardware-dependent part.
+
+  sys/svc directory
+        Extended SVC related definition files.
+
+(4) device directory
+
+Definition files related to device drivers are stored.
+Files under this directory belong to the hardware-dependent part.
+
+(5) tm directory
+
+Definition files related to T-Monitor and debugging are stored. 
+Files under this directory belong to the kernel basic part.
+
+------------------------------------------------------------------------------
+7. config Directory
+------------------------------------------------------------------------------
+
+The config directory contains various configuration files 
+(RomInfo, SYSCONF, and DEVCONF) used in T-Kernel.
+All these source code files under this directory belong to the
+hardware-dependent part.
+
+--------------------------------------------------
+7.1 Directory Structure
+--------------------------------------------------
+
+The config directory has the following directory structure:
+
+  config
+  |
+  |-- src                     Source directory
+  |   `--<sysdepend>              Hardware-dependent part
+  |      `-- [TARGET]
+  |
+  `-- build                   Build directory
+      `-- [TARGET]         <- Directory for executing make
+
+The directories described as [TARGET] above shall be replaced with the
+real name of the directory of the target system.
+
+--------------------------------------------------
+7.2 Description of Directories
+--------------------------------------------------
+
+The directories under the config directory are explained below.
+
+(1) src directory
+
+Source codes for various configuration files (RomInfo, SYSCONF, DEVCONF) used in
+T-Kernel.
+All these source code files are hardware-dependent. So the directory
+for the target CPU is created under the src/sysdepend directory to
+store the source code. 
+
+(2) build directory
+
+Build directory for the configuration file.
+You can create the object file of configuration by creating the
+directory for the target system to build under the config/build
+directory, and executing make command in that directory. 
+Under the directory for each machine-dependent part, sysconf.c and
+devconf.c are provided. These were automatically-generated files when
+make was executed make and are not directly used as source files. 
+
+  config/build/[TARGET]/sysconf.c  <-  config/src/sysdepend/[TARGET]/SYSCONF
+  config/build/[TARGET]/devconf.c  <-  config/src/sysdepend/[TARGET]/DEVCONF
+
+Normally, sysconf.c and devconf.c are automatically generated from SYSCONF and
+DEVCONF in the src directory when make is executed.
+For this reason, when building configuration files, it is recommended
+to first execute make clean to delete sysconf.c and devconf.c, and
+then execute make again. 
+Sysconf.c and devconf.c included in the package are for reference only. If you
+change various settings used in T-Kernel, you should modify SYSCONF and
+DEVCONF. If you directly edit sysconf.c and devconf.c to use them, you should
+modify Makefile to prevent these files from being deleted by executing make
+clean.
+Additionally, proper management should be administered to the modified
+sysconf.c and devconf.c such as adding proper Version and Copyright to
+them. Pay due attention to these files. 
+
+------------------------------------------------------------------------------
+8. Resources Used by T-Kernel
+------------------------------------------------------------------------------
+
+--------------------------------------------------
+8.1 Kernel Objects
+--------------------------------------------------
+
+T-Kernel uses the following kernel objects in the system.
+ID numbers are allocated dynamically. This section uses ID numbers allocated
+when T-Kernel is started up in the standard environment.
+
+-----------+-------+----------+--------------------------------------
+    Type   |   ID  |  Name    |            Description
+-----------+-------+----------+--------------------------------------
+Task       |   1   |  INIT    | Initial task
+           |   2   |  SYSLOG  | syslog task
+-----------+-------+----------+--------------------------------------
+Message    |   1   |  SYSLOG  | For receiving syslog message data (6 KB)
+  buffer   |   2   |  DEvt    | Event notification (1 KB)
+           |       |          | Changeable in TDEvtMbfSz in SYSCONF
+-----------+-------+----------+--------------------------------------
+Semaphore  |   1   |  MemMgr  | Memory manager lock control
+           |   2   |  DevSync | Device management synchronization control
+-----------+-------+----------+--------------------------------------
+Event      |   1   |  DevMgr  | Entire device management lock control
+  Flag     |   2   |  LibTk   | Entire libtk lock control
+-----------+-------+----------+--------------------------------------
+
+--------------------------------------------------
+8.2 Subsystems
+--------------------------------------------------
+
+T-Kernel uses the following subsystems.
+
+-------+--------------------------------------
+   ID  |            Description
+-------+--------------------------------------
+   8   | T-Kernel/SM device management
+   9   | T-Kernel/SM system management
+  17   | Segment manager
+-------+--------------------------------------
+
+------------------------------------------------------------------------------
+9. T-Kernel Startup
+------------------------------------------------------------------------------
+
+--------------------------------------------------
+9.1 Reset Processing and T-Monitor Startup Processing
+--------------------------------------------------
+
+After the system is reset, T-Monitor is started up. The following
+steps are performed from the startup of T-Monitor to the startup of
+T-Kernel: 
+
+ (1)T-Monitor initializes hardware, exception/interrupt vectors,
+ etc. The specific operation depends on the machine and implementation.
+
+ (2)T-Monitor loads the program code of T-Kernel onto the memory. When
+    T-Kernel is booted from a disk or operates on the RAM, T-Monitor performs
+    the appropriate boot processing. When T-Kernel operates on the ROM, no
+    special processing is performed.
+    This processing depends on the implementation of T-Monitor but is
+    basically performed in the following steps:
+
+        - T-Monitor searches for a bootable disk. If it exists, T-Monitor
+          executes the boot program on the disk.
+        - If it does not exist, T-Monitor executes the boot_start program in
+          the ROM information (RomInfo).
+        - If the boot_start program is not set in the ROM information 
+          (RomInfo), T-Monitor performs the internally defined processing.
+
+ (3)T-Monitor or the boot program executed by T-Monitor jumps to the startup
+    address of T-Kernel to transfer the control to it. The hardware state
+    including CPU at this time depends on the implementation. Basically, CPU
+    operates in privileged mode, and all interrupts are masked.
+    After this step, T-Kernel does not directly use T-Monitor functions except for
+    the following:
+
+        - Termination of system (tm_exit call)
+        - Invocation of monitor when an abnormal event occurs (tm_monitor call)
+        - Log output for debugging (tm_putstring call and tm_putchar call)
+        - Exception or interrupt handling
+
+    T-Kernel only sets the handler vector address in the vector table defined
+    in the system. The call to handler is processed in the T-Monitor
+    exception/interrupt processing routines.
+
+--------------------------------------------------
+9.2 System Startup Information
+--------------------------------------------------
+
+Before T-Kernel starts up, the following information must exist on the memory:
+
+(1) ROM information, RomInfo
+
+System startup information on the ROM. It is shared between T-Monitor and
+T-Kernel.
+This information depends on the hardware and implementation. For more details,
+refer to the implementation specification for your machine.
+
+(2) System shared information, SysCommonInfo
+
+System information shared between T-Monitor and T-Kernel.
+This information area is reserved on the RAM, and the information is set in
+the area at system startup.
+This information depends on the hardware and implementation. For more details,
+refer to the implementation specifications for your machine.
+
+--------------------------------------------------
+9.3 T-Kernel/OS Initialization
+--------------------------------------------------
+
+After the control is transferred to the T-Kernel startup address (START), the
+T-Kernel/OS initialization is performed in the following steps:
+
+(1) START: C initialization routine (sysdepend/device/[TARGET]/icrt0.S)
+
+This performs the preprocessing for program execution such as initialization
+of registers, caches, and variable areas. In case T-Kernel starts from
+the ROM, the ROM startup initialization routine, ROM_startup
+(sysdepend/device/[TARGET]/devinit.c) is called. This routine depends
+on the hardware and implementation.  
+
+(2) main: Kernel main routine (sysinit/src/sysinit_main.c)
+
+Start the T-Kernel/OS startup processing. This processingcalls the
+kernel initialization (init_system) and then invokes the kernel main
+processing (t_kernel_main). The control is not returned to this
+routine from the kernel main processing.  
+
+(3) init_system: Kernel initialization (kernel/sysinit/sysstartup.c)
+
+This calls the kernel initialization routines as follows..
+Since T-Kernel is not started up completely at this time, T-Kernel
+system calls cannot be used. These initializations are required to
+initialize various functions essential to start up T-Kernel/OS,
+including initialization of the kernel memory management.  
+
+    (3-1) init_device
+        Device initialization (sysdepend/device/[TARGET]/devinit.c)
+
+    (3-2) init_subsystems
+        Subsystem initialization (extension/startup/[TARGET]/subsystem.c)
+
+    (3-3) init_segmgr
+        Segment management initialization (extension/memory/[TARGET]/segmgr.c)
+
+    (3-4) init_memmgr
+        Memory management initialization (kernel/extension/memory/[TARGET]/memmgr.c)
+
+    (3-5) init_Imalloc
+        Kernel memory management initialization (kernel/sysmgr/imalloc.c)
+
+(4) t_kernel_main: Kernel main processing (kernel/tkernel/tkstart.c)
+
+This is called from main mentioned above, following init_system. This
+initializes each T-Kernel/OS function, then creates and starts up the
+initial task. At the time when the initial task is created, all the
+T-Kernel/OS functions are available. Once the initial task starts up, the
+T-Kernel/OS startup processing is completed.
+
+    (4-1) cpu_initialize
+        CPU related initialization (sysdepend/cpu/[TARGET]/cpu_init.c)
+        This performs the CPU-dependent initialization such as registration of
+        exception handlers used in the kernel, coprocessor related
+        setting, etc. 
+
+    (4-2) tkdev_initialize
+        Device related initialization (sysdepend/device/[TARGET]/tkdev_init.c)
+        This performs the (non-CPU) hardware-dependent initialization,
+        such as disabling interrupt of each device.
+
+    (4-3) Function module initialization
+
+        This executes the initialization routines for function modules
+        in the following order:
+
+          task_initialize
+                Initialization of task function (tkernel/task.c)
+
+          semaphore_initialize
+                Initialization of semaphore function (tkernel/semaphore.c)
+
+          eventflag_initialize
+                Initialization of event flag function (tkernel/eventflag.c)
+
+          mailbox_initialize
+                Initialization of mailbox function (tkernel/mailbox.c)
+
+          messagebuffer_initialize
+                Initialization of message buffer function (tkernel/messagebuf.c)
+
+          rendezvous_initialize
+                Initialization of rendezvous function (tkernel/rendezvous.c)
+
+          mutex_initialize
+                Initialization of mutex function (tkernel/mutex.c)
+
+          memorypool_initialize
+                Initialization of variable-size memory pool function (tkernel/mempool.c)
+
+          fix_memorypool_initialize
+                Initialization of fixed-size memory pool function (tkernel/mempfix.c)
+
+          cyclichandler_initialize
+                Initialization of cyclic handler function (tkernel/time_calls.c)
+
+          alarmhandler_initialize
+                Initialization of alarm handler function (tkernel/time_calls.c)
+
+          subsystem_initialize
+                Initialization of subsystem function (tkernel/subsystem.c)
+
+          resource_group_initialize
+                Initialization of resource group management (tkernel/subsystem.c)
+
+          timer_initialize
+                Initialization of system timer (tkernel/timer.c)
+
+    (4-4) init_task_startup
+        Initial task generation/startup (kernel/tkernel/tkstart.c)
+        This creates and starts up the initial task.
+
+--------------------------------------------------
+9.4 Startup Processing by Initial Task
+--------------------------------------------------
+
+After the initial task, init_task (sysinit/sysinit_main.c), performs
+the startup processing of the highe-level system such as T-Kernel/SM
+as follows, it transfers the execution to the user-defined
+processing. When the T-Kernel Extension is used, its startup
+processing is performed here.  
+
+(1) start_system: higher-level system startup (sysinit/sysstartup.c)
+
+This performs the startup processing of the higher-level system such as T-Kernel/SM
+and the device drivers as follows. This processing
+completes the T-Kernel initialization and startup.
+
+    (1-1) start_segmgr
+        Segment management startup (extension/memory/[TARGET]/segmgr.c)
+
+    (1-2) start_memmgr
+        Memory management startup (extension/memory/[TARGET]/memmgr.c)
+
+    (1-3) SystemManager
+        T-Kernel/SM startup (sysmgr/smmain.c)
+        This starts up the T-Kernel/SM. After this step, the
+        T-Kernel/SM function can be used.
+
+    (1-4) _InitLibtk
+        Initialization of library (libtk)
+        This initializes the libtk library. After this step, the libtk
+        library functions can be used. 
+
+    (1-5) start_device
+        Device driver startup (sysdepend/device/[TARGET]/devinit.c)
+        This registers and starts up the device drivers.
+
+    (1-6) start_subsystem
+        Subsystem startup (extension/startup/[TARGET]/subsystem.c)
+        This registers and starts up the subsystems.
+        When the T-Kernel Extension is used, its startup processing is
+        performed here.
+        That is, this registers the subsystems and device drivers that are used
+        in the Extension.
+
+(2) init_task_main (sysmain/inittask_main.c)
+
+This processes the user-defined application in the following order.
+
+    (2-1) ROMInfo->userinit
+        User-defined initialization
+        This performs the user-defined initialization program set in ROMInfo.
+
+    (2-2) usermain
+        Main processing of the user-defined initial task (usermain/usermain.c)
+        This is the main processing of the initial task defined by the user.
+        Once this finishes, the initial task is completed, and then
+        the T-Kernel termination processing starts. 
+
+END.

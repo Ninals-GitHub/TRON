@@ -1,0 +1,94 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by T-Engine Forum
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by T-Engine Forum at 2012/11/07.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+GNU development environment and installation procedure (Linux)
+==============================================================================
+
+------------------------------
+1. Creating directory
+------------------------------
+
+Create the directory that holds the development environment.  In this
+document, it is assumed that the development environment is installed
+in /usr/local/tef_em1d.
+
+Example:
+  % mkdir /usr/local/tef_em1d
+
+  * If GNU development environment for other T-Kernels has already
+    been installed, install this development environment in a
+    different directory.  If it is installed in the same directory, it
+    may cause a trouble.
+
+   * The root privilege is required to create /usr/local/tef_em1d as
+     the owner of /usr/local is usually root.  After creating
+     /usr/local/tef_em1d, set the owner and the permission
+     appropriately so that the user who does the T-Kernel development
+     work can access it.
+
+------------------------------
+2. Expanding the development environment package
+------------------------------
+
+GNU development environment package is expanded in /usr/local/tef_em1d. 
+
+Example:
+  % cd /usr/local/tef_em1d 
+  % tar zxpf te.Linux-i686.arm_2.1.0.1.tar.gz
+  % tar zxpf te.Linux-i686.common.12.tar.gz
+
+Delete the above-mentioned *.tar.gz files after expanding the packages
+as they are not needed anymore.
+
+------------------------------
+3. Preparing for development tools 
+------------------------------
+
+The following tools are required to use the development environment.
+If it is not installed in the system yet, obtain it in the proper
+manner and make it available to developers.
+
+  GNU Make 
+  Perl
+
+Perl must be startable by invoking /usr/local/bin/perl.  For this
+purpose, provide the symbolic link to /usr/bin/perl from
+/usr/local/bin.
+
+Example:
+  % cd /usr/local/bin 
+  % ln -s /usr/bin/perl
+
+------------------------------
+4. Setting environment variables, GNU_BD and GNUARM_2
+------------------------------
+
+Set environment variables, GNU_BD and GNUARM_2, to conduct the build
+of the T-Kernel.
+
+Example:
+  % export GNU_BD=/usr/local/tef_em1d/tool/Linux-i686
+  % export GNUARM_2=$GNU_BD/arm_2-unknown-tkernel
+
+------------------------------
+5. Setting environment variable BD
+------------------------------
+
+Set the top directory of the T-Kernel source to the environment variable BD. 
+
+Example:
+  % export BD=/usr/local/tef_em1d/tkernel_source
+
+[EOF]

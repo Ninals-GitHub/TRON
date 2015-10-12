@@ -1,0 +1,404 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+        T-Monitor構築説明書(tef_em1d用)
+==============================================================================
+------------------------------------------------------------------------------
+1. はじめに
+------------------------------------------------------------------------------
+
+本書では、T-Monitorの構築方法について説明します。
+
+T-Monitorのソースコードは、T-Kernelソースコードのパッケージ(tkernel_source.tar.
+gz)の中に含まれています。あらかじめ、ソースコードのパッケージを展開しておいて
+ください。また、Linuxコマンドラインを使って開発する場合は、展開したソースコー
+ドのトップディレクトリ(tkernel_sourceのディレクトリ)を、環境変数 ${BD} に設定
+してください。
+
+なお、T-Monitorの機能仕様は、T-Engine フォーラムから公開されている「T-Monitor
+仕様書」がベースになります。
+
+本パッケージで対応している機種は、以下の通りです。
+
+         -------------------------------------------------------
+                種別、名称              機種名(略称)   CPU略称
+         -------------------------------------------------------
+          T-Engineリファレンスボード      tef_em1d      em1d
+         -------------------------------------------------------
+
+------------------------------------------------------------------------------
+2. T-Monitorの構築方法
+------------------------------------------------------------------------------
+
+以下に、T-Monitorの構築方法を説明します。なお、Eclipseを使う場合の具体的な手順
+については、「EclipseによるT-Kernel構築説明書」(eclipse_guide.txt)の「3.1 一般
+的なビルド方法」も合わせて参照してください。
+
+     ※ 以下は、T-Engineリファレンスボード(tef_em1d)を対象とした説明です。他の
+        機種では、パス名などに出てくる "tef_em1d" を "[TARGET]" に読み替えてく
+        ださい。
+
+     ※ オブジェクトのクリーンアップを行うには、各ディレクトリで make clean を
+        実行してください。
+
+--------------------------------------------------
+2.1 T-Kernel用ライブラリの構築
+--------------------------------------------------
+
+T-Monitorの構築にはT-Kernel用ライブラリのlibstr.aを必要としますので、まず、T-
+Kernel用ライブラリ一式をビルドしてください。既にT-Kernel用ライブラリを構築済の
+場合は、この手順は不要です。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/lib/build/tef_em1d
+  % make
+        ※ T-Kernel用ライブラリのlibstr.a他一式を作成します。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\lib
+
+ ・プロジェクト名
+        build
+
+ ・ビルド先ディレクトリ
+        build/tef_em1d
+
+上記の設定で make を実行することにより、libstr.a他一式をビルドします。
+
+--------------------------------------------------
+2.2 コマンド・SVC処理部のビルド
+--------------------------------------------------
+
+コマンド・SVC処理部をビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/cmdsvc/build/tef_em1d
+  % make
+        ※ コマンド・SVC処理部のcmdsvc.oとwrkbuf.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/monitor/bin/tef_em1d にインストールし
+           ます。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        cmdsvc
+
+ ・ビルド先ディレクトリ
+        cmdsvc/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、コマンド・SVC処理部のcmdsvc.oとwrkbuf.oをビルドし
+ます。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、cmdsvc.
+oとwrkbuf.oを所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\tkernel_source\
+monitor\bin\tef_em1d)にインストールします。
+
+--------------------------------------------------
+2.3 システム依存部のビルド
+--------------------------------------------------
+
+システム依存部をビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/hwdepend/tef_em1d/build
+  % make
+        ※ システム依存部のhwdepend.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/monitor/bin/tef_em1d にインストールし
+           ます。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        hwdepend
+
+ ・ビルド先ディレクトリ
+        hwdepend/tef_em1d/build
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、システム依存部のhwdepend.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+hwdepend.oを所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\tkernel_source\
+monitor\bin\tef_em1d)にインストールします。
+
+--------------------------------------------------
+2.4 T-Monitor用FlashROMドライバのビルド
+--------------------------------------------------
+
+T-Monitor用FlashROMドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/driver/flash/build/tef_em1d
+  % make
+        ※ T-Monitor用FlashROMドライバのflash.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/monitor/bin/tef_em1d にインストールし
+           ます。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        driver
+
+ ・ビルド先ディレクトリ
+        driver/flash/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、T-Monitor用FlashROMドライバのflash.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、flash.
+oを所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor\bin\
+tef_em1d)にインストールします。
+
+--------------------------------------------------
+2.5 T-Monitor用memdiskドライバのビルド
+--------------------------------------------------
+
+T-Monitor用memdiskドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/driver/memdisk/build/tef_em1d
+  % make
+        ※ T-Monitor用memdiskドライバのmemdisk.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/monitor/bin/tef_em1d にインストールし
+           ます。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        driver
+
+ ・ビルド先ディレクトリ
+        driver/memdisk/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、T-Monitor用memdiskドライバのmemdisk.oをビルドしま
+す。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+memdisk.oを所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\tkernel_source\
+monitor\bin\tef_em1d)にインストールします。
+
+--------------------------------------------------
+2.6 T-Monitor用SIOドライバのビルド
+--------------------------------------------------
+
+T-Monitor用SIOドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/driver/sio/build/tef_em1d
+  % make
+        ※ T-Monitor用SIOドライバのsio.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/monitor/bin/tef_em1d にインストールし
+           ます。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        driver
+
+ ・ビルド先ディレクトリ
+        driver/sio/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、T-Monitor用SIOドライバのsio.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、sio.o
+を所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor\bin\
+tef_em1d)にインストールします。
+
+--------------------------------------------------
+2.7 T-Monitor本体のビルド
+--------------------------------------------------
+
+コマンド・SVC 処理部、システム依存部および全てのT-Monitor用ドライバの make
+install を完了した後に、T-Monitor本体をビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/monitor/tmmain/build/tef_em1d
+  % make
+        ※ T-Monitor本体のtmonitor.mapとtmonitor.motを作成します。
+  % make install
+        ※ 作成したオブジェクトを ${BD}/bin/tef_em1d にインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ ・プロジェクト名
+        tmmain
+
+ ・ビルド先ディレクトリ
+        tmmain/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、T-Monitor本体のtmonitor.mapとtmonitor.motをビルド
+します。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+tmonitor.mapとtmonitor.motを所定のディレクトリ(C:\cygwin\usr\local\tef_em1d\
+tkernel_source\bin\tef_em1d)にインストールします。
+
+------------------------------------------------------------------------------
+3. ディレクトリ構成
+------------------------------------------------------------------------------
+
+T-Kernel ソースコードのパッケージを展開することで、T-Monitor のソースコードも
+展開されます。以下では、T-Kernel ソースコードのトップディレクトリ
+(tkernel_sourceのディレクトリ)を ${BD} と表記します。
+
+T-Engineリファレンスボード(tef_em1d)に対するT-Monitorのソースコードのディレク
+トリ構成は、以下のようになっています。
+
+ ${BD}/monitor
+   |
+   |----bin                             T-Monitor オブジェクト格納用
+   |       |----tef_em1d
+   |
+   |----include                         ヘッダファイル
+   |       |----device.h
+   |       |----tmonitor.h
+   |       |----arm                     ヘッダファイル (CPU/システム依存部)
+   |               |----cpudepend.h
+   |               |----em1d512.h
+   |
+   |----tmmain                          T-Monitor メイン
+   |        |----build
+   |        |       |----tef_em1d
+   |        |               |----Makefile
+   |        |               |----monitor.lnk
+   |        |----src
+   |                |----float_dummy.c
+   |
+   |----cmdsvc                          T-Monitor コマンド・SVC 処理部
+   |       |----build
+   |       |       |----tef_em1d
+   |       |               |----Makefile
+   |       |----src
+   |               |----boot.c
+   |               |----cmdsvc.h
+   |               |----command.c
+   |               |----console.c
+   |               |----help.h
+   |               |----helpmsg.c
+   |               |----load.c
+   |               |----memory.c
+   |               |----svc.c
+   |               |----wrkbuf.c
+   |               |----armv6           コマンド・SVC 処理部 (CPU 依存部)
+   |                       |----break.c
+   |                       |----chkaddr.c
+   |                       |----cpudep.h
+   |                       |----disassemble.c
+   |                       |----misc.c
+   |                       |----monent.c
+   |                       |----monhdr.S
+   |                       |----register.c
+   |                       |----step.c
+   |
+   |----driver
+   |       |----flash                   T-Monitor ドライバ (FlashROM)
+   |       |       |----build
+   |       |       |       |----tef_em1d
+   |       |       |               |----Makefile
+   |       |       |----src
+   |       |               |----cfi.c
+   |       |               |----cfi_16x1.c
+   |       |               |----flash.h
+   |       |               |----main.c
+   |       |               |----reset-em1d.c
+   |       |               |----setup-em1d.c
+   |       |
+   |       |----memdisk                 T-Monitor ドライバ (memory disk)
+   |       |       |----build
+   |       |       |       |----tef_em1d
+   |       |       |               |----Makefile
+   |       |       |----src
+   |       |               |----memdsk.c
+   |       |
+   |       |----sio                     T-Monitor ドライバ (Serial I/O)
+   |               |----build
+   |               |       |----tef_em1d
+   |               |               |----Makefile
+   |               |----src
+   |                       |----ns16550.c
+   |
+   |----hwdepend                        T-Monitor システム依存部
+           |----tef_em1d
+                   |----build
+                   |       |----Makefile
+                   |----src
+                           |----config.c
+                           |----cpuctrl.c
+                           |----cpuctrl2.S
+                           |----diskio.c
+                           |----eitent.S
+                           |----eitproc.c
+                           |----hwdepend.h
+                           |----hwinfo.c
+                           |----memattr.S
+                           |----misc.c
+                           |----reset.S
+                           |----setup_em1d512.h
+                           |----sio.c
+                           |----startup.c
+                           |----sysdepend.h
+                           |----system.c
+                           |----waitusec.c
+
+なお、T-Monitor内のディスクドライバの構築に必要となる、以下の T-Kernel デバイ
+スドライバのヘッダファイルを、本パッケージの中にディレクトリ構造を含めて格納し
+ています。
+
+ ${BD}/include
+   |----device                          ヘッダファイル (デバイス用)
+           |----disk.h
+
+以上

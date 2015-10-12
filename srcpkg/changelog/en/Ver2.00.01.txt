@@ -1,0 +1,22 @@
+============================================================================
+[[[ The following documents have been modified. ]]]
+							June 8, 2011
+
+<< UPDATE OF DOCUMENTS >> 
+
+ * "T-Engine Reference Board  U00B0021-02 Hardware Manual"
+    hardware/tef_em1d/doc/ja/TE_ReferenceBoard_HardwareManual.pdf
+       - Description of power supply via USB connector is edited.
+       - Associated circuit diagram is modified.  
+
+ * T-Kernel 2.0 and Eclipse development environment for the T-Engine Reference Board.
+    ReadMe.txt, ReadMe_en.txt
+       - The table of contents is added.
+       - "4.3 Running T-Kernel on an emulator" is added.
+
+
+<< UPDATE OF SOURCE CODE >>
+
+ * No updates.
+
+============================================================================

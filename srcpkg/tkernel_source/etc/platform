@@ -1,0 +1,42 @@
+#! /bin/sh -e
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#	platform
+#
+#	check cross platform
+#
+#	"SunOS-sparc"	: Solaris Ultra
+#	"SunOS-i386"	: Solaris x86
+#	"Linux-i686"	: Linux x86
+#	"FreeBSD-i386"	: FreeBSDq x86
+#	"Cygwin-i686"	: Cygwin x86
+#	"unknown"	: unknown platform
+#
+usage='usage: platform'
+
+PATH=/usr/bin:/bin
+
+os=`uname -s`
+
+case $os in
+  SunOS)	platform=$os-`uname -p` ;;
+  Linux)	platform=$os-`uname -m` ;;
+  FreeBSD)	platform=$os-`uname -p` ;;
+  CYGWIN*)	platform="Cygwin-`uname -m`" ;;
+  *)		platform=unknown ;;
+esac
+
+echo $platform
+
+exit 0

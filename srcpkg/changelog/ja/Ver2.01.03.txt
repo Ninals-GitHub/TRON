@@ -1,0 +1,67 @@
+============================================================================
+■■■T-Kernel 2.0ソースコードパッケージ Ver 2.01.03 修正箇所
+								2012/12/12
+
+■T-Kernel Ver 2.01.03 修正箇所
+
+----
+■ ソースコードの修正
+
+[K-20103-1] bms_printf() を tm_printf()/tm_sprintf() に変更
+
+[K-20103-2] 書き込み不要な変数に対してCONSTを追加
+
+[K-20103-3] コメントに含まれるtypoなどを修正
+
+----
+■ 開発環境の更新
+
+[K-20103-4] eclipse を Release 3.2.2 から 3.7.2 に更新
+
+[K-20103-5] gterm.exe をパッケージに追加
+
+[K-20103-6] 環境変数 BD、GNU_BD、GNUarm_2 の扱いを変更
+　・GNUarm_2 は GNUARM_2 に変更
+　・設定方法に関する説明を資料に追加
+　・未定義の場合に固定パスに設定する処理を削除
+
+[K-20103-7] 実行権限の欠けている実行ファイルに実行権限を追加
+　・tkernel_source/drv/tef_em1d/clk/build/mkdrvsvc, mksvc
+　・tkernel_source/drv/tef_em1d/console/build/mkdrvsvc, mksvc
+　・tkernel_source/etc/*
+
+[K-20103-8] エミュレータの不具合を修正
+　・BKPT 命令、CLREX 命令で落ちる不具合を改修
+
+----
+■ 資料の更新
+
+　○「T-License 2.0」(PDF版)を追加
+      TEF000-215-120911.pdf
+
+　○資料の文字コードをShift-JISからUTF-8に変更
+
+　○「EclipseによるT-Kernel構築説明書(tef_em1d用)」
+      srcpkg/doc/ja/eclipse_guide.txt
+	・eclipse 3.7 に合わせて説明を更新
+	・設定が不要な項目に関する説明を削除
+
+　○「Eclipse版開発環境・インストール手順」
+      srcpkg/doc/ja/eclipse_setup_guide.txt
+	・eclipse 3.7 に合わせて説明を更新
+	・パッケージ構成に合わせて説明を更新
+
+　○「GNU開発環境・インストール手順(Cygwin)」
+      srcpkg/doc/ja/gcc_setup_guide_cygwin.txt
+	・環境変数の設定に関する説明を更新
+	・パッケージ構成に合わせて説明を更新
+
+　○「GNU開発環境・インストール手順(Linux)」
+      srcpkg/doc/ja/gcc_setup_guide_linux.txt
+	・環境変数の設定に関する説明を更新
+
+　○「tef_em1d実装仕様書」
+      srcpkg/doc/ja/impl-tef_em1d.txt
+	・説明用のユーザー初期化プログラムを修正
+									以上
+============================================================================

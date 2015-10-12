@@ -1,0 +1,537 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+        Device driver build manual (for tef_em1d)
+==============================================================================
+------------------------------------------------------------------------------
+1. Introduction 
+------------------------------------------------------------------------------
+
+This document explains how to build the device drivers for T-Kernel. 
+
+The source code of the device drivers is included in the package of the T-Kernel source code (tkernel_source.tar.gz). Expand the package of the source code beforehand. Also, set the top directory of the expanded source code (the directory of tkernel_source) to the environment variable ${BD} when the Linux command line is used for development. 
+
+The following device drivers are included in the package of the source code. 
+
+   - System disk driver (for microSD)
+            * Part of the program is included as an object code instead of the 
+              source code.
+            * CF (ATA) card, ATAPI PC card (CD-ROM, MO, FD), USB storage disk, 
+              HDD (ATA/IDE), etc. are not supported.
+   - Clock driver
+   - Console driver
+   - KB/PD driver (Include the real IO driver)
+   - Screen driver
+
+The function specification of each device driver is based on "T-Engine Standard Device Driver Specifications" published by T-Engine Forum. 
+
+The hardware model supported by this package is as follows. 
+
+--------------------------------------------------------------
+  Type, Name                Model name      CPU abbreviation
+                            (abbreviation)
+--------------------------------------------------------------
+  T-Engine reference board  tef_em1d        em1d
+--------------------------------------------------------------
+
+--------------------------------------------------------------------
+2. How to build a device driver 
+--------------------------------------------------------------------
+
+How to build a device driver is explained below. For the specific procedure using  Eclipse, see "3.1 Build in General" in "T-Kernel Build Manual Using Eclipse" (eclipse_guide.txt). 
+
+     * The following explanations are intended for the T-Engine reference board 
+       (tef_em1d). For other hardware models, read "tef_em1d" used for the 
+       path name, etc. as "[TARGET]." 
+
+     * Execute the following under each directory to perform the cleanup of the
+       object and the automatically-generated source code.
+            make clean          Cleanup of the object only
+            make clean_source   Cleanup of the source only
+            make clean_all      Cleanup of all (source/object) 
+
+----------------------------------------
+2.1 Building driver I/F library
+----------------------------------------
+
+Build the driver I/F library. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/lib/libdrvif/build/tef_em1d
+  % make
+        * Create libdrvvif.a of the driver I/F library. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\lib
+
+ - Project name
+        libdrvif
+
+ - The destination directory to store build
+        libdrvif/build/tef_em1d
+
+Use the above setting, execute make according to the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and build libdrvvif.a of the driver I/F library. 
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1(6) Build (when there is an argument of make)." Install libdrvvif.a in the designated directory by this procedure.
+
+----------------------------------------
+2.2 Building console driver
+----------------------------------------
+
+Build console driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/console/build
+  % make source
+        * The header and source files required for creating the extended SVC I/F
+          library are automatically generated in console/src/svc/*. 
+  % make
+        * Create console.o of the console driver. Moreover, create 
+          libconsolesvc.a of the extended SVC I/F library. 
+        * An error occurs by this make if make source has not been executed. 
+  % make install
+        * Install the created object in the designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ - Project name
+        tef_em1d
+
+- The destination directory to store build
+        tef_em1d/console/build
+
+Use the above setting, prepare and execute make source first by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." The header and source files required for creating the extended SVC I/F library are automatically generated by this procedure. 
+
+Next, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case), and create console.o of the console driver and libconsolesvc.a of the extended SVC I/F library. 
+
+Finally, prepare and execute make install by the same operation as in make source. These steps will install console.o and libconsolesvc.a in a designated directory. 
+
+----------------------------------------
+2.3 Building clock driver
+----------------------------------------
+
+Build clock driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/clk/build 
+  % make source
+        * The header and source files required for creating the extended SVC I/F
+          library are automatically generated in clk/src/svc/*.
+  % make
+        * Create clkdrv.o of the clock driver. Additionally, create libem1diic.a
+          of the extended SVC I/F library. 
+        * An error occurs by this make if make source has not been executed. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used.
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ - Project name
+        tef_em1d
+
+ - The destination directory to store build
+        tef_em1d/clk/build
+
+Use the above setting, prepare and execute make source first by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." The header and source files required for creating the extended SVC I/F library are automatically generated by this procedure. 
+
+Next, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and create clkdrv.o of the clock driver and libem1diic.a of the extended SVC I/F library. 
+
+Finally, prepare and execute make install by the same operation as in make source. These steps will install clkdrv.o and libem1diic.a in a designated directory. 
+
+----------------------------------------
+2.4 Building system disk driver 
+----------------------------------------
+
+Build system disk driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/sysdsk/build 
+  % make
+        * Create sysdsk.o of the system disk driver. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used.
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ - Project name
+        tef_em1d
+
+ - The destination directory to store build
+        tef_em1d/sysdsk/build
+
+Use the above setting, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and build sysdsk.o of the system disk driver. 
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." These steps will install sysdsk.o in a designated directory. 
+
+----------------------------------------
+2.5 Building screen driver 
+----------------------------------------
+
+Build screen driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/screen/build 
+  % make
+        * Create screen.o of the screen driver. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ - Project name
+        tef_em1d
+
+ - The designation directory to store build
+        tef_em1d/screen/build
+
+Use the above setting, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)" and build screen.o of the screen driver. 
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." These steps will install screen.o in a designated directory. 
+
+----------------------------------------
+2.6 Building KB/PD driver
+----------------------------------------
+
+Build KB/PD driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/kbpd/build 
+  % make
+        * Create kbpd.o of the KB/PD driver. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+ 
+ - Project name
+        tef_em1d
+
+ - The destination directory to store build
+        tef_em1d/kbpd/build
+
+Use the above setting, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and build kbpd.o of the KB/PD driver.
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." These steps will install kbpd.o in a prescribed directory. 
+
+----------------------------------------
+2.7 Building KB/PD real IO driver 
+----------------------------------------
+
+Build KB/PD real IO driver. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/drv/tef_em1d/lowkbpd/build 
+  % make
+        * Create lowkbpd.o of the KB/PD real IO driver. 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ - Project name
+        tef_em1d
+
+ - The destination directory to store build
+        tef_em1d/lowkbpd/build
+
+Use the above setting, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and build lowkbpd.o of the KB/PD real IO driver. 
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." These steps will install lowkbpd.o in a designated directory. 
+
+----------------------------------------
+2.8 Building the T-Kernel main body including the device driver 
+----------------------------------------
+
+To build T-Kernel in which the device drivers are included, the following directories are available in the source code. 
+
+        ${BD}/kernel/sysmain/build_drv
+        ${BD}/kernel/usermain_drv
+
+  * The device drivers can be used even without the T-Kernel Standard Extension. 
+
+After make install of the driver I/F library and all device drivers is completed, the T-Kernel main body including the device driver is built. In this case, the source file under kernel/usermain_drv (usermain.c, etc.) is used. 
+
+The example procedure when the Linux command line is used is as follows. 
+
+  % cd ${BD}/kernel/sysmain/build_drv/tef_em1d 
+  % make
+        * Create kernel_rom.map and kernel_rom.mot of the T-Kernel main body
+          including the device driver(s). 
+  % make install
+        * Install the created object in a designated directory. 
+
+Build with the following environment setting when Eclipse is used. 
+
+ - Workspace
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\kernel
+
+ - Project name
+        sysmain
+
+ - The destination directory to store build 
+        sysmain/build_drv/tef_em1d
+
+Use the above setting, execute make by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (5) Build (ordinary case)," and build kernel_rom.map and kernel_rom.mot of the T-Kernel main body including the device driver(s). 
+
+Next, prepare and execute make install by the steps in "T-Kernel Build Manual Using Eclipse" and "3.1 (6) Build (when there is an argument of make)." These steps will install kernel_rom.map and kernel_rom.mot in a designated directory. 
+
+The location in which the created objects, etc. are installed is as follows. 
+
+        ${BD}/bin/tef_em1d/kernel_xxx.xxx
+
+--------------------------------------------------------------------
+3. Directory structure 
+--------------------------------------------------------------------
+
+The directory structure of the source code of the device drivers for the T-Engine reference board (tef_em1d) is as follows.  (A top directory of the source code is described as ${BD}.)
+
+
+As device drivers are highly dependent on machines, they do not have the directory structures in which the common part and the hardware-dependent part are separated as in T-Kernel. 
+
+${BD}
+   |
+   |----bin
+   |       |----tef_em1d        The location in which tef_em1d is installed
+   |
+   |----driver                  For storing the driver device driver object
+   |       |----tef_em1d
+   |
+   |----include
+   |       |----device          Header files (for device)
+   |       |       |----clk.h
+   |       |       |----devconf.h
+   |       |       |----disk.h
+   |       |       |----em1d512_iic.h
+   |       |       |----gdrvif.h
+   |       |       |----h8io.h
+   |       |       |----kbpd.h
+   |       |       |----keycode.h
+   |       |       |----lowkbpd.h
+   |       |       |----pcmcia.h
+   |       |       |----rs.h
+   |       |       |----screen.h
+   |       |       |----sdrvif.h
+   |       |       |----serialio.h
+   |       |       |----share.h
+   |       |       |----videomode.h
+   |       |
+   |       |----tkse (*1)      Header files (for TRON code / event notification)
+   |               |----bitop.h
+   |               |----stdlib.h
+   |               |----tcode.h
+   |               |----extension
+   |                       |----event.h
+   |                       |----typedef.h
+   |
+   |----tkse (*1)
+   |       |----include         Header files (for subsystem)
+   |       |       |----extension
+   |       |               |----sys
+   |       |                       |----tkse_ssid.h
+   |       |
+   |       |----extension
+   |               |----common
+   |                       |----build
+   |                       |       |----Makefile.common
+   |                       |       |----tef_em1d
+   |                       |               |----Makefile
+   |                       |----src
+   |                               |----abs.c
+   |                               |----bitclr.c
+   |                               |----bitnot.c
+   |                               |----bitsclr.c
+   |                               |----bitsearch0.c
+   |                               |----bitsearch1.c
+   |                               |----bitset.c
+   |                               |----bitsset.c
+   |                               |----bittest.c
+   |                               |----div.c
+   |                               |----ffs.c
+   |                               |----memset_w.c
+   |                               |----quesearch.c
+   |                               |----quesearchge.c
+   |                               |----quesearchgeu.c
+   |                               |----quesearchgt.c
+   |                               |----quesearchgtub.c
+   |                               |----quesearchh.c
+   |                               |----quesearchne.c
+   |                               |----quesearchneh.c
+   |                               |----quesearchrevltu.c
+   |                               |----quetemplate.h
+   |                               |----strcasecmp.c
+   |                               |----strchr.c
+   |
+   |----kernel                  Changing the startup sequence
+   |       |----sysmain
+   |       |       |----build_drv
+   |       |               |----Makefile.common
+   |       |
+   |       |----usermain_drv
+   |               |----Makefile.usermain
+   |               |----inittask_def.c
+   |               |----inittask_def.h
+   |               |----usermain.c
+   |
+   |----lib
+   |       |----libdrvif           Driver I/F library
+   |               |----build
+   |               |       |----Makefile.common
+   |               |       |----tef_em1d
+   |               |       |       |----Makefile
+   |               |
+   |               |----src
+   |                       |----gdrvif.c
+   |                       |----sdrvif.c
+   |
+   |----drv        Main body of the device drivers
+           |----tef_em1d
+                   |----clk             Clock driver
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |       |----makeifdrv.pl
+                   |       |       |----mkdrvsvc
+                   |       |       |----mksvc
+                   |       |
+                   |       |----src
+                   |               |----clkdrv.h
+                   |               |----main.c
+                   |               |----rtc.c
+                   |               |----em1d512_iic.c
+                   |               |----em1d512_iicspi_svc.c
+                   |               |----em1d512_iicspi_svc.h
+                   |               |----em1d512_spi.c
+                   |               |----svc             For extended SVC IF
+                   |
+                   |----console         Console driver
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |       |----makeifdrv.pl
+                   |       |       |----mkdrvsvc
+                   |       |       |----mksvc
+                   |       |
+                   |       |----src
+                   |               |----consmlock.c
+                   |               |----console_drv.c
+                   |               |----line_drv.c
+                   |               |----line_drv.h
+                   |               |----main.c
+                   |               |----ns16450.c
+                   |               |----ns16450.h
+                   |               |----ns16450sys.h
+                   |               |----portdef.h
+                   |               |----sharemgr.c
+                   |               |----svc             For extended SVC IF
+                   |
+                   |----screen          Screen driver
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----common.c
+                   |               |----conf.c
+                   |               |----em1d512.c
+                   |               |----main.c
+                   |               |----mode_string.h
+                   |               |----screen.h
+                   |
+                   |----kbpd            KB/PD driver
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----accept.c
+                   |               |----devcmd.c
+                   |               |----devevt.h
+                   |               |----etc.c
+                   |               |----innevt.c
+                   |               |----innevt.h
+                   |               |----kbpd.h
+                   |               |----key.c
+                   |               |----main.c
+                   |               |----pdbut.c
+                   |               |----pdsim.c
+                   |               |----receive.c
+                   |               |----statmach.c
+                   |               |----statmach.h
+                   |
+                   |----lowkbpd         KB/PD driver (real IO driver)
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----common.c
+                   |               |----hwkbpd.c
+                   |               |----kbpd.h
+                   |               |----main.c
+                   |               |----scancode.h
+                   |
+                   |----sysdsk          System disk driver
+                           |----build
+                           |       |----Makefile
+                           |
+                           |----obj
+                           |       |----mmc-common.o         (*2)
+                           |       |----mmc-em1d512.o        (*2)
+                           |
+                           |----src
+                                   |----accept.c
+                                   |----ata.c
+                                   |----ata.h
+                                   |----atacmd.c
+                                   |----ataio.c
+                                   |----common.c
+                                   |----inthdr.c
+                                   |----main.c
+                                   |----mem.c
+                                   |----pccard.c
+                                   |----pccardio.h
+                                   |----sdisk.h
+
+    (*1) The files used for T-Kernel Standard Extension are stored in this
+    package including the directory structure as they are also required for
+    building the device drivers.
+
+    (*2) As for mmc-common.o and mmc-em1d512.o among the device drivers of the
+    system disk (for microSD), the object code is included instead of the
+    source code.
+[EOF]

@@ -1,0 +1,72 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	T-Kernel/System Manager (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target object
+TARGET	= sysmgr.o
+
+S	= ../../src
+
+# common source files
+SRC	+=	smmain.c system.c imalloc.c syslog.c \
+		device.c deviceio.c
+
+VPATH	+= $(S)
+HEADER	+= $(S)
+
+# additional source files (cpu-dependent)
+VPATH	+= ../../../sysdepend/cpu/$(MACHINE)
+HEADER	+= ../../../sysdepend/cpu/$(MACHINE)
+
+# additional source files (device-dependent)
+VPATH	+= ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+HEADER	+= ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+
+# header file path (kernel settings)
+HEADER  += ../../../tkernel/src
+
+OBJ = $(addsuffix .o, $(basename $(SRC)))
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+
+CPPFLAGS += -DTKERNEL_CHECK_CONST
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean
+
+ALL = $(TARGET)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+clean:
+	$(RM) $(OBJ) *.o $(ALL) $(DEPS)
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)

@@ -1,0 +1,481 @@
+#! /usr/bin/perl
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2013/02/20.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	mkt2exsvc
+#
+#	T2EX SVC interface library generation script (common)
+#
+
+$usage = 'usage: mkt2exsvc [-deps] machine infile';
+
+$makedeps = 0;
+$infile = "";	# input file
+
+$copyright_c = <<EndOfCopyright;
+/*
+ *----------------------------------------------------------------------
+ *    T2EX Software Package
+ *
+ *    Copyright 2012 by Ken Sakamura.
+ *    This software is distributed under the latest version of T-License 2.x.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+ *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *
+ *----------------------------------------------------------------------
+ */
+/*
+ * This software package is available for use, modification, 
+ * and redistribution in accordance with the terms of the attached 
+ * T-License 2.x.
+ * If you want to redistribute the source code, you need to attach 
+ * the T-License 2.x document.
+ * There's no obligation to publish the content, and no obligation 
+ * to disclose it to the TRON Forum if you have modified the 
+ * software package.
+ * You can also distribute the modified source code. In this case, 
+ * please register the modification to T-Kernel traceability service.
+ * People can know the history of modifications by the service, 
+ * and can be sure that the version you have inherited some 
+ * modification of a particular version or not.
+ *
+ *    http://trace.tron.org/tk/?lang=en
+ *    http://trace.tron.org/tk/?lang=ja
+ *
+ * As per the provisions of the T-License 2.x, TRON Forum ensures that 
+ * the portion of the software that is copyrighted by Ken Sakamura or 
+ * the TRON Forum does not infringe the copyrights of a third party.
+ * However, it does not make any warranty other than this.
+ * DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+ * responsible for any consequences or damages caused directly or
+ * indirectly by the use of this software package.
+ *
+ * The source codes in bsd_source.tar.gz in this software package are 
+ * derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+ * They need to be changed or redistributed according to the 
+ * representation of each source header.
+ */
+EndOfCopyright
+
+#
+# analyze command line parameter
+#
+if ( $ARGV[0] eq "-deps" ) {
+	$makedeps = 1;
+	shift(@ARGV);
+}
+
+$machine = $ARGV[0];
+$infile = $ARGV[1];
+
+if ( $machine eq "" ) {
+	print STDERR "$usage\n";
+	exit(1);
+}
+if ( $infile eq "" ) {
+	print STDERR "Too few arguments\n";
+	exit(1);
+}
+
+$mkifsvc = "$ENV{'BD'}/etc/sysdepend/cpu/$machine/makeift2ex.pl";
+
+chop($infile_base = `basename $infile`);
+@infile_elem = split(/_|\./, $infile_base);
+$infile_base = $infile_elem[0];
+
+#
+# parse definition file
+#
+open(IN, "$infile") || die "can not open $infile\n";
+
+$ignore = 1;
+$if_h = "if${infile_base}.h";
+$fn_h = "fn${infile_base}.h";
+$incfile = "<${infile_base}.h>";
+
+while ( <IN> ) {
+
+	# skip to definition line
+	if ( $ignore != 0 ) {
+		$ignore = 0 if ( /^(#|\/\*\*).*\bDEFINE_IFLIB\b/ );
+		next;
+	}
+
+	chop;
+	s/^\s//;	# trim space code
+
+	next if ( /^$/ );	# skip empty line
+	next if ( /^#/ );	# skip comment line
+
+	# input data type
+	if ( /^(\/\*\s+)*\[/ ) {
+		( $inp ) = /\[(.*)\]/;
+		next;
+	}
+
+	# clear input data type
+	if ( /^\*\*/ ) {
+		$inp = "";
+		next;
+	}
+
+	# scan data
+	if ( $inp =~ /^(LIBRARY HEADER FILE)$/i ) {
+		$if_h = $_;
+	}
+	if ( $inp =~ /^(FNUMBER HEADER FILE)$/i ) {
+		$fn_h = $_;
+	}
+	if ( $inp =~ /^(INCLUDE FILE)$/i ) {
+		$incfile = $_;
+	}
+	if ( $inp =~ /^(PREFIX)$/i ) {
+		$prefix = $_;
+	}
+	if ( $inp =~ /^(SVC NO)$/i ) {
+		$svcno = $_;
+	}
+	if ( $inp =~ /^(BEGIN SYSCALLS)$/i ) {
+		s/\s+/ /g;	# delete extra space code
+
+		$syscalls[$#syscalls+1] = $_ if ( /^IMPORT/ );
+
+		$syscalls[$#syscalls+1] = "" if ( /RESERVE_NO/ );
+
+		if ( ( $no ) = /ALIGN_NO (0x[0-9a-zA-Z]+|[0-9]+)\b/ ) {
+			$no = oct($no) if ( $no =~ /^0/ );
+			if ( $no > 0 ) {
+				$i = $no - ($#syscalls + 1) % $no;
+				if ( $i > 1 && $i < $no ) {
+					$syscalls[$#syscalls+$i-1] = "";
+				} elsif ( $no > 1 && $#syscalls < 0 ) {
+					$syscalls[$no-2] = "";
+				}
+			}
+		}
+		if ( ( $no ) = /ORIGIN_NO (0x[0-9a-zA-Z]+|[0-9]+)\b/ ) {
+			$no = oct($no) if ( $no =~ /^0/ );
+			if ( $no > $#syscalls + 2 ) {
+				$syscalls[$no-2] = "";
+			}
+		}
+	}
+}
+
+close(IN);
+
+if ( $#syscalls < 0 ) {
+	print stderr "There is no definition of a system call.\n";
+	exit(1);
+}
+
+# ----------------------------------------------------------------------------
+#
+# dependency (-deps) mode
+#
+if ( $makedeps ) {
+	@svcsrc = ();
+
+	for ( $i = 0; $i <= $#syscalls; $i++ ) {
+		next if ( $syscalls[$i] eq "" );
+
+		$syscall = $syscalls[$i];
+		( $Func, $func, $ret, @para ) = &split_func($syscall);
+
+		$fname = $func;
+		$fname =~ tr/A-Z/a-z/;	# to lower case
+
+		print "\$(IFSRC)/$fname.S: $infile\n";
+		push(@svcsrc, "$fname.S");
+	}
+
+	print "SRC_SVC += ".join(" ", @svcsrc)."\n" if ( @svcsrc );
+	exit(0);
+}
+
+# ----------------------------------------------------------------------------
+#
+# generate function code definition file
+#
+open(FN_H, ">$fn_h") || die "can not open $fn_h\n";
+
+### create header part ###
+print FN_H <<EndOfFnHeader;
+$copyright_c
+/*
+ *	T2EX SVC function code
+ *
+ *	   (generated automatically)
+ */
+
+#include <t2ex/ssid.h>
+
+EndOfFnHeader
+
+### generate extended SVC number ###
+$svc = "${prefix}_SVC";
+if ( $svcno ne "" ) {
+
+	print FN_H <<EndOfSVCNo;
+/*
+ * Extended SVC number
+ */
+#ifndef ${svc}
+#define	${svc}	$svcno
+#endif
+
+EndOfSVCNo
+}
+
+### generate function number ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+	$fno = (($i + 1) << 16) + (($#para + 1) << 8);
+	printf FN_H "#define ${prefix}_${Func}_FN\t(0x%08x | ${svc})\n", $fno;
+}
+print FN_H "\n";
+
+close(FN_H);
+
+# ----------------------------------------------------------------------------
+#
+# create header file (if*.h)
+#
+open(IF_H, ">$if_h") || die "can not open $if_h\n";
+
+### generate header part ###
+print IF_H <<EndOfIfHeader;
+$copyright_c
+/*
+ *	T2EX SVC parameter packet
+ *
+ *	   (generated automatically)
+ */
+
+#include <basic.h>
+#include ${incfile}
+#include <sys/str_align.h>
+#include "${fn_h}"
+
+EndOfIfHeader
+
+### generate parameter packet ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+
+	# expect for void parameter
+	next if ( $#para < 0 );
+
+	print IF_H "typedef struct {\n";
+	for ( $j = 0; $j <= $#para; $j++ ) {
+		( $xp, $pad ) = &stack_packet($para[$j]);
+		print IF_H "\t_pad_b($pad)\n" if ( $pad > 0 );
+		print IF_H "\t$xp;	_align64\n";
+		print IF_H "\t_pad_l($pad)\n" if ( $pad > 0 );
+	}
+	print IF_H "} ${prefix}_${Func}_PARA;\n\n";
+}
+
+close(IF_H);
+
+# ----------------------------------------------------------------------------
+#
+# create extended SVC interface function
+#
+
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	$syscall = $syscalls[$i];
+	( $Func, $func, $ret, @para ) = &split_func($syscall);
+
+	$fname = $func;
+	$fname =~ tr/A-Z/a-z/;	# to lower case
+
+	# open library source file
+	open(LIB, ">$fname.S") || die "can not open $fname.S\n";
+
+	print LIB <<EndOfIfLibHeader;
+$copyright_c
+/*
+ *	T2EX SVC interface library ($machine)
+ *
+ *	   (generated automatically)
+ */
+
+EndOfIfLibHeader
+
+	# system dependencies
+	require($mkifsvc);
+	&makeift2ex();
+
+	close(LIB);
+}
+
+exit(0);
+
+# ============================================================================
+
+#
+# split definition of function
+#
+sub split_func
+{
+	local($syscall) = @_;
+	local($Func, $func, $ret, @para, $p);
+
+	( $ret, $func, $p ) =
+		( $syscall =~ /IMPORT\s+(\w+)\s+(\w+)\s*\((.*)\)\s*;/ );
+
+	$p =~ s/^\s*//;		# trim space code
+	$p =~ s/\s*$//;
+
+	@para = split(/\s*,\s*/, $p);	# split parameters
+
+	if ( $#para == 0 && $para[0] =~ /^void$/i ) {
+		# no params (void)
+		@para = ();
+	}
+
+	if ( $ret =~ /^void$/i ) {
+		# return type is "void"
+		$ret = "";
+	}
+
+	$Func = $func;
+	$Func =~ s/^tkse_//;	# delete "tkse_"
+	$Func =~ tr/a-z/A-Z/;	# to upper case
+
+	return ( $Func, $func, $ret, @para );
+}
+
+#
+# split parameter
+#
+sub split_para
+{
+	local($para) = @_;
+	local($type, $vname, @token);
+
+	# get variable name
+	$vname = $para;
+	$vname =~ s/\[[^\]]*\]//g;
+	if ( $vname =~ /\(/ ) {
+		$vname =~ s/^[^\(]*\(/\(/;
+		$vname =~ y/()*/ /s;
+		$vname =~ s/^\s*//;
+		@token = split(/ +/, $vname);
+		$vname = $token[0];
+	} else {
+		$vname =~ y/*/ /s;
+		@token = split(/ +/, $vname);
+		$vname = $token[$#token];
+	}
+
+	# get variable type
+	$type = $para;
+	$type =~ s/\b$vname\b//;
+	$type =~ s/^\s*//;
+	$type =~ s/\s*$//;
+
+	# convert variable type from array to pointer
+	if ( $para =~ s/\[[^\]]*\]// ) {
+		$para =~ s/\b($vname)\b/(*\1)/;
+	} else {
+		if ( &isMatrix($type) ) {
+			$para =~ s/\b($vname)\b/*\1/;
+		}
+	}
+
+	return ( $type, $vname, $para );
+}
+
+#
+# create parameter packet members
+#
+sub stack_packet
+{
+	local($para) = @_;
+	local($type, $vname, $pad);
+
+	( $type, $vname, $para ) = &split_para($para);
+
+	# padding size to INT
+	$pad = &isShort($type);
+
+	return ( $para, $pad );
+}
+
+#
+# return TRUE if variable is array
+#
+sub isMatrix
+{
+	local($type) = @_;
+
+	return ( $type =~ /^(KeyMap)$/ );
+}
+
+#
+# return sizeof(INT) - sizeof(variable type)
+#
+sub isShort
+{
+	local($type) = @_;
+
+	return 24 if ( $type =~ /^(B|UB|CHAR)$/ );
+	return 16 if ( $type =~ /^(H|UH|TC|CH|TLANG|SCRIPT)$/ );
+
+	return 0;
+}

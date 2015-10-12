@@ -1,0 +1,581 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+        デバイスドライバ構築説明書(tef_em1d用)
+==============================================================================
+------------------------------------------------------------------------------
+1. はじめに
+------------------------------------------------------------------------------
+
+本書では、T-Kernel用のデバイスドライバの構築方法について説明します。
+
+デバイスドライバのソースコードは、T-Kernelソースコードのパッケージ
+(tkernel_source.tar.gz)の中に含まれています。あらかじめ、ソースコードのパッケ
+ージを展開しておいてください。また、Linuxコマンドラインを使って開発する場合は、
+展開したソースコードのトップディレクトリ(tkernel_sourceのディレクトリ)を、環境
+変数 ${BD} に設定してください。
+
+ソースコードのパッケージの中には、以下のデバイスドライバが含まれています。
+
+   ・システムディスクドライバ(microSD用)
+            ※ プログラムの一部は、ソースコードではなくオブジェクトコードが含
+               まれます。
+            ※ CF(ATA)カード、ATAPI PC カード(CD-ROM, MO, FD)、USBストレージデ
+               ィスク、HDD(ATA/IDE)などには対応していません。
+   ・時計ドライバ
+   ・コンソールドライバ
+   ・KB/PD ドライバ (実IOドライバを含む)
+   ・スクリーンドライバ
+
+なお、各デバイスドライバの機能仕様は、T-Engineフォーラムから公開されている
+「T-Engine 標準デバイスドライバ仕様」がベースになります。
+
+本パッケージで対応している機種は、以下の通りです。
+
+         -------------------------------------------------------
+                種別、名称              機種名(略称)   CPU略称
+         -------------------------------------------------------
+          T-Engineリファレンスボード      tef_em1d      em1d
+         -------------------------------------------------------
+
+------------------------------------------------------------------------------
+2. デバイスドライバの構築方法
+------------------------------------------------------------------------------
+
+以下に、デバイスドライバの構築方法を説明します。なお、Eclipseを使う場合の具体
+的な手順については、「EclipseによるT-Kernel構築説明書」(eclipse_guide.txt)の「3.
+1 一般的なビルド方法」も合わせて参照してください。
+
+     ※ 以下は、T-Engineリファレンスボード(tef_em1d)を対象とした説明です。他の
+        機種では、パス名などに出てくる "tef_em1d" を "[TARGET]" に読み替えてく
+        ださい。
+
+     ※ オブジェクトや自動生成されたソースコードのクリーンアップを行うには、各
+        ディレクトリで次の処理を実行してください。
+            make clean          オブジェクトのみのクリーンアップ
+            make clean_source   ソースのみのクリーンアップ
+            make clean_all      すべて(ソース/オブジェクト)のクリーンアップ
+
+--------------------------------------------------
+2.1 ドライバI/Fライブラリのビルド
+--------------------------------------------------
+
+ドライバI/Fライブラリをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/lib/libdrvif/build/tef_em1d
+  % make
+        ※ ドライバI/Fライブラリのlibdrvvif.aを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\lib
+
+ ・プロジェクト名
+        libdrvif
+
+ ・ビルド先ディレクトリ
+        libdrvif/build/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、ドライバI/Fライブラリのlibdrvvif.aをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+libdrvvif.aを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.2 コンソールドライバのビルド
+--------------------------------------------------
+
+コンソールドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/console/build
+  % make source
+        ※ console/src/svc/* に、拡張SVC I/Fライブラリの作成に必要なヘッダファ
+           イルおよびソースを自動生成します。
+  % make
+        ※ コンソールドライバのconsole.oを作成します。また、拡張SVC I/Fライブ
+           ラリのlibconsolesvc.aを作成します。
+        ※ make source を実行していないと、この make でエラーが発生します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/console/build
+
+上記を設定した後、まず「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの
+引数がある場合)」の手順により、make source の設定と実行を行ってください。この
+手順により、拡張SVC I/Fライブラリの作成に必要なヘッダファイルおよびソースを自
+動生成します。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」の手順に
+より make を実行し、コンソールドライバのconsole.oと拡張SVC I/Fライブラリの
+libconsolesvc.aを作成します。
+
+最後に、make source と同様の操作で、make install の設定と実行を行ってください。
+この手順により、console.oとlibconsolesvc.aを所定のディレクトリにインストールし
+ます。
+
+--------------------------------------------------
+2.3 時計ドライバのビルド
+--------------------------------------------------
+
+時計ドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/clk/build
+  % make source
+        ※ clk/src/svc/* に、拡張SVC I/Fライブラリの作成に必要なヘッダファイル
+           およびソースを自動生成します。
+  % make
+        ※ 時計ドライバのclkdrv.oを作成します。また、拡張SVC I/Fライブラリの
+           libem1diic.aを作成します。
+        ※ make source を実行していないと、この make でエラーが発生します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/clk/build
+
+上記を設定した後、まず「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの
+引数がある場合)」の手順により、make source の設定と実行を行ってください。この
+手順により、拡張SVC I/Fライブラリの作成に必要なヘッダファイルおよびソースを自
+動生成します。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」の手順に
+より make を実行し、時計ドライバのclkdrv.oと拡張SVC I/Fライブラリのlibem1diic.
+aを作成します。
+
+最後に、make source と同様の操作で、make install の設定と実行を行ってください。
+この手順により、clkdrv.oとlibem1diic.aを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.4 システムディスクドライバのビルド
+--------------------------------------------------
+
+システムディスクドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/sysdsk/build
+  % make
+        ※ システムディスクドライバのsysdsk.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/sysdsk/build
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、システムディスクドライバのsysdsk.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、sysdsk.
+oを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.5 スクリーンドライバのビルド
+--------------------------------------------------
+
+スクリーンドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/screen/build
+  % make
+        ※ スクリーンドライバのscreen.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/screen/build
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、スクリーンドライバのscreen.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、screen.
+oを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.6 KB/PDドライバのビルド
+--------------------------------------------------
+
+KB/PDドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/kbpd/build
+  % make
+        ※ KB/PDドライバのkbpd.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/kbpd/build
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、KB/PDドライバのkbpd.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、kbpd.
+oを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.7 KB/PD実IOドライバのビルド
+--------------------------------------------------
+
+KB/PD実IOドライバをビルドします。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/drv/tef_em1d/lowkbpd/build
+  % make
+        ※ KB/PD実IOドライバのlowkbpd.oを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+ ・プロジェクト名
+        tef_em1d
+
+ ・ビルド先ディレクトリ
+        tef_em1d/lowkbpd/build
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、KB/PD実IOドライバのlowkbpd.oをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+lowkbpd.oを所定のディレクトリにインストールします。
+
+--------------------------------------------------
+2.8 デバイスドライバを含むT-Kernel本体のビルド
+--------------------------------------------------
+
+デバイスドライバを組み込んだT-Kernelを構築するために、ソースコード内に以下のデ
+ィレクトリを用意しています。
+
+        ${BD}/kernel/sysmain/build_drv
+        ${BD}/kernel/usermain_drv
+
+  ※ デバイスドライバは、T-Kernel Standard Extension の無い状態でも使用できま
+     す。
+
+ドライバI/Fライブラリおよび全デバイスドライバの make install を完了したのち、
+デバイスドライバを含めたT-Kernel本体をビルドします。なお、この場合は kernel/
+usermain_drv の下のソースファイル(usermain.cなど)が使用されます。
+
+Linuxコマンドラインを使う場合の手順例は以下の通りです。
+
+  % cd ${BD}/kernel/sysmain/build_drv/tef_em1d
+  % make
+        ※ デバイスドライバを含むT-Kernel本体のkernel_rom.mapおよびkernel_rom.
+           motを作成します。
+  % make install
+        ※ 作成したオブジェクトを所定のディレクトリにインストールします。
+
+Eclipseを使う場合は、以下の環境や設定によりビルドしてください。
+
+ ・ワークスペース
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\kernel
+
+ ・プロジェクト名
+        sysmain
+
+ ・ビルド先ディレクトリ
+        sysmain/build_drv/tef_em1d
+
+上記の設定で、「EclipseによるT-Kernel構築説明書」「3.1(5)ビルド(通常の場合)」
+の手順により make を実行し、デバイスドライバを含むT-Kernel本体のkernel_rom.map
+およびkernel_rom.motをビルドします。
+
+次に、「EclipseによるT-Kernel構築説明書」「3.1(6)ビルド(makeの引数がある場合)」
+の手順により、make install の設定と実行を行ってください。この手順により、
+kernel_rom.mapおよびkernel_rom.motを所定のディレクトリにインストールします。
+
+作成されたオブジェクト等のインストール先は次の通りです。
+
+        ${BD}/bin/tef_em1d/kernel_xxx.xxx
+
+------------------------------------------------------------------------------
+3. ディレクトリ構成
+------------------------------------------------------------------------------
+
+T-Engineリファレンスボード(tef_em1d)に対するデバイスドライバのソースコードのデ
+ィレクトリ構成は、以下のようになっています。(ソースコードのトップディレクトリ
+を ${BD} と表記)
+
+なお、デバイスドライバ類は機種依存性が高いため、T-Kernelのように、共通部とハー
+ドウェア依存部に分けたディレクトリ構成にはなっていません。
+
+ ${BD}
+   |
+   |----bin
+   |       |----tef_em1d        インストール先
+   |
+   |----driver                  デバイスドライバオブジェクト格納用
+   |       |----tef_em1d
+   |
+   |----include
+   |       |----device          ヘッダファイル (デバイス用)
+   |       |       |----clk.h
+   |       |       |----devconf.h
+   |       |       |----disk.h
+   |       |       |----em1d512_iic.h
+   |       |       |----gdrvif.h
+   |       |       |----h8io.h
+   |       |       |----kbpd.h
+   |       |       |----keycode.h
+   |       |       |----lowkbpd.h
+   |       |       |----pcmcia.h
+   |       |       |----rs.h
+   |       |       |----screen.h
+   |       |       |----sdrvif.h
+   |       |       |----serialio.h
+   |       |       |----share.h
+   |       |       |----videomode.h
+   |       |
+   |       |----tkse (*1)       ヘッダファイル (TRONコード・イベント通知用)
+   |               |----bitop.h
+   |               |----stdlib.h
+   |               |----tcode.h
+   |               |----extension
+   |                       |----event.h
+   |                       |----typedef.h
+   |
+   |----tkse (*1)
+   |       |----include         ヘッダファイル (サブシステム用)
+   |       |       |----extension
+   |       |               |----sys
+   |       |                       |----tkse_ssid.h
+   |       |
+   |       |----extension
+   |               |----common
+   |                       |----build
+   |                       |       |----Makefile.common
+   |                       |       |----tef_em1d
+   |                       |               |----Makefile
+   |                       |----src
+   |                               |----abs.c
+   |                               |----bitclr.c
+   |                               |----bitnot.c
+   |                               |----bitsclr.c
+   |                               |----bitsearch0.c
+   |                               |----bitsearch1.c
+   |                               |----bitset.c
+   |                               |----bitsset.c
+   |                               |----bittest.c
+   |                               |----div.c
+   |                               |----ffs.c
+   |                               |----memset_w.c
+   |                               |----quesearch.c
+   |                               |----quesearchge.c
+   |                               |----quesearchgeu.c
+   |                               |----quesearchgt.c
+   |                               |----quesearchgtub.c
+   |                               |----quesearchh.c
+   |                               |----quesearchne.c
+   |                               |----quesearchneh.c
+   |                               |----quesearchrevltu.c
+   |                               |----quetemplate.h
+   |                               |----strcasecmp.c
+   |                               |----strchr.c
+   |
+   |----kernel                  起動シーケンスの変更
+   |       |----sysmain
+   |       |       |----build_drv
+   |       |               |----Makefile.common
+   |       |
+   |       |----usermain_drv
+   |               |----Makefile.usermain
+   |               |----inittask_def.c
+   |               |----inittask_def.h
+   |               |----usermain.c
+   |
+   |----lib
+   |       |----libdrvif           ドライバI/Fライブラリ
+   |               |----build
+   |               |       |----Makefile.common
+   |               |       |----tef_em1d
+   |               |       |       |----Makefile
+   |               |
+   |               |----src
+   |                       |----gdrvif.c
+   |                       |----sdrvif.c
+   |
+   |----drv        デバイスドライバ本体
+           |----tef_em1d
+                   |----clk             時計ドライバ
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |       |----makeifdrv.pl
+                   |       |       |----mkdrvsvc
+                   |       |       |----mksvc
+                   |       |
+                   |       |----src
+                   |               |----clkdrv.h
+                   |               |----main.c
+                   |               |----rtc.c
+                   |               |----em1d512_iic.c
+                   |               |----em1d512_iicspi_svc.c
+                   |               |----em1d512_iicspi_svc.h
+                   |               |----em1d512_spi.c
+                   |               |----svc             拡張 SVC IF 用
+                   |
+                   |----console         コンソールドライバ
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |       |----makeifdrv.pl
+                   |       |       |----mkdrvsvc
+                   |       |       |----mksvc
+                   |       |
+                   |       |----src
+                   |               |----consmlock.c
+                   |               |----console_drv.c
+                   |               |----line_drv.c
+                   |               |----line_drv.h
+                   |               |----main.c
+                   |               |----ns16450.c
+                   |               |----ns16450.h
+                   |               |----ns16450sys.h
+                   |               |----portdef.h
+                   |               |----sharemgr.c
+                   |               |----svc             拡張 SVC IF 用
+                   |
+                   |----screen          スクリーンドライバ
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----common.c
+                   |               |----conf.c
+                   |               |----em1d512.c
+                   |               |----main.c
+                   |               |----mode_string.h
+                   |               |----screen.h
+                   |
+                   |----kbpd            KB/PD ドライバ
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----accept.c
+                   |               |----devcmd.c
+                   |               |----devevt.h
+                   |               |----etc.c
+                   |               |----innevt.c
+                   |               |----innevt.h
+                   |               |----kbpd.h
+                   |               |----key.c
+                   |               |----main.c
+                   |               |----pdbut.c
+                   |               |----pdsim.c
+                   |               |----receive.c
+                   |               |----statmach.c
+                   |               |----statmach.h
+                   |
+                   |----lowkbpd         KB/PD ドライバ (実IOドライバ)
+                   |       |----build
+                   |       |       |----Makefile
+                   |       |
+                   |       |----src
+                   |               |----common.c
+                   |               |----hwkbpd.c
+                   |               |----kbpd.h
+                   |               |----main.c
+                   |               |----scancode.h
+                   |
+                   |----sysdsk          システムディスクドライバ
+                           |----build
+                           |       |----Makefile
+                           |
+                           |----obj
+                           |       |----mmc-common.o         (*2)
+                           |       |----mmc-em1d512.o        (*2)
+                           |
+                           |----src
+                                   |----accept.c
+                                   |----ata.c
+                                   |----ata.h
+                                   |----atacmd.c
+                                   |----ataio.c
+                                   |----common.c
+                                   |----inthdr.c
+                                   |----main.c
+                                   |----mem.c
+                                   |----pccard.c
+                                   |----pccardio.h
+                                   |----sdisk.h
+
+   (*1) T-Kernel Standard Extensionで使用するファイルですが、デバイスドライバ
+        の構築にも必要となるため、本パッケージの中にディレクトリ構造を含めて格
+        納しています。
+
+   (*2) システムディスク(microSD用)のデバイスドライバのうち、mmc-common.o, mmc
+        -em1d512.o は、ソースコードではなくオブジェクトコードが含まれます。
+
+以上

@@ -1,0 +1,359 @@
+#! /usr/bin/perl
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+
+#
+#	mkdrvsvc
+#
+#	Driver interface library generation script (common)
+#
+
+$mkifdrv = "../../build/makeifdrv.pl";
+
+$usage = 'usage: mkdrvsvc infile';
+
+$infile = "";	# input file
+
+#
+# analyze command line parameter
+#
+$infile = $ARGV[0];
+if ( $infile eq "" ) {
+	print STDERR "Too few arguments\n";
+	exit(1);
+}
+
+chop($infile_base = `basename $infile`);
+@infile_elem = split(/_|\./, $infile_base);
+$infile_base = $infile_elem[0];
+
+#
+# parse definition file
+#
+open(IN, "$infile") || die "can not open $infile\n";
+
+$ignore = 1;
+$if_h = "if${infile_base}.h";
+$fn_h = "fn${infile_base}.h";
+$incfile = "<${infile_base}.h>";
+
+while ( <IN> ) {
+
+	# skip to definition line
+	if ( $ignore != 0 ) {
+		$ignore = 0 if ( /^(#|\/\*\*).*\bDEFINE_IFLIB\b/ );
+		next;
+	}
+
+	chop;
+	s/^\s//;	# trim space code
+
+	next if ( /^$/ );	# skip empty line
+	next if ( /^#/ );	# skip comment line
+
+	# input data type
+	if ( /^(\/\*\s+)*\[/ ) {
+		( $inp ) = /\[(.*)\]/;
+		next;
+	}
+
+	# clear input data type
+	if ( /^\*\*/ ) {
+		$inp = "";
+		next;
+	}
+
+	# scan data
+	if ( $inp =~ /^(LIBRARY HEADER FILE)$/i ) {
+		$if_h = $_;
+	}
+	if ( $inp =~ /^(FNUMBER HEADER FILE)$/i ) {
+		$fn_h = $_;
+	}
+	if ( $inp =~ /^(INCLUDE FILE)$/i ) {
+		$incfile = $_;
+	}
+	if ( $inp =~ /^(PREFIX)$/i ) {
+		$prefix = $_;
+	}
+	if ( $inp =~ /^(SVC NO)$/i ) {
+		$svcno = $_;
+	}
+	if ( $inp =~ /^(BEGIN SYSCALLS)$/i ) {
+		s/\s+/ /g;	# delete extra space code
+
+		$syscalls[$#syscalls+1] = $_ if ( /^IMPORT/ );
+
+		$syscalls[$#syscalls+1] = "" if ( /RESERVE_NO/ );
+
+		if ( ( $no ) = /ALIGN_NO (0x[0-9a-zA-Z]+|[0-9]+)\b/ ) {
+			$no = oct($no) if ( $no =~ /^0/ );
+			if ( $no > 0 ) {
+				$i = $no - ($#syscalls + 1) % $no;
+				if ( $i > 1 && $i < $no ) {
+					$syscalls[$#syscalls+$i-1] = "";
+				} elsif ( $no > 1 && $#syscalls < 0 ) {
+					$syscalls[$no-2] = "";
+				}
+			}
+		}
+		if ( ( $no ) = /ORIGIN_NO (0x[0-9a-zA-Z]+|[0-9]+)\b/ ) {
+			$no = oct($no) if ( $no =~ /^0/ );
+			if ( $no > $#syscalls + 2 ) {
+				$syscalls[$no-2] = "";
+			}
+		}
+	}
+}
+
+close(IN);
+
+if ( $#syscalls < 0 ) {
+	print stderr "There is no definition of a system call.\n";
+	exit(1);
+}
+
+# ----------------------------------------------------------------------------
+#
+# generate function code definition file
+#
+open(FN_H, ">$fn_h") || die "can not open $fn_h\n";
+
+### create header part ###
+print FN_H <<EndOfFnHeader;
+/*
+ *	Extended SVC function code
+ *
+ */
+
+#include <extension/sys/tkse_ssid.h>
+
+EndOfFnHeader
+
+### generate extended SVC number ###
+$svc = "${prefix}_SVC";
+if ( $svcno ne "" ) {
+
+	print FN_H <<EndOfSVCNo;
+/*
+ * Extended SVC number
+ */
+#ifndef ${svc}
+#define	${svc}	$svcno
+#endif
+
+EndOfSVCNo
+}
+
+### generate function number ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+	$fno = (($i + 1) << 16) + (($#para + 1) << 8);
+	printf FN_H "#define ${prefix}_${Func}_FN\t(0x%08x | ${svc})\n", $fno;
+}
+print FN_H "\n";
+
+close(FN_H);
+
+# ----------------------------------------------------------------------------
+#
+# create header file (if*.h)
+#
+open(IF_H, ">$if_h") || die "can not open $if_h\n";
+
+### generate header part ###
+print IF_H <<EndOfIfHeader;
+/*
+ *	Extended SVC parameter packet
+ *
+ */
+
+#include <basic.h>
+#include ${incfile}
+#include <sys/str_align.h>
+#include "${fn_h}"
+
+EndOfIfHeader
+
+### generate parameter packet ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+
+	# expect for void parameter
+	next if ( $#para < 0 );
+
+	print IF_H "typedef struct {\n";
+	for ( $j = 0; $j <= $#para; $j++ ) {
+		( $xp, $pad ) = &stack_packet($para[$j]);
+		print IF_H "\t_pad_b($pad)\n" if ( $pad > 0 );
+		print IF_H "\t$xp;	_align64\n";
+		print IF_H "\t_pad_l($pad)\n" if ( $pad > 0 );
+	}
+	print IF_H "} ${prefix}_${Func}_PARA;\n\n";
+}
+
+close(IF_H);
+
+# ----------------------------------------------------------------------------
+#
+# create extended SVC interface function
+#
+
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	$syscall = $syscalls[$i];
+	( $Func, $func, $ret, @para ) = &split_func($syscall);
+
+	$fname = $func;
+	$fname =~ tr/A-Z/a-z/;	# to lower case
+
+	# open library source file
+	open(LIB, ">$fname.S") || die "can not open $fname.S\n";
+
+	print LIB <<EndOfIfLibHeader;
+/*
+ *	T-Kernel driver SVC interface library
+ *
+ */
+
+EndOfIfLibHeader
+
+	# system dependencies
+	require($mkifdrv);
+	&makelibdrv();
+
+	close(LIB);
+}
+
+exit(0);
+
+# ============================================================================
+
+#
+# split definition of function
+#
+sub split_func
+{
+	local($syscall) = @_;
+	local($Func, $func, $ret, @para, $p);
+
+	( $ret, $func, $p ) =
+		( $syscall =~ /IMPORT\s+(\w+)\s+(\w+)\s*\((.*)\)\s*;/ );
+
+	$p =~ s/^\s*//;		# trim space code
+	$p =~ s/\s*$//;
+
+	@para = split(/\s*,\s*/, $p);	# split parameters
+
+	if ( $#para == 0 && $para[0] =~ /^void$/i ) {
+		# no params (void)
+		@para = ();
+	}
+
+	if ( $ret =~ /^void$/i ) {
+		# return type is "void"
+		$ret = "";
+	}
+
+	$Func = $func;
+	$Func =~ s/^tkse_//;	# delete "tkse_"
+	$Func =~ tr/a-z/A-Z/;	# to upper case
+
+	return ( $Func, $func, $ret, @para );
+}
+
+#
+# split parameter
+#
+sub split_para
+{
+	local($para) = @_;
+	local($type, $vname, @token);
+
+	# get variable name
+	$vname = $para;
+	$vname =~ s/\[[^\]]*\]//g;
+	if ( $vname =~ /\(/ ) {
+		$vname =~ s/^[^\(]*\(/\(/;
+		$vname =~ y/()*/ /s;
+		$vname =~ s/^\s*//;
+		@token = split(/ +/, $vname);
+		$vname = $token[0];
+	} else {
+		$vname =~ y/*/ /s;
+		@token = split(/ +/, $vname);
+		$vname = $token[$#token];
+	}
+
+	# get variable type
+	$type = $para;
+	$type =~ s/\b$vname\b//;
+	$type =~ s/^\s*//;
+	$type =~ s/\s*$//;
+
+	# convert variable type from array to pointer
+	if ( $para =~ s/\[[^\]]*\]// ) {
+		$para =~ s/\b($vname)\b/(*\1)/;
+	} else {
+		if ( &isMatrix($type) ) {
+			$para =~ s/\b($vname)\b/*\1/;
+		}
+	}
+
+	return ( $type, $vname, $para );
+}
+
+#
+# create parameter packet members
+#
+sub stack_packet
+{
+	local($para) = @_;
+	local($type, $vname, $pad);
+
+	( $type, $vname, $para ) = &split_para($para);
+
+	# padding size to INT
+	$pad = &isShort($type);
+
+	return ( $para, $pad );
+}
+
+#
+# return TRUE if variable is array
+#
+sub isMatrix
+{
+	local($type) = @_;
+
+	return ( $type =~ /^(KeyMap)$/ );
+}
+
+#
+# return sizeof(INT) - sizeof(variable type)
+#
+sub isShort
+{
+	local($type) = @_;
+
+	return 24 if ( $type =~ /^(B|UB|CHAR)$/ );
+	return 16 if ( $type =~ /^(H|UH|TC|CH|TLANG|SCRIPT)$/ );
+
+	return 0;
+}

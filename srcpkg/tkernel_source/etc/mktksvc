@@ -1,0 +1,314 @@
+#! /usr/local/bin/perl
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by Nina Petipa at 2015/09/22
+#
+# ----------------------------------------------------------------------
+#
+
+#	mktksvc
+#
+#	T-Kernel system call
+#	interface library generation script
+#
+#
+
+$usage = 'usage: mktksvc cpu infile';
+
+$infile = "";	# input file
+
+#
+# analyze command line parameter
+#
+$cpu = $ARGV[0];
+$infile = $ARGV[1];
+if ( $cpu eq "" ) {
+	print STDERR "$usage\n";
+	exit(1);
+}
+if ( $infile eq "" ) {
+	print STDERR "Too few arguments\n";
+	exit(1);
+}
+
+#
+# parse definition file
+#
+open(IN, "$infile") || die "can not open $infile\n";
+
+$ignore = 1;
+$tb_h = "tksvctbl.h";
+$fn_h = "tkfncd.h";
+
+while ( <IN> ) {
+
+	# skip to definition line
+	if ( $ignore != 0 ) {
+		$ignore = 0 if ( /^(#|\/\*\*).*\bDEFINE_TKSVC\b/ );
+		next;
+	}
+
+	chop;
+	s/^\s//;	# trim space code
+
+	next if ( /^$/ );	# skip empty line
+	next if ( /^#/ );	# skip comment line
+
+	# input data type
+	if ( /^(\/\*\s+)*\[/ ) {
+		( $inp ) = /\[(.*)\]/;
+		next;
+	}
+
+	# clear input data type
+	if ( /^\*\*/ ) {
+		$inp = "";
+		next;
+	}
+
+	# scan data
+	if ( $inp =~ /^(BRANCH TABLE FILE)$/i ) {
+		$tb_h = $_;
+	}
+	if ( $inp =~ /^(FNUMBER HEADER FILE)$/i ) {
+		$fn_h = $_;
+	}
+	if ( $inp =~ /^(BEGIN SYSCALLS)$/i ) {
+		s/\s+/ /g;	# delete extra space code
+
+		$syscalls[$#syscalls+1] = $_ if ( /^IMPORT/ );
+
+		$syscalls[$#syscalls+1] = "" if ( /RESERVE_NO/ );
+
+		if ( ( $align ) = /ALIGN_NO (0x[0-9a-zA-Z]+|[0-9]+)\b/ ) {
+			$align = oct($align) if ( $align =~ /^0/ );
+			if ( $align > 0 ) {
+				$i = $align - ($#syscalls + 1) % $align;
+				if ( $i > 1 && $i < $align ) {
+					$syscalls[$#syscalls+$i-1] = "";
+				} elsif ( $align > 1 && $#syscalls < 0 ) {
+					$syscalls[$align-2] = "";
+				}
+			}
+		}
+	}
+}
+
+close(IN);
+
+if ( $#syscalls < 0 ) {
+	print stderr "There is no definition of a system call.\n";
+	exit(1);
+}
+
+# ----------------------------------------------------------------------------
+#
+# generate function code definition file
+#
+open(FN_H, ">sysdepend/include/$fn_h") || die "can not open sysdepend/include/$fn_h\n";
+
+### create header part ###
+print FN_H <<EndOfFnHeader;
+/*
+ *	T-Kernel function code
+ */
+
+EndOfFnHeader
+
+### create function code ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+	$psz = &para_size(@para);
+	$fno = ((($i + 1) << 16) + ($psz << 8)) | 0x80000000;
+	printf FN_H "#define TFN_${Func}\t0x%08x\n", $fno;
+}
+print FN_H "\n";
+
+close(FN_H);
+
+# ----------------------------------------------------------------------------
+#
+# generate branch table
+#
+open(TB_H, ">sysdepend/include/$tb_h") || die "can not open sysdepend/include/$tb_h\n";
+
+### create header part ###
+print TB_H <<EndOfTbHeader;
+/*
+ *	T-Kernel system call branch table
+ *
+ *	   created from $infile
+ */
+
+#include <machine.h>
+
+#define _SVC_ENTRY(name)	.long	Csym(_##name)
+
+EndOfTbHeader
+
+# number of system call
+printf TB_H "#define N_TFN	%d\n", $#syscalls + 1;
+printf TB_H "\n";
+
+### create branch table ###
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	if ( $syscalls[$i] eq "" ) {
+		printf TB_H "\t_SVC_ENTRY(no_support)\n";
+	} else {
+		( $Func, $func, $ret, @para ) = &split_func($syscalls[$i]);
+		print TB_H "\t_SVC_ENTRY(${func})\n";
+	}
+}
+
+close(TB_H);
+
+# ----------------------------------------------------------------------------
+#
+# create SVC interface function
+#
+
+for ( $i = 0; $i <= $#syscalls; $i++ ) {
+	next if ( $syscalls[$i] eq "" );
+
+	$syscall = $syscalls[$i];
+	( $Func, $func, $ret, @para ) = &split_func($syscall);
+
+	$fname = $func;
+	$fname =~ tr/A-Z/a-z/;	# to lower case
+
+	# open library source file
+	open(LIB, ">sysdepend/$cpu/$fname.S") || die "can not open sysdepend/$cpu/$fname.S\n";
+
+	print LIB <<EndOfIfLibHeader;
+/*
+ *	T-Kernel SVC interface library ($cpu)
+ *
+ *	   created from $infile
+ */
+
+EndOfIfLibHeader
+
+	# system dependencies
+	require("../build/$cpu/makeiftk.pl");
+	&makelib();
+
+	close(LIB);
+}
+
+exit(0);
+
+# ============================================================================
+
+#
+# split definition of function
+#
+sub split_func
+{
+	local($syscall) = @_;
+	local($Func, $func, $ret, @para, $p);
+
+	( $ret, $func, $p ) =
+		( $syscall =~ /IMPORT\s+(\w+)\s+(\w+)\s*\((.*)\)\s*;/ );
+
+	$p =~ s/^\s*//;		# trim space code
+	$p =~ s/\s*$//;
+
+	@para = split(/\s*,\s*/, $p);	# split parameters
+
+	if ( $#para == 0 && $para[0] =~ /^void$/i ) {
+		# no params (void)
+		@para = ();
+	}
+
+	if ( $ret =~ /^void$/i ) {
+		# return type is "void"
+		$ret = "";
+	}
+
+	$Func = $func;
+	$Func =~ s/^tk_//;	# delete "tk_"
+	$Func =~ tr/a-z/A-Z/;	# to upper case
+
+	return ( $Func, $func, $ret, @para );
+}
+
+#
+# Split the argument definition to type and variable name
+#
+sub split_para
+{
+	local($para) = @_;
+	local($type, $vname, $pt, @token);
+
+	# Obtain variable name
+	$vname = $para;
+	$vname =~ s/\[[^\]]*\]//g;
+	if ( $vname =~ /\(/ ) {
+		$vname =~ s/^[^\(]*\(/\(/;
+		$vname =~ y/()*/ /s;
+		$vname =~ s/^\s*//;
+		@token = split(/ +/, $vname);
+		$vname = $token[0];
+	} else {
+		$vname =~ y/*/ /s;
+		@token = split(/ +/, $vname);
+		$vname = $token[$#token];
+	}
+
+	# Obtain type
+	$type = $para;
+	$type =~ s/\b$vname\b//;
+	$type =~ s/^\s*//;
+	$type =~ s/\s*$//;
+
+	return ( $type, $vname );
+}
+
+#
+# Calculate the total size (in words) of arguments
+#
+sub para_size
+{
+	local(@para) = @_;
+	local($type, $vname, $i, $c);
+
+	$c = 0;
+	for ( $i = 0; $i <= $#para; $i++ ) {
+		( $type, $vname ) = &split_para($para[$i]);
+
+		if ( isLongLong($type) ) {
+			$c += 2;
+		} else {
+			$c++;
+		}
+	}
+
+	return $c;
+}
+
+#
+# Return trun if long long
+#
+sub isLongLong
+{
+	local($type) = @_;
+
+	# except for CONST
+	$type =~ s/\bCONST\b//;
+	$type =~ s/^\s*//;
+	$type =~ s/\s*$//;
+
+	return 1 if ( $type =~ /^(D|UD|VD|_D|_UD)$/ );
+	return 1 if ( $type =~ /^(TMO_U|RELTIM_U|SYSTIM_U)$/ );
+
+	return 0;
+}

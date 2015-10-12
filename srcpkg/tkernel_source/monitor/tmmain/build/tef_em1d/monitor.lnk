@@ -1,0 +1,111 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+/*
+ *	monitor.lnk
+ *
+ *       link specification for monitor
+ */
+
+OUTPUT_FORMAT("elf32-larm-tkernel", "elf32-barm-tkernel", "elf32-larm-tkernel")
+OUTPUT_ARCH(arm)
+ENTRY(_start)
+
+SECTIONS {
+	__loadaddr = 0x70000000;
+	_start = 0x70000000;
+	.eitbra _start : AT(__loadaddr) {
+		__eitbra_start = .;
+		*(EITBRA)
+		. = ALIGN(0x10);
+	}
+	.startup  : {
+		*(.startup)
+		. = ALIGN(0x10);
+	}
+	__text_org = __loadaddr + SIZEOF(.startup) + SIZEOF(.eitbra);
+	.text __text_org : {
+		_stext = .;
+		KEEP (*(.init))
+		*(.text)
+		*(.text.*)
+		*(.stub)
+		*(.glue_7t)
+		*(.glue_7)
+		KEEP (*(.fini))
+		PROVIDE (__etext = .);
+		PROVIDE (_etext = .);
+		PROVIDE (etext = .);
+		*(.rodata)
+		*(.rodata.*)
+		*(.rodata1)
+		. = ALIGN(0x10);
+	} =0
+	__data_org = . ;
+	.data 0x30004440 : AT(LOADADDR(.text) + SIZEOF(.text)) {
+		__data_start = . ;
+		*(flashwr.rodata)
+		*(.data)
+		*(.data.*)
+		SORT(CONSTRUCTORS)
+		*(.data1)
+		KEEP (*(.eh_frame))
+		*(.gcc_except_table)
+		KEEP (*crtbegin.o(.ctors))
+		KEEP (*(EXCLUDE_FILE (*crtend.o ) .ctors))
+		KEEP (*(SORT(.ctors.*)))
+		KEEP (*(.ctors))
+		KEEP (*crtbegin.o(.dtors))
+		KEEP (*(EXCLUDE_FILE (*crtend.o ) .dtors))
+		KEEP (*(SORT(.dtors.*)))
+		KEEP (*(.dtors))
+		*(.got.plt)
+		*(.got)
+		*(.sdata)
+		*(.sdata.*)
+		. = ALIGN(0x10);
+		_edata = .;
+		PROVIDE (edata = .);
+	}
+	.bss (NOLOAD) : AT(LOADADDR(.data) + SIZEOF(.data)) {
+		__bss_start = .;
+		PROVIDE (__sbss_start = .);
+		PROVIDE (___sbss_start = .);
+		*(.sbss)
+		*(.sbss.*)
+		*(.scommon)
+		PROVIDE (__sbss_end = .);
+		PROVIDE (___sbss_end = .);
+		*(.bss)
+		*(.bss.*)
+		*(EXCLUDE_FILE(*/wrkbuf.o) COMMON)
+		. = ALIGN(0x10);
+		_end = .;
+		PROVIDE (end = .);
+	}
+	__flashwr_org = __data_org + SIZEOF(.data);
+	OVERLAY : AT(LOADADDR(.bss)) {
+		.flashwr {
+			__flashwr_start = .;
+			*(flashwr.text)
+			__flashwr_end = .;
+		}
+		.wrkbuf {
+			*/wrkbuf.o(COMMON)
+		}
+	}
+	.stack ALIGN(0x10) (NOLOAD) : {
+		__stack_top    = .;
+		__stack_bottom = 0x30006000 - ABSOLUTE(.);
+	}
+}

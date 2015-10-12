@@ -1,0 +1,220 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by T-Engine Forum at 2012/05/22.
+#     Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	sysmain (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# T-Kernel common standard library
+include ../../../tstdlib/Makefile.tstdlib
+
+# user main
+include ../../../usermain/Makefile.usermain
+
+# kernel install path
+KERNEL_INSTALLDIR	= ../../../bin/$(TETYPE)_$(MACHINE)
+
+# kernel modules path
+OBJ_TKERNEL_PATH	= ../../../tkernel/build/$(TETYPE)_$(MACHINE)
+OBJ_SYSMGR_PATH		= ../../../sysmgr/build/$(TETYPE)_$(MACHINE)
+OBJ_SYSINIT_PATH	= ../../../sysinit/build/$(TETYPE)_$(MACHINE)
+
+# config modules path
+OBJ_CONFIG_PATH		= ../../../../config/build/$(TETYPE)_$(MACHINE)
+OBJ_DBG_CONFIG_PATH	= ../../../../config/launch-ramkernel/build/$(TETYPE)_$(MACHINE)
+
+# ----------------------------------------------------------------------------
+
+# target objects
+TARGET_RAM	= kernel-ram.sys
+TARGET_ROM	= kernel-rom.rom
+TARGET_IMG	= kernel.img
+TARGET_RAMCRT0	= icrt0_ram.o
+TARGET_ROMCRT0	= icrt0.o
+TARGET_IMGCRT0	= icrt0.o
+
+MULTI_BOOT	= multiboot.o
+
+ROM_INFO	= $(OBJ_CONFIG_PATH)/rominfo
+
+# grub rescue disk image
+TARGET_GRUB	= grub_rescue.iso
+GRUB_COMMAND	= grub-mkrescue
+GRUB_PATH	= ../../../../../rescue
+
+# emulator targets
+TARGET_EMU	= rom.bin
+TARGET_DBG_EMU	= rom-dbg.bin
+
+#S	= ../../src
+S	= ../../../sysmain/src
+
+# common source files
+SRC	+= inittask_main.c
+VPATH	+= $(S)
+HEADER	+= $(S)
+
+# additional source files (cpu-dependent)
+VPATH   += ../../../sysdepend/cpu/$(MACHINE)
+HEADER  += ../../../sysdepend/cpu/$(MACHINE)
+
+# additional source files (device-dependent)
+VPATH   += ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+HEADER  += ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+
+# header file path (kernel settings)
+HEADER  += ../../../tkernel/src
+
+OBJ	= $(addsuffix .o, $(basename $(SRC)))
+
+# T-Kernel modules
+K_OBJ	+=	$(OBJ_TKERNEL_PATH)/tkernel.o \
+		$(OBJ_SYSMGR_PATH)/sysmgr.o \
+		$(OBJ_SYSINIT_PATH)/sysinit.o
+
+# gcc standard library
+STDLIB = -lgcc
+
+# additional library
+LDSYSLIBS += -ltk -ltm -lsvc
+LDLIBS += $(LDSYSLIBS) $(LDUSRLIBS) $(LDSYSLIBS)
+
+# linker options
+LDFLAGS += -static -nostdlib -T $(LINKSCRIPT) -Wl,-Map=$(TARGET_IMG:%.img=%.map)
+#LDFLAGS += -static -nostdlib -T $(LINKSCRIPT) Map $(TARGET_IMG:%.img=%.map)
+
+LINKSCRIPT = kernel-ram$(_GCCVER).lnk
+$(TARGET_ROM): LINKSCRIPT = kernel-rom$(_GCCVER).lnk
+$(TARGET_IMG): LINKSCRIPT = kernel-img$(_GCCVER).lnk
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+CPPFLAGS += -DTKERNEL_ONLY
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all emu clean install
+
+ifeq ($(TETYPE)_$(MACHINE),std_x86)
+#ALL += $(TARGET_IMG) $(TARGET_IMG:%.img=%.map)
+ALL += $(TARGET_IMG)
+
+all: tkernel sysmgr sysinit $(ALL) $(TARGET_IMGCRT0) $(MULTI_BOOT)
+else
+ALL  = $(TARGET_RAM) $(TARGET_RAM:%.sys=%.map) $(TARGET_RAM:%.sys=%.mot)
+ALL += $(TARGET_ROM) $(TARGET_ROM:%.rom=%.map) $(TARGET_ROM:%.rom=%.mot)
+
+all: tkernel sysmgr sysinit $(ALL) $(TARGET_RAMCRT0) $(TARGET_ROMCRT0)
+endif
+
+CLEAN_TARGETS  = $(TARGET_IMG) $(TARGET_IMG:%.img=%.map)
+CLEAN_TARGETS += $(TARGET_RAM) $(TARGET_RAM:%.sys=%.map) $(TARGET_RAM:%.sys=%.mot)
+CLEAN_TARGETS += $(TARGET_ROM) $(TARGET_ROM:%.rom=%.map) $(TARGET_ROM:%.rom=%.mot)
+CLEAN_TARGETS += $(TARGET_GRUB)
+
+emu: rominfo $(TARGET_EMU) $(TARGET_DBG_EMU)
+
+# objects for x86 image
+$(TARGET_IMG): $(MULTI_BOOT) $(TARGET_IMGCRT0) $(OBJ) $(K_OBJ) $(I_OBJ) $(ROM_INFO)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+$(TARGET_IMG:%.img=%.map): $(TARGET_IMG)
+	$(NM) $(NMFLAGS) $< > $@
+
+$(ROM_INFO): $(TARGET_IMG)
+	( cd $(OBJ_CONFIG_PATH) ; make )
+
+# objects for disk loading (RAM)
+$(TARGET_RAM): $(TARGET_RAMCRT0) $(OBJ) $(K_OBJ) $(I_OBJ)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+$(TARGET_RAM:%.sys=%.map): $(TARGET_RAM)
+	$(NM) $(NMFLAGS) $< > $@
+
+$(TARGET_RAM:%.sys=%.mot): $(TARGET_RAM)
+	$(OBJCOPY) $(OUTPUT_SREC) $< $@
+
+# make grub rescue disk image
+cd:$(TARGET_IMG)
+	cp $(TARGET_IMG) $(GRUB_PATH)
+	$(GRUB_COMMAND) --output=$(TARGET_GRUB) $(GRUB_PATH)
+
+# objects for ROM
+$(TARGET_ROM): $(TARGET_ROMCRT0) $(OBJ) $(K_OBJ) $(I_OBJ)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+$(TARGET_ROM:%.rom=%.map): $(TARGET_ROM)
+	$(NM) $(NMFLAGS) $< > $@
+
+$(TARGET_ROM:%.rom=%.mot): $(TARGET_ROM)
+	$(OBJCOPY) $(OUTPUT_SREC) $< $@
+
+# objects for emulator rom images
+EMU_OBJ	= 	$(EXE_INSTALLDIR)/tmonitor.mot \
+	  	$(OBJ_CONFIG_PATH)/rominfo.mot \
+	  	$(TARGET_ROM:%.rom=%.mot)
+
+DBG_EMU_OBJ =	$(EXE_INSTALLDIR)/tmonitor.mot \
+	  	$(OBJ_DBG_CONFIG_PATH)/rominfo.mot \
+	  	$(TARGET_ROM:%.rom=%.mot)
+
+MOT2BIN = $(OBJCOPY) -I srec -O binary
+
+$(TARGET_EMU): $(EMU_OBJ)
+	$(BD)/etc/mergesrec $(EMU_OBJ) > _rom.mot
+	$(MOT2BIN) _rom.mot $@
+	$(RM) _rom.mot
+
+$(TARGET_DBG_EMU): $(DBG_EMU_OBJ)
+	$(BD)/etc/mergesrec $(DBG_EMU_OBJ) > _rom.mot
+	$(MOT2BIN) _rom.mot $@
+	$(RM) _rom.mot
+
+tkernel:
+	( cd $(OBJ_TKERNEL_PATH) ; make )
+
+sysmgr:
+	( cd $(OBJ_SYSMGR_PATH) ; make )
+
+sysinit:
+	( cd $(OBJ_SYSINIT_PATH) ; make )
+
+rominfo:
+	(cd $(OBJ_CONFIG_PATH) ; make )
+	(cd $(OBJ_DBG_CONFIG_PATH) ; make )
+
+clean:
+	( cd $(OBJ_TKERNEL_PATH) ; make clean )
+	( cd $(OBJ_SYSMGR_PATH) ; make clean )
+	( cd $(OBJ_SYSINIT_PATH) ; make clean )
+	(cd $(OBJ_CONFIG_PATH) ; make clean )
+	$(RM) $(OBJ) $(TARGET_RAMCRT0) $(TARGET_ROMCRT0) $(TARGET_IMGCRT0) $(ALL) $(DEPS)
+	$(RM) $(TARGET_EMU) $(TARGET_DBG_EMU)
+	$(RM) $(CLEAN_TARGETS)
+
+install: $(addprefix $(EXE_INSTALLDIR)/, $(ALL))
+
+$(addprefix $(EXE_INSTALLDIR)/, $(TARGET)): $(EXE_INSTALLDIR)/%: %
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)

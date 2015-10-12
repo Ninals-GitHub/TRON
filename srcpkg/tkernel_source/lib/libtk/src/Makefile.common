@@ -1,0 +1,75 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	libtk - T-Kernel library (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target file
+TARGET = libtk.a
+
+# source file path
+S = ../../src
+VPATH = $(S) $(S)/sysdepend/$(TETYPE)_$(MACHINE)
+HEADER += $(S) $(S)/sysdepend/$(TETYPE)_$(MACHINE)
+
+# source files
+SRC +=	libinit.c knlinit.c _commarea.c liblock.c \
+	fastlock.c fastmlock.c \
+	chkspc.c chkspc2.c chkspc3.c \
+	bchkspc.c bchkspc2.c bchkspc3.c \
+	memalloc.c memcheck.c tkminit.c malloc.c \
+	kmalloc.c kmcheck.c vmalloc.c vmcheck.c smalloc.c smcheck.c \
+	dbgmode.c fsrcvmode.c getdembf.c \
+	prreg.c _exit.c
+
+OBJ	= $(addsuffix .o, $(basename $(notdir $(SRC))))
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+
+CPPFLAGS += -DTKERNEL_CHECK_CONST
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean install
+
+ALL = $(TARGET)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(AR) $(ARFLAGS) $@ $?
+  ifdef RANLIB
+	$(RANLIB) $@
+  endif
+
+install: $(TARGET:%=$(LIB_INSTALLDIR)/%)
+
+clean:
+	$(RM) $(OBJ) $(ALL) $(DEPS)
+
+# generate dependencies
+ifdef DEPENDENCIES_OUTPUT
+  $(DEPS): ; touch $(DEPS)
+else
+  $(DEPS): $(SRC) ; $(MAKEDEPS) $@ $?
+endif
+-include $(DEPS)

@@ -1,0 +1,99 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+
+#
+#	Makefile for gmake
+#	libconsolesvc (system-dependent description)
+#
+
+# T-Engine type
+MACHINE = x86
+TETYPE = std
+
+# default rules
+include $(BD)/etc/makerules
+
+# auto generation header/source files
+IFLIB = device/em1d512_iic.h
+
+# target files
+TARGET = libem1diic.a
+
+# ----------------------------------------------------------------------------
+
+# source file dependencies (generated automatically)
+DEPS_SVC = Dependencies_svc
+DEPENDENCIES_SVC_OUTPUT := $(DEPS_SVC)
+
+# ----------------------------------------------------------------------------
+
+# source file path
+S	= ../src/svc
+I	= $(S)
+IFSRC	= $(S)
+
+VPATH = $(IFSRC)
+SRC = $(wildcard $(IFSRC)/*.S)
+HEADER := $(I) $(BD)/tkse/include $(HEADER)
+
+OBJ = $(addsuffix .o, $(basename $(notdir $(SRC))))
+
+# compiler options
+CFLAGS   += $(CFLAGS_WARNING)
+CFLAGS   += -fomit-frame-pointer
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean clean_all install
+
+ALL = $(TARGET)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(AR) $(ARFLAGS) $@ $?
+  ifdef RANLIB
+	$(RANLIB) $@
+  endif
+
+install: $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+
+clean:
+	$(RM) $(OBJ) $(ALL) $(DEPS_SVC)
+
+clean_all: clean clean_source
+
+# ----------------------------------------------------------------------------
+
+# generate interface library source file
+
+.PHONY: source clean_source
+
+source:
+	( cd $(S) ; \
+	for iflib_src in $(IFLIB) ; do \
+	  ../../build/mkdrvsvc $(BD)/include/$$iflib_src ; \
+	done );
+
+clean_source:
+	( cd $(I) ; $(RM) *.h )
+	( cd $(IFSRC) ; $(RM) *.S )
+
+# generate dependencies
+ifdef DEPENDENCIES_SVC_OUTPUT
+  $(DEPS_SVC): ; touch $(DEPS_SVC)
+else
+  $(DEPS_SVC): $(SRC) ; $(MAKEDEPS) $@ $?
+endif
+-include $(DEPS_SVC)

@@ -1,0 +1,349 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by Ken Sakamura.
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+T-Monitor Build Manual (for tef_em1d)
+==============================================================================
+--------------------------------------------------------------------
+1. Introduction 
+--------------------------------------------------------------------
+
+This document explains the method for building T-Monitor. 
+
+The source code of T-Monitor is included in the package of T-Kernel source code (tkernel_source.tar.gz). Expand the package of the source code beforehand. If Linux command line is used for development, set the top directory of the expanded source code (directory of tkernel_source) to the environment variable, ${BD}.
+
+The functional specification of T-Monitor is based on "T-Monitor Specification" released from T-Engine Forum.
+
+The hardware model supported by this package is as follows. 
+-------------------------------------------------------------------------------
+   Type, Name               Model name (abbreviation)         CPU abbreviation
+-------------------------------------------------------------------------------
+T-Engine Reference Board       tef_em1d                          em1d
+-------------------------------------------------------------------------------
+
+--------------------------------------------------------------------
+2. T-Monitor Build Method 
+--------------------------------------------------------------------
+
+The method for building T-Monitor is explained below. Refer to "3.1 General Build Method" in "T-Kernel Build Manual using Eclipse" (eclipse_guide.txt) for the details when Eclipse is used. 
+
+	* The following explanations are those intended for T-Engine Reference Board (tef_em1d). For other hardware models, replace "tef_em1d" that appears in path name etc. with "[TARGET]"
+
+	* Execute make clean under each directory to do clean up the objects. 
+
+--------------------------------------------------
+2.1 Building Library for T-Kernel 
+--------------------------------------------------
+
+Libstr.a of the library for T-Kernel is needed to build T-Monitor. First, build the complete set of the libraries for T-Kernel. If the libraries for T-Kernel have already been built, this procedure is unnecessary. 
+
+The example of the procedure when linux command line is used is as follows. 
+
+% cd ${BD}/lib/build/tef_em1d 
+% make
+     * Create the complete set of libstr.a and other libraries for T-Kernel. 
+
+Build the libraries by using the following environment setting when Eclipse is used. 
+
+ * Workspace 
+      C:\cygwin\usr\local\tef_em1d\tkernel_source\lib 
+      
+ * Project name 
+      build
+
+ * Destination directory for build  
+      build/tef_em1d 
+     
+Build the complete set of libstr.a and others by executing make based on the above-mentioned setting. 
+
+-------------------------------------------------------
+2.2 Building Component that Processes Commands and SVCs 
+-------------------------------------------------------
+
+Build the component that processes commands and SVCs. 
+
+The example of the procedure when Linux command line is used is as follows. 
+
+% cd ${BD}/monitor/cmdsvc/build/tef_em1d 
+% make
+    * Create cmdsvc.o and wrkbuf.o of the component that processes commands and SVCs. 
+% make install
+    * Install the created object in ${BD}/monitor/bin/tef_em1d. 
+
+Build the component that processes commands and SVCs by using the following environment setting when Eclipse is used. 
+
+ * Workspace 
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor 
+ 
+ * Project name 
+        cmdsvc 
+
+ * Destination directory for build 
+         cmdsvc/build/tef_em1d
+
+With the above setting, execute make following the procedure in "3.1(5) Build (normal case)" in "T-Kernel Build Manual using Eclipse," and build cmdsvc.o and wrkbuf.o of the component that processes commands and SVCs. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install cmdsvc.o and wrkbuf.o in the designated directory (C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor\bin\tef_em1d).
+
+--------------------------------------------------
+2.3 Building System Dependent Component 
+--------------------------------------------------
+
+Build the system dependent component. 
+
+The example of the procedure when Linux command line is used is as follows. 
+
+% cd ${BD}/monitor/hwdepend/tef_em1d/build 
+% make
+     * Create hwdepend.o of the system dependent component.
+% make install 
+*Install the created object in ${BD}/monitor/bin/tef_em1d. 
+
+Build the system dependent component using the following environment setting when Eclipse is used. 
+ * Workspace 
+        C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ * Project name 
+        hwdepend 
+
+ * Destination directory for build 
+        hwdepend/tef_em1d/build
+
+With the above setting, execute make following the steps in "3.1(5) Build (normal case)" in "T-Kernel Build Manual using Eclipse," and build hwdepend.o of the system dependent component. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install hwdepend.o in the designated directory (C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor\bin\tef_em1d).
+
+--------------------------------------------------
+2.4 Building Flash ROM Driver for T-Monitor 
+--------------------------------------------------
+
+Build Flash ROM driver for T-Monitor.
+
+The example of the procedure when Linux command line is used is as follows. 
+
+% cd ${BD}/monitor/driver/flash/build/tef_em1d 
+% make
+     * Create flash.o of Flash ROM driver for T-Monitor.
+% make install 
+     * Install the created object in ${BD}/monitor/bin/tef_em1d.
+
+Build Flash ROM driver for T-Monitor using the following environment setting when Eclipse is used.
+
+ * Workspace 
+       C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+      
+ * Project name 
+       driver 
+
+ * Destination Directory for Build 
+       driver/flash/build/tef_em1d
+
+With the above setting, execute make following the steps in "3.1(5) Build (normal case)" in "T-Kernel Build Manual using Eclipse," and build flash.o of Flash ROM driver for T-Monitor. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install flash.o in the designated directory (C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor\bin\tef_em1d).
+
+--------------------------------------------------
+2.5 Building MEMDISK Driver for T-Monitor 
+--------------------------------------------------
+
+Build MEMDISK driver for T-Monitor. 
+
+The example of the procedure when Linux command line is used is as follows. 
+----------
+% cd ${BD}/monitor/driver/memdisk/build/tef_em1d 
+% make
+      * Create memdisk.o of MEMDISK driver for T-Monitor.  
+% make install 
+      * Install the created object in ${BD}/monitor/bin/tef_em1d. 
+
+Build MEMDISK driver for T-Monitor using the following environment setting when Eclipse is used. 
+
+ * Workspace 
+         C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor 
+ * Project name 
+        driver
+
+ * Destination directory for build 
+        driver/memdisk/build/tef_em1d 
+
+With the above setting, execute make following the steps in "3.1(5) Build (normal case)" in "T-Kernel Build Manual Using Eclipse," and build memdisk.o of MEMDISK driver for T-Monitor. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install memdisk.o in the designated directory (C:\cygwin\usr\local\ tef_em1d \ tkernel_source \monitor\bin\ tef_em1d).
+
+--------------------------------------------------
+2.6 Building SIO Driver for T-Monitor 
+--------------------------------------------------
+
+Build SIO driver for T-Monitor.
+
+The example of the procedure when Linux command line is used is as follows. 
+
+% cd ${BD}/monitor/driver/sio/build/tef_em1d 
+% make
+     * Create sio.o of SIO driver for T-Monitor.
+% make install
+     * Install the created object in ${BD}/monitor/bin/tef_em1d.
+
+Build SIO driver for T-Monitor using the following environment setting when Eclipse is used. 
+
+ * Workspace 
+         C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor 
+ * Project name 
+        driver
+
+ * Destination directory for build 
+        driver/sio/build/tef_em1d 
+
+With the above setting, execute make following the steps in "3.1(5) Build (normal case)" in "T-Kernel Build Manual Using Eclipse," and build sio.o of SIO driver for T-Monitor. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install sio.o in the designated directory (C:\cygwin\usr\local\ tef_em1d \ tkernel_source \monitor\bin\ tef_em1d).
+
+--------------------------------------------------
+2.7 Building T-Monitor Main Body 
+--------------------------------------------------
+
+Build the main body of T-Monitory after make install of the component that processes commands and SVCs, the system dependent component, and all of the drivers for T-Monitor have been completed. 
+
+The example of the procedure when Linux command line is used is as follows. 
+
+% cd ${BD}/monitor/tmmain/build/tef_em1d 
+% make
+     * Create tmonitor.map and tmonitor.mot of the main body of T-Monitor. 
+% make install 
+     * Install the created object in ${BD}/bin/tef_em1d.
+
+Build the main body of T-Monitor using the following environment setting when Eclipse is used. 
+
+ * Workspace 
+         C:\cygwin\usr\local\tef_em1d\tkernel_source\monitor 
+ * Project name 
+        tmmain 
+
+ * Destination directory for build 
+        tmmain/build/tef_em1d 
+
+With the above setting, execute make following the steps in "3.1(5) Build (normal case)" in "T-Kernel Build Manual Using Eclipse," and build tmonitor.map and tmonitor.mot of main body of T-Monitor. 
+
+Next, prepare and execute make install following the steps in "3.1(6) Build (when there is argument to make)" in "T-Kernel Build Manual Using Eclipse." These steps will install tmonitor.map and tmonitor.mot in the designated directory (C:\cygwin\usr\local\tef_em1d\tkernel_source\bin\tef_em1d).
+
+--------------------------------------------------------------------
+3. Directory Structure 
+--------------------------------------------------------------------
+
+The source code of T-Monitor will also be expanded when the package of T-Kernel source code is expanded. In the following text, the top directory of T-Kernel source code (directory of tkernel_source) is represented as ${BD}. 
+
+The directory structure of T-Monitor source code for T-Engine Reference Board (tef_em1d) is as follows. 
+
+${BD}/monitor
+   |
+   |----bin                             For storing T-Monitor objects
+   |       |----tef_em1d
+   |
+   |----include                         Header files 
+   |       |----device.h
+   |       |----tmonitor.h
+   |       |----arm                  Header files (CPU/system dependent component)
+   |               |----cpudepend.h
+   |               |----em1d512.h
+   |
+   |----tmmain                          T-Monitor main
+   |        |----build
+   |        |       |----tef_em1d
+   |        |               |----Makefile
+   |        |               |----monitor.lnk
+   |        |----src
+   |                |----float_dummy.c
+   |
+   |----cmdsvc                    Component to process T-Monitor commands and SVCs
+   |       |----build
+   |       |       |----tef_em1d
+   |       |               |----Makefile
+   |       |----src
+   |               |----boot.c
+   |               |----cmdsvc.h
+   |               |----command.c
+   |               |----console.c
+   |               |----help.h
+   |               |----helpmsg.c
+   |               |----load.c
+   |               |----memory.c
+   |               |----svc.c
+   |               |----wrkbuf.c
+   |               |----armv6     Component to process commands and SVCs (CPU dependent component) 
+   |                       |----break.c
+   |                       |----chkaddr.c
+   |                       |----cpudep.h
+   |                       |----disassemble.c
+   |                       |----misc.c
+   |                       |----monent.c
+   |                       |----monhdr.S
+   |                       |----register.c
+   |                       |----step.c
+   |
+   |----driver
+   |       |----flash                   T-Monitor driver (Flash ROM)
+   |       |       |----build
+   |       |       |       |----tef_em1d
+   |       |       |               |----Makefile
+   |       |       |----src
+   |       |               |----cfi.c
+   |       |               |----cfi_16x1.c
+   |       |               |----flash.h
+   |       |               |----main.c
+   |       |               |----reset-em1d.c
+   |       |               |----setup-em1d.c
+   |       |
+   |       |----memdisk                 T-Monitor driver (memory disk)
+   |       |       |----build
+   |       |       |       |----tef_em1d
+   |       |       |               |----Makefile
+   |       |       |----src
+   |       |               |----memdsk.c
+   |       |
+   |       |----sio                     T-Monitor driver (Serial I/O)
+   |               |----build
+   |               |       |----tef_em1d
+   |               |               |----Makefile
+   |               |----src
+   |                       |----ns16550.c
+   |
+   |----hwdepend                        T-Monitor system dependent part
+           |----tef_em1d
+                   |----build
+                   |       |----Makefile
+                   |----src
+                           |----config.c
+                           |----cpuctrl.c
+                           |----cpuctrl2.S
+                           |----diskio.c
+                           |----eitent.S
+                           |----eitproc.c
+                           |----hwdepend.h
+                           |----hwinfo.c
+                           |----memattr.S
+                           |----misc.c
+                           |----reset.S
+                           |----setup_em1d512.h
+                           |----sio.c
+                           |----startup.c
+                           |----sysdepend.h
+                           |----system.c
+                           |----waitusec.c
+
+The following header file of T-Engine device driver, which will be necessary for the building of a disk driver in T-Monitor, is included in this package keeping the directory structure intact. 
+
+ ${BD}/include
+   |----device                          Header file (for the device driver) 
+           |----disk.h
+
+

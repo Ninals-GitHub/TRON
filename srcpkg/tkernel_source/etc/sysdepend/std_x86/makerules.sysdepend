@@ -1,0 +1,308 @@
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2013/01/16.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#    Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	makerules
+#		for GNU make
+#
+#	default rules - system-dependent (EM1-D512)
+#
+#	MACHINE	target CPU
+#		em1d	: EM1-D512
+#
+#	TETYPE	target T-Engine type
+#		tef	: T-Engine Forum Reference Board
+#
+#	GNUARM_2	GNU development tool for ARM
+#
+
+# check environmental variables
+ifndef GNU_BD
+  $(error 'GNU_BD' is not defined)
+endif
+ifndef GNUX86
+  ifndef GNUx86
+    $(error 'GNUX86' is not defined)
+  endif
+  # for compatibitily
+  GNUX86 = $(GNUx86)
+endif
+
+# command path
+PATH = .
+ifneq ($(filter "$(origin GNUX86)", $(TOOL_ORIGIN)), )
+  PATH := $(PATH):$(GNUARM_2)/bin
+endif
+ifneq ($(filter "$(origin GNUs)", $(TOOL_ORIGIN)), )
+  PATH := $(PATH):$(GNUs)/bin
+endif
+ifneq ($(filter Linux-%, $(CROSS_ARCH)), )
+  PATH := $(PATH):/usr/local/bin:/bin:/usr/bin
+endif
+ifneq ($(filter Cygwin-%, $(CROSS_ARCH)), )
+  PATH := $(PATH):/usr/local/bin:/bin:/usr/bin
+endif
+
+# ----- T-Engine (x86) ----------------------------
+
+# GCC environment
+TARGET_ARCH =
+
+# target type
+#_CPUTYPE_FLAGS    = -mcpu=i386 -msoft-float -mfpu=vfp
+#_CPUTYPE_FLAGS_AS = -mcpu=i386 -mfpu=softvfp
+#_CPUTYPE_FLAGS    = -mcpu=i386
+#_CPUTYPE_FLAGS_AS = -mcpu=i386
+_TE_SYSTEM_NAME_ = _STD_X86_
+
+# code set
+#_CODESET_FLAGS = -mthumb-interwork
+_CODESET_FLAGS =
+
+### build option ###
+CFLAGS +=
+CPPFLAGS +=
+ASFLAGS +=
+LDFLAGS +=
+
+### C  ###
+#CC := $(GNUX86)/bin/gcc4arm
+#CC := $(GNUX86)/bin/x86_64-pc-linux-gnu-gcc
+CC := $(GNUX86)/bin/i686-pc-linux-gnu-gcc
+#CC := $(GNUX86)/bin/gcc
+OUTPUT_OPTION = -o $@
+ifeq ($(mode), debug)
+  CFLAGS += -g
+  CPPFLAGS += $(HEADER:%=-I%) -D$(_TE_SYSTEM_NAME_) -DDEBUG
+else
+  CFLAGS += -O2
+  CPPFLAGS += $(HEADER:%=-I%) -D$(_TE_SYSTEM_NAME_)
+endif
+
+#CFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -mstructure-size-boundary=8 -ffreestanding
+CFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -ffreestanding
+
+CFLAGS_WARNING      = -Wall -Wno-pointer-sign
+CFLAGS_WARNING_FULL = -pedantic -W -Wall
+
+COMPILE.c = $(CC) $(TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) -c
+LINK.c = $(CC) $(TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) $(LDFLAGS)
+
+%.o: %.c
+	$(COMPILE.c) $< $(OUTPUT_OPTION)
+
+%.uo: %.c
+	$(COMPILE.c) $< $(OUTPUT_OPTION) -MT $@
+
+%.s: %.c
+	$(CC) $(TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) -S $<
+
+%.i: %.c
+	$(CC) $(TARGET_ARCH) $(CFLAGS) $(CPPFLAGS) -E $< $(OUTPUT_OPTION)
+
+### C++ ###
+#CXX := $(GNUX86)/bin/gcc
+CXX := $(GNUX86)/bin/i686-pc-linux-gnu-gcc
+CXXFLAGS = $(CFLAGS)
+
+COMPILE.cc = $(CXX) $(TARGET_ARCH) $(CXXFLAGS) $(CPPFLAGS) -c
+LINK.cc = $(CXX) $(TARGET_ARCH) $(CXXFLAGS) $(CPPFLAGS) $(LDFLAGS)
+
+%.o: %.cc
+	$(COMPILE.cc) $< $(OUTPUT_OPTION)
+
+%.uo: %.cc
+	$(COMPILE.cc) $< $(OUTPUT_OPTION) -MT $@
+
+%.s: %.cc
+	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) $(CPPFLAGS) -S $<
+
+%.i: %.cc
+	$(CXX) $(TARGET_ARCH) $(CXXFLAGS) $(CPPFLAGS) -E $< $(OUTPUT_OPTION)
+
+### asm ###
+#AS = $(GNUX86)/bin/as
+AS = $(GNUX86)/bin/i686-pc-linux-gnu-as
+
+ifeq ($(mode), debug)
+  ASFLAGS += -g
+else
+  ASFLAGS +=
+endif
+
+ASFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS)
+ASFLAGS.s = $(_CPUTYPE_FLAGS_AS) $(_CODESET_FLAGS)
+
+COMPILE.S = $(CC) $(TARGET_ARCH) $(ASFLAGS) $(CPPFLAGS) -c
+COMPILE.s = $(AS) $(ASFLAGS.s)
+
+%.o: %.S
+	$(COMPILE.S) $< $(OUTPUT_OPTION)
+
+%.uo: %.S
+	$(COMPILE.S) $< $(OUTPUT_OPTION) -MT $@
+
+%.o: %.s
+	$(COMPILE.s) $< $(OUTPUT_OPTION)
+
+%.uo: %.s
+	$(COMPILE.S) $< $(OUTPUT_OPTION)
+
+%.i: %.S
+	$(CC) $(TARGET_ARCH) $(ASFLAGS) $(CPPFLAGS) -E $< $(OUTPUT_OPTION)
+
+### linker ###
+#LD = $(GNUX86)/bin/ld
+LD = $(GNUX86)/bin/i686-pc-linux-gnu-ld
+ifeq ($(mode), debug)
+  LDFLAGS += $(LIBDIR:%=-L%)
+else
+  LDFLAGS += $(LIBDIR:%=-L%)
+endif
+
+LDFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS)
+
+LIBDIR = $(COMMONLIB)
+LOADLIBES =
+LDOBJS =
+LDLIBS =
+
+# additional linker option
+ifneq ($(filter sl, $(options)), )
+  LDFLAGS2 = -static
+else
+  # no effect
+  LDFLAGS2 = -static
+endif
+LDFLAGS3 = -static -T $(COMMONLIB)/static.lnk
+START_ADR =
+
+# create executable
+LINK.o = $(CC) $(TARGET_ARCH) $(LDFLAGS) $(LDFLAGS2) $(START_ADR)
+
+# link objects
+LINK_R.o = $(CC) $(TARGET_ARCH) $(LDFLAGS) -r -nostdlib
+
+# link objects and libraries
+LINK_A.o = $(CC) $(TARGET_ARCH) $(LDFLAGS) -r
+
+# create executable (location only)
+LOCATE.o = $(CC) $(TARGET_ARCH) $(LDFLAGS) -nostdlib $(LDFLAGS3) $(START_ADR)
+
+%: %.o
+	$(LINK.o) $(LDOBJS) $^ $(LOADLIBES) $(LDLIBS) $(OUTPUT_OPTION)
+
+%.out: %.o
+	$(LINK.o) $(LDOBJS) $^ $(LOADLIBES) $(LDLIBS) $(OUTPUT_OPTION)
+
+%.abs: %.o
+	$(LINK_A.o) $(LDOBJS) $^ $(LOADLIBES) $(LDLIBS) -o _$@
+	$(LOCATE.o) _$@ $(OUTPUT_OPTION)
+	$(RM) _$@
+
+### library ###
+#AR = $(GNUX86)/bin/ar
+AR = $(GNUX86)/bin/i686-pc-linux-gnu-ar
+ARFLAGS = rv
+#RANLIB = $(GNUX86)/bin/ranlib
+RANLIB = $(GNUX86)/bin/i686-pc-linux-gnu-ranlib
+
+(%): %
+	$(AR) $(ARFLAGS) $@ $%
+
+### create name list ###
+#NM = $(GNUX86)/bin/nm
+NM = $(GNUX86)/bin/i686-pc-linux-gnu-nm
+NMFLAGS = -n
+
+%.map: %
+	$(NM) $(NMFLAGS) $< > $@
+
+%.map: %.out
+	$(NM) $(NMFLAGS) $< > $@
+
+%.map: %.abs
+	$(NM) $(NMFLAGS) $< > $@
+
+%.map: %.dll
+	$(NM) $(NMFLAGS) $< > $@
+
+### data box ###
+DBCPPFLAGS = -D$(_TE_SYSTEM_NAME_)
+DB_CPP = $(CPP) -nostdinc -traditional -P $(DATABOX_HEADER:%=-I%) $(DBCPPFLAGS)
+DB = $(ETCBIN)/databox
+DBFLAGS =
+DBSRCFLAGS = -s
+DATABOX = $(DB) $(DBFLAGS)
+
+%.dbx: %.d
+	$(DB_CPP) $< $@.tmp
+	$(DATABOX) $@.tmp $@
+	$(RM) $@.tmp
+
+%.fsn: %.f
+	$(DB_CPP) $< $@.tmp
+	$(DATABOX) -n $@.tmp $@
+	$(RM) $@.tmp
+
+%.c: %.d
+	$(DB_CPP) $< $@.tmp
+	$(DATABOX) -n $(DBSRCFLAGS) $@.tmp $@
+	$(RM) $@.tmp
+
+### other ###
+ifndef CPP
+#  CPP = $(GNU_BD)/bin/i686-pc-linux-gnu-cpp
+  CPP = $(GNU_BD)/bin/cpp
+endif
+STRIP = $(GNUX86)/bin/strip --strip-unneeded
+#STRIP = $(GNUX86)/bin/i686-pc-linux-gnu-strip --strip-unneeded
+
+
+OBJCOPY = $(GNU_BD)/bin/objcopy
+OUTPUT_SREC = -O srec --srec-forceS3 --srec-len 32

@@ -1,0 +1,488 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by T-Engine Forum
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Last modified at 2012/11/30 by T-Engine Forum.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+         T-Kernel Build Manual Using Eclipse (for tef_em1d)
+==============================================================================
+------------------------------------------------------------------------------
+1. Introduction 
+------------------------------------------------------------------------------
+
+In Eclipse, the target programs for development and the work environment are switched by "workspace." Moreover, the program to be developed is managed by the unit "Project." One "workspace" can contain multiple "projects," and many objects can be built in one "project." 
+
+The name of a workspace and a project is the same as the upper (or leading) part of the path name to the directory (directory where Makefile is stored) in which built objects should be stored. For instance,
+
+             /XXX/YYY/ZZZ/WWW/VVV/Makefile 
+
+If there is a Makefile that is specified by a path name like the above, to perform build by this Makefile using Eclipse, configure the following environment setting. 
+
+    Workspace  /XXX/YYY 
+    Project    ZZZ
+
+
+In this case, the tree structure of the directories placed under /XXX/YYY/ZZZ is displayed in the view of "C/C++ project" displayed in the left side of the window of Eclipse. In order to perform build with Makefile mentioned above, execute the menu such as "Make all" in the state where the directory WWW/VVV or the Makefile is selected. 
+
+In the following text, a case example where the Cygwin system is installed under c:\cygwin, and T-Kernel source code is expanded under /usr/local/tef_em1d in Cygwin environment is explained. When this directory is seen from the Explorer etc. of Windows, it will be the folder of c:\cygwin\usr\local\tef_em1d. 
+
+Expand the package (tkernel_source.tar.gz) of T-Kernel source code in the above folder before configuring the setting and building the program in the following sections. 
+
+Replace each path name with a different name if you expand the source code in a location different from the one mentioned above.  
+
+------------------------------------------------------------------------------
+2. Startup of Eclipse and Setting of Workspace 
+------------------------------------------------------------------------------
+
+Build each object file using the following workspaces when T-Kernel or its application system is developed using Eclipse. 
+
+ * Library
+ * T-Monitor 
+ * Kernel (+ device driver + application)
+ * Set up information file (config)
+ * Device driver 
+
+First, generate these workspaces and configure environmental settings. Specific procedures are as follows. 
+
+* The newly installed plug-in may not be recognized properly when Eclipse has been used for other purposes. In such a case, use the Windows function of "Specify the file name and execute it" and start Eclipse once specifying an argument of "-clean," as in "c:\eclipse\eclipse.exe -clean."
+
+-----------------------------------------------------
+2.1 Setting of Workspace for Building Libraries 
+-----------------------------------------------------
+
+Double-click the short cut for Eclipse or "c:\eclipse\eclipse.exe" to start Eclipse. "Workspace Launcher" dialog box will be displayed after a while.
+
+(1) Setting of Workspace Directory
+
+First, set the workspace to build libraries. In this workspace, set the following directory (folder) in the dialog box of "Workspace Launcher." 
+
+        c:\cygwin\usr\local\tef_em1d\tkernel_source\lib
+
+Input the above folder name to the field for workspace, and press the "OK" button. A new workspace for building libraries is generated, and "Welcome" view is displayed. 
+
+Next, click the icon of "Workbench" at the middle-right of the window, and display "Workbench." 
+
+* The icon of "Workbench" is an icon with the picture of an arrow that rolls back in a circle. The explanation "Workbench" pops up when the cursor is moved over the icon. 
+
+Select "Window," "Open Perspective," "Other...," and "T-Engine Development" of the menu. 
+
+Perform the development work of T-Engine in this perspective. 
+
+(2) Environment Setting for Workspace (T-Engine Development Environment) 
+
+Set up the environment for workspace. Select "Window" and "Preferences" in the menu, and display the "Preferences" dialog box. After clicking "T-Engine Development Environment" displayed at the left side of the dialog box, perform the following setting at the right side of the dialogue box. 
+
+ * Cygwin directory
+
+Specify path name in which cygwin is installed. Although the standard path name is c:\cygwin, change the name if cygwin is installed in a location different from the standard one.  
+
+ * External Tool te_vcom 
+
+Specify the port of the console line that connects the host PC for development with the target in the argument list. Perform the setting referring to the following example according to the environment you use. 
+
+   -b -x -l /dev/ttyS0    (When connecting to COM1 of the host PC for development)
+   -b -x -l /dev/ttyS1    (When connecting to COM2 of the host PC for development)
+           ...
+   -b -x -l /dev/ttyS7    (When connecting to COM8 of the host PC for development)
+
+ * External tool gterm
+ 
+Generally, no change is necessary from the default setting. 
+
+  * Since the setting of this external tool is recorded in the registry, it is used universally by the same user. Even if this development environment is reinstalled, the setting will be retained. 
+
+(3) Setting of Environment Variables "GNU_BD", "GNUARM_2" and "BD" for Eclipse
+
+Click [+] sign at the left of "T-Engine Development" in the "Preferences" dialog, and select the "tef_em1d.1.1.0" that appeared. After that, add the following environment variables.
+
+- Setting the environments variable GNU_BD and GNUARM_2 for compilation and build
+
+    Name    GNU_BD
+    Value   /usr/local/tef_em1d/tool/Cygwin-i686
+
+    Name    GNUARM_2
+    Value   /usr/local/tef_em1d/tool/Cygwin-i686/arm_2-unknown-tkernel
+
+- Setting the environment variable BD that shows the top directory of the T-Kernel source
+
+    Name    BD
+    Value   /usr/local/tef_em1d/tkernel_source
+
+* Change the path names properly according to each user's environment.
+
+(4) Environment Setting for Debugging
+
+In order for source files to be correctly searched at debugging, search path of source files can be set. First click [+] sign at the left of "C/C++" in the "Preferences" dialog, then click [+] sign at the left of "Debug" that is newly displayed, and when you further click "Source Lookup Path," the targets of source code lookup are displayed. If "Project" is not at the top of the list, please click and select "Project," and then press "Up" button to make it at the top.
+
+The above settings from (1) to (3) must be done for all the workspaces. For workspaces used for debugging, also perform setting described in (4).
+
+-----------------------------------------------------
+2.2 Setting of Workspace for Building T-Monitor 
+-----------------------------------------------------
+
+Set the workspace to build T-Monitor. 
+Select "File," "Switch Workspace," "Other..." in the menu. The "Workspace Launcher" dialog box will be displayed after a while. 
+
+Here, perform the setting of the workspace to build T-Monitor. Specify the following folder in the dialog box of "Workspace Launcher."
+
+         c:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+         
+Input the above folder name to the field for the workspace, and press the "OK" button. The new workspace for building T-Monitor is created, and "Welcome" view is displayed. 
+
+The environment setting needs to be performed individually for each workspace. The steps that follow are similar to those for the workspace for building libraries. Therefore, the explanation for these steps is skipped in this section (and the following sections too). Refer to "2.1 Setting of Workspace for Building Libraries," and perform the same setting.  
+
+-----------------------------------------------------
+2.3 Setting of Workspace for Building Kernel 
+-----------------------------------------------------
+
+Set the workspace for building the kernel. 
+
+The procedure is similar to the preceding section. Specify the following folder in the dialog box of "Workspace Launcher."
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\kernel
+
+-----------------------------------------------------------------------
+2.4 Setting of Workspace for Building Set Up Information File (config)
+-----------------------------------------------------------------------
+
+Set the workspace for building the set up information file (config). 
+
+The procedure is similar to the preceding section. Specify the following folder in the dialog box of "Workspace Launcher." 
+
+        c:\cygwin\usr\local\tef_em1d\tkernel_source\config
+
+-----------------------------------------------------------------------
+2.5 Setting of Workspace for Building Device Driver
+-----------------------------------------------------------------------
+
+Set the workspace for building the device driver. 
+
+The procedure is similar to the preceding section. Specify the following folder in the dialog box of "Workspace Launcher." 
+
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\drv
+
+------------------------------------------------------------------------------
+3. Program Build Method 
+------------------------------------------------------------------------------
+
+In Eclipse, a project is created and build is performed for each program and object file to be developed. Projects are made based on the existing directory structure in the source code when the package was expanded.
+
+This section first explains the general usage of Eclipse when a project is created and a program is built. And then the explanation of specific steps to build T-Kernel follows. 
+
+-----------------------------------------------------
+3.1 General Build Method 
+-----------------------------------------------------
+
+Select and set up the following environments and parameters for build using Eclipse. 
+
+ * Workspace 
+ * Perspective
+ * Project 
+ * Build destination directory
+ * Build environment 
+
+The meanings of the above and the set up method are explained below. 
+
+(1) Workspace 
+
+It is a large unit for switching the programs to be developed and the work environments. 
+
+Select "File" and "Switch Workspace" in the menu, and you will find the previously configured workspaces as saved choices. Select the appropriate workspace among them. The following five workspaces are switched and used in the development related to T-Kernel.
+
+ * Library 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\lib 
+
+ * T-Monitor 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\monitor
+
+ * Kernel
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\kernel 
+
+ * Set up information file (config)
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\config
+
+ * Device driver 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\drv 
+
+(2) Perspective 
+
+The perspective of "T-Engine Development" is used in the development related to T-Kernel. 
+
+The current perspective is displayed in the upper right corner of the window of Eclipse. If "T-Engine Development" is not displayed, set the perspective of "T-Engine development" by selecting the menu, "Window," "Open Perspective," and "T-Engine Development." 
+
+(3) Project 
+
+A "project" manages the programs to be developed by a unit that is smaller than "workspace." Create a project by the following steps. 
+
+Right-click on the view of "C/C++ Project" displayed in the left side of the window of Eclipse, and select the displayed menu, "New" and "T-Engine C/C++ Project." 
+
+The dialog box of "New Project" is displayed. Input the project name to be created in the project name field. Although the program type and the template are set as necessary, unless special instruction is given, keep the default setting and press the "End" button. 
+
+(4) Build Destination Directory and Build Environment
+
+The build destination directory is a directory where Makefile is placed. It is also a directory where the object of the build result, etc., should be placed. 
+
+The build environment is information that shows the name and version of T-Kernel plug-ins of Eclipse for each hardware model. Always specify "tef_em1d.1.1.0" in the current version for tef_em1d. 
+
+The procedure for specifying the build environment is as follows.
+
+Search the build destination directory among the directories displayed in the view of "C/C++ Project" displayed in the left side of the window of Eclipse. Click "+" as necessary, and display subdirectories. Hereinafter, the location where the directories are displayed is called the build destination directory display.
+
+Move the cursor over the build destination directory display, right-click on the display, and select "Properties" in the displayed menu. 
+
+The dialogue box of "Properties" is displayed. Select "T-Engine Related" to display "Build Environment," and set them to the specified ones.
+
+The program type, monitor, is specified for building a target that is 
+loaded, executed and debugged within Eclipse.
+If only building is done for libraries, object files, configuration 
+files, no specification for program type is necessary : you can leave 
+them blank.
+
+The above setting needs to be performed individually for each build destination directory. Note that Eclipse does not operate correctly if the build environment (tef_em1d.1.1.0) is not set.   
+
+(5) Build (ordinary case)
+
+After performing the setting up to the preceding section, click the build destination directory display with the mouse so that it will be in the selected state. 
+
+Then, execute make and build the object by selecting the menu of the toolbar, "Project" and "Make all of T-Engine of Target." 
+
+Re-build after the source program is modified can be performed by selecting the menu as specified in this paragraph if the setting up to the previous section has been done. 
+
+(6) Build (when there is an argument to make)
+
+Perform the following setting when make with an argument, such as make install, is executed from Eclipse. 
+
+When "Project" and "Make of T-Engine Target" are selected from the menu of the toolbar, the dialogue box of "Make target" is displayed. Press the "Addition" button in the box.  
+
+The dialog box of "Create a new Make target" is displayed. Perform the following setting. 
+
+Target name        install 
+Make target        install 
+
+Leave other settings as default, and press the "Create" button.  
+
+Make install will be executed by selecting the created "install," and pressing the "Build" button. 
+
+If you want to execute make source instead of make install, read the above explanation replacing "install" with "source." This applies also when make has other arguments. 
+
+The above setting needs to be performed individually for each build destination directory.
+
+-----------------------------------------------------
+3.2 Build of Libraries for T-Kernel 
+-----------------------------------------------------
+
+In the following text, the detailed steps taken when the T-Kernel and libraries are actually built are explained. 
+
+Before building the main body of T-Kernel and T-Monitor, build libraries for T-Kernel with the following environment setting first. Refer to "3.1 General Build Method" for details. If these libraries have already been built, this step is not necessary. 
+
+ * Workspace 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\lib
+ 
+ * Project name 
+       build 
+
+ * Build destination directory
+       build/tef_em1d 
+
+-----------------------------------------------------
+3.3 Build of Kernel to be Loaded in RAM 
+-----------------------------------------------------
+
+The program to be debugged using Eclipse needs to be placed in RAM. Applications and device drivers are linked with T-Kernel, and they become one object at the time of execution. Thus, even if the debugging target is an application, the entire object including T-Kernel and the device drivers needs to be executed in RAM.
+
+On the other hand, at the time of normal execution after debugging is finished, generally T-Kernel and the application written into ROM are executed. 
+
+It is the set up information file (rominfo.mot) written into ROM that switches between the execution of the kernel in RAM (in this section, it means T-Kernel that includes the application and device drivers) and the execution of the kernel in ROM. Therefore, the set up information file in ROM should be rewritten for the time of both debugging and normal execution after debugging is finished. The build procedure of the set up information file is explained in the following section.  
+
+Build the kernel to be loaded in RAM (for debugging) with the following environment setting. Create the following two projects in the following order. The object built using this project is an executable program that is loaded, executed and debugged within Eclipse. Hence, specify program type, monitor, for it. Refer to "3.1 General Build Method" for details. 
+
+ * Workspace 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\kernel 
+ 
+ * Project name 1
+       sysmainsmpl 
+
+* Activate the template and select "sysmainsmpl" as well as setting this project name on the dialog box of "New Project." 
+
+ * Project name 2
+       usermainsmpl
+
+* Activate the template and select "usermainsmpl" as well as setting this project name on the dialog box of "New Project." 
+
+ * Build destination directory
+       sysmainsmpl/build/tef_em1d 
+
+ * Program type 
+       monitor 
+
+When a program with which T-Kernel is linked along with the application and the device drivers is developed, the program is built following the similar procedure using the same workspace for building the kernel as above. In this case, give a different project name to a different application, etc. In other words, set the name corresponding to the application and the project instead of above "sysmain," and place the files of the related program under the directory with the new name. 
+
+If the name of the project that stores user program "usermainsmpl" is changed, change the following path,
+
+    include ../../../usermainsmpl/Makefile.usermain
+
+of sysmainsmpl/src/Makefile.common. 
+
+Also, change the path, 
+
+VPATH += ../../../usermainsmpl
+HEADER += ../../../usermainsmpl
+
+of usermainsmpl/Makefile.usermain.
+
+-----------------------------------------------------
+3.4 Build of Set Up Information File for Loading in RAM 
+-----------------------------------------------------
+
+Create the set up information file for loading in RAM so that the kernel loaded into RAM will start. Build the set up information file for loading in RAM (config) with the following environment setting. Refer to "3.1 General Build Method" for details. 
+
+ * Workspace 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\config
+
+ * Project name 
+       launch-ramkernel 
+
+ * Build destination directory
+       launch-ramkernel/build/tef_em1d
+
+The path of the created set up information file on Windows is c: \cygwin\usr\local\tef_em1d\tkernel_source\config\launch-ramkernel\build\tef_em1d\rominfo.mot. 
+
+Write the set up information file created here into ROM of the target machine. Refer to target.txt, "Writing of ROM Image into Target Machine" for details. 
+
+------------------------------------------------------------------------------
+4. Execution and Debugging 
+------------------------------------------------------------------------------
+
+Connect the host PC for development and T-Engine Reference Board (tef_em1d) with the connecting cable (serial). 
+
+As the execution/debug target is a kernel for loading on RAM, specify the Eclipse workspace as c:\cygwin\usr\local\tef_em1d\tkernel_source\kernel.
+
+-----------------------------------------------------
+4.1 Preparation of Console 
+-----------------------------------------------------
+
+Start the relay program (te_vcom) and terminal emulator (gterm) to communicate with the target. Click "Run," "External Tools" and "External Tools Configurations...," on the menu, or inverted triangle of the external tool in the tool bar, and click "External Tools Configurations..." 
+
+When "+" at the left of "Program" in the displayed "External Tools Configurations" dialog box is clicked, the settings of "te_vcom" and "gterm" are displayed. Usually these settings do not need to be changed. 
+
+First, select "te_vcom," and "Run." When the "Console" tab under the Eclipse window is clicked, te_vcom [Program] is displayed in the line right under the tab (right above the view), that shows the operation status of te_vcom. 
+
+Then, start "gterm" following the similar procedure. The start up message of "gterm" is displayed in the console. If T-Engine reference board is connected and the prompt is displayed, inputting the Enter key on the console will display the prompt. 
+
+Once these external tools are started up, shortcuts will be displayed in the pull-down list of the toolbar if the same workspace is used. Start the tools in the order of "te_vcom" and "gterm" using the shortcuts.
+ 
+-----------------------------------------------------
+4.2 Execution Method 
+-----------------------------------------------------
+
+Start gterm and get the prompt of T-Monitor. 
+
+       TM>
+
+Select sysmainsmpl/build/tef_em1d/kernel-ram.sys on "C/C++ Project View," and select "Run As" and "Run Configurations..." using the right button of the mouse. 
+
+Select "T-Engine Application" on the "Run Configurations" dialog box, and select "New" using the right button of the mouse. 
+
+Confirm "Execution file" of the "Main" tab is "build/tef_em1d/kernel-ram.sys," select the whole string of this name, copy it with Ctrl-C, and paste it to the text box of "Transfer file" with Ctrl-V. 
+
+Next, modify ".sys" of the paste result  to ".mot," so that the file name will be "build/tef_em1d/kernel-ram.mot." Press the "Execution" button when these steps are finished. 
+
+The following display appears on the console, the kernel starts, and the program of the sample is executed. The prompt of T-Monitor appears, and it will be in the input wait state. Input "g," and the system shuts down. 
+
+        -------------------------------------------
+        << Gterm ver 2.49 : 121012 >>
+
+        T-Monitor/tef_em1d Version 2.01.00
+
+        TM> .load /cygdrive/C/cygwin/usr/local/tef_em1d/tkernel_source/kernel/
+        sysmainsmpl/build/tef_em1d/kernel-ram.mot
+        .. LO XS [/cygdrive/C/cygwin/usr/local/tef_em1d/tkernel_source/kernel/
+        sysmainsmpl/build/tef_em1d/kernel-ram.mot: 266800 bytes]
+        ....*....*....*....*....*....*....*....*....*....*....*....*.... *....
+        *....*....*....*....*....*....*....*....*....*....*....* (4664.7 bytes
+        /sec)
+
+        Loaded: 30006074 -> 30020137
+        TM> bd
+
+        T-Kernel Version X.XX.XX
+
+        String -> gnirtS
+        Push 'g' key to shutdown the T-Kernel.
+        TM> g
+
+        << SYSTEM SHUTDOWN >>
+        -------------------------------------------
+
+-----------------------------------------------------
+4.3 Debugging Method 
+-----------------------------------------------------
+
+Start the target machine, and get the prompt of T-Monitor on the console. 
+
+TM>
+
+Select sysmainsmpl/build/tef_em1d/kernel-ram.sys on "C/C++ Project View," and select "Debug As" and "Debug Configurations..." using the right button of the mouse. If the execution has already been done according to the steps in the previous section, the setting, "kernel-ram," should have remained. Select that setting. 
+
+If the execution in the previous section has not been done, select "T-Engine Application" on the "Debug Configurations" dialog box, and select "New" using the right button of the mouse. 
+
+Confirm "Execution file" of the "Main" tab is "build/tef_em1d/kernel-ram.sys," select the whole string of this name, copy it with Ctrl-C, and paste it to the text box of "Transfer file" with Ctrl-V. 
+
+Next, modify ".sys" of the paste result to ".mot," so that the file name will be "build/tef_em1d/kernel-ram.mot."
+
+Select the "Debugger" tab, and change "main" to "usermain" in "Stop on startup at:" 
+
+Press the "Debug" button when these steps are completed. 
+
+The transfer of the program is performed, and execution begins automatically, and the program stops at the beginning of usermain. Here, set break points where you need them. To set the break point, select "Switching the break points" displayed when the right button of the mouse is pressed at the left end of the source code view. 
+
+Debugging functions, including Step Into, Step Over, Resume Execution, can be used additionally. (On the right of Debug View tab, these buttons can be found.)
+
+* As the program of the main body of T-Kernel is an object code without debugging information, the inside of T-Kernel cannot be debugged. It is an application developed by the user where you can set a break point or perform step execution of source code. 
+
+The control returns to the debugger as tm_monitor() is called at the end of usermain, and the control is passed to T-Monitor. At this point, press the "End" button, and terminate the debugger. In addition, press the "Remove all the start ups that have ended" button, and end the debugging session. 
+
+On the gterm console, the prompt ("TM>") of target T-Monitor remains. If g command is input here, T-Kernel terminates. 
+
+------------------------------------------------------------------------------
+5. Build of Program for Writing Into ROM  
+------------------------------------------------------------------------------
+
+Generally, at the time of normal execution after debugging is finished, T-Kernel and the application written into ROM are executed.
+
+The steps to build such an object in this case are as follows:
+
+-----------------------------------------------------
+5.1 Build of Kernel for ROM  
+-----------------------------------------------------
+
+The kernel to be written into ROM is generated together with the kernel to be loaded in RAM when the steps in "3.3 Build of Kernel to be Loaded in RAM" are executed. Its name is "sysmainsmpl/build/tef_em1d/kernel-rom.mot".
+
+The kernel created here is an object that runs in ROM, and it cannot be executed in RAM. Therefore, it is not possible to use it for debugging.
+
+It is necessary to write this object into ROM using T-Monitor or ICE for it to run on the target machine. Refer to "Writing in ROM of Target Machine" in target.txt for details.
+
+-----------------------------------------------------
+5.2 Build of Information Setup File (config)  
+-----------------------------------------------------
+
+Create the set up information file that has been configured so that the kernel for ROM will start up. Build the set up information file (config) for the kernel for ROM with the following environment setting. Refer to "3.1 General Build Method" for details. 
+
+ * Workspace 
+       c:\cygwin\usr\local\tef_em1d\tkernel_source\config 
+ 
+ * Project name 
+       build 
+
+ * Build destination directory
+       build/tef_em1d 
+
+Write the set up information file created here into ROM of the target machine. Refer to "Writing in ROM of Target Machine" in target.txt for details.

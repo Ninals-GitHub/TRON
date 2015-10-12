@@ -1,0 +1,100 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by T-Engine Forum
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by T-Engine Forum at 2012/11/07.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+      Eclipsed-based Development Environment Installation Procedure 
+==============================================================================
+---------------------------------------------------------
+Installation of Cygwin-based Development Environment
+---------------------------------------------------------
+
+Eclipsed-based development environment is configured on Cygwin-based development environment. Therefore, it is necessary to install Cygwin-based development environment first before Eclipse is installed. Refer to gcc_setup_guide_cygwin.txt, "GNU Development Environment Installation Procedure (Cygwin)," for steps in detail. 
+
+-----------------------------------
+2. Installation of Java 
+-----------------------------------
+
+Because Eclipse is a Java program, the execution environment for Java is necessary. 
+----------
+Install the execution environment for Java if it has not been installed, or the version is old. Download the installation file of Java execution environment from the following link, and install it on the host PC for development. 
+
+     http://www.java.com/ja/download/windows_xpi.jsp
+
+Even if the OS of the host PC for development is 64-bit version of Windows 7, the Java execution environment for 32 bits is needed. Download and install the Java execution environment for 32 bits. 
+
+* The 64-bit version of Windows Vista is not supported. 
+* The Java runtime environment (JRE) version 7 causes an error at execution.
+  Use JRE version 6.
+
+------------------------------------
+3. Installation of Eclipse 
+-------------------------------------
+
+Next, expand the main body of Eclipse and the zip file of the CDT plug-in package, and install Eclipse. 
+
+Perform the rest of the procedure after logging in to Windows using the account of the user who actually uses it. 
+
+First, copy (save) all the following files into an appropriate folder (C:\temp etc.) in the drive where Eclipse is to be installed.  
+
+[When used in the English-language environment]
+  Main body of Eclipse    develop/eclipse-platform-3.2.2-win32.zip 
+  CDT plug-in             develop/org.eclipse.cdt-3.1.2-win32.x86.zip 
+
+[When used in the Japanese-language environment]
+  Main body of Eclipse          develop/eclipse-platform-3.2.2-win32.zip 
+  Main body of Eclipse Japanese localization package
+                                develop/NLpack1-eclipse-platform-3.2.1-win32.zip 
+  CDT plug-in                   develop/org.eclipse.cdt-3.1.2-win32.x86.zip 
+  CDT Japanese localization package
+                                develop/CDT_NL_3.1.1.zip 
+
+A newer version of Eclipse can be found in the website of Eclipse. However, the operation testing has been performed using the above version of Eclipse. Use the above version.
+
+Next, expand each of the above-mentioned zip files in the above order. Select the above-mentioned files on the Explorer, right-click them, and select "Expand all." Specify the destination of expansion as "c:\." Eclipse will be expanded under the c:\eclipse directory.
+
+* Do not install Eclipse in a place where a blank or Japanese character is included in the path name. If a blank exists in path name (c:\Program Files etc.), it doesn't operate correctly. 
+
+* In some cases you are asked to confirm if you overwrite a file when CDT plug-in is expanded. As this is an html file for displaying the license, it does not matter whether you overwrite it or not.  
+
+When Eclipse is used in Japanese-language environment, add the following line at the end of c:\eclipse\eclipse.ini.
+
+  -javaagent:plugins/jp.sourceforge.mergedoc.pleiades/pleiades.jar
+
+Open the directory under which Eclipse was installed using the Explorer. eclipse.exe in this directory is the main body of Eclipse. Create a short cut for this file on the desktop. 
+
+
+---------------------------------------------------------
+4. Installation of Plug-ins for T-Kernel Development 
+---------------------------------------------------------
+
+Next, install the plug-ins for T-Kernel development.
+
+Copy all the following files into an appropriate folder in the drive where the plug- ins are to be installed (C:\temp etc.). 
+
+Common platform part          develop/org.t_engine.te.1.0.0.zip 
+Part for each mode            develop/org.t_engine.tl.tef_em1d.1.0.1.zip 
+
+Next, expand each of the above zip files in the above order. Select the above files on the Explorer, right-click them, and select "Expand all." Specify the destination of expansion as "c:\eclipse." (Specify the directory of the main body of Eclipse in a subdirectory just below the one previously specified.)
+
+Delete .zip files stored in c:\temp, etc., as they are not needed after the installation is finished. 
+
+---------------------------------------------------------
+5. Other Settings
+---------------------------------------------------------
+
+If "HOME" is set as the environment variable for Windows, Eclipse may not operate correctly due to the conflict with the environment variable "HOME" of Cygwin. Delete the environment variable "HOME" for Windows.  
+
+The environment variable for Windows can be referred to by going to control panel -> system -> detailed setting. If "HOME" is defined as the environment variable, delete it. 
+
+[EOF]

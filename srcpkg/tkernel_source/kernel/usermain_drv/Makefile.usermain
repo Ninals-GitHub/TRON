@@ -1,0 +1,35 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	usermain (included from sysmain)
+#
+
+# source files
+SRC += usermain.c
+
+# source file path
+VPATH += ../../../usermain_drv
+HEADER += ../../../usermain_drv
+
+# Manager and Driver objects
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/console.o
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/clkdrv.o
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/sysdsk.o
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/screen.o
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/kbpd.o
+I_OBJ += $(BD)/driver/$(TETYPE)_$(MACHINE)/lowkbpd.o
+
+# additional libraries
+LDUSRLIBS += -ldrvif -lconsolesvc -lem1diic -lstr

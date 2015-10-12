@@ -1,0 +1,183 @@
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2013/02/25.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#    Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	SYSCONF (T-Engine/EM1D-512)
+#
+#	System configuration
+#
+
+#
+# Use SCTAG_XXX as a parameter of _tk_get_cfn().
+# SCTAG_XXX is defined in <sys/sysdepend/tef_em1d/rominfo.h>.
+#
+
+#
+#	Product information
+#
+TSysName	T-Kernel	# System name
+
+#
+#	Kernel version information for tk_ref_ver(T_RVER*)
+#
+Maker		0x0000		# = "T-Engine Forum"
+ProductID	0x0000		# Kernel Identifier
+SpecVer		0x7200		# = "T-Kernel" + "Ver 2.00"
+ProductVer	0x0201		# Product Version
+ProductNo	0x0000 0x0000 0x0000 0x0000
+				# Product Number [0]-[3]
+
+#
+#	T-Kernel/OS
+#
+TMaxTskId	150	# Maximum task ID
+TMaxSemId	100	# Maximum semaphore ID
+TMaxFlgId	100	# Maximum event flag ID
+TMaxMbxId	20	# Maximum mail box ID
+TMaxMtxId	100	# Maximum mutex ID
+TMaxMbfId	20	# Maximum message buffer ID
+TMaxPorId	50	# Maximum rendezvous port ID
+TMaxMpfId	10	# Maximum fixed size memory pool ID
+TMaxMplId	10	# Maximum variable size memory pool ID
+TMaxCycId	20	# Maximum cyclic handler ID
+TMaxAlmId	40	# Maximum alarm handler ID
+TMaxResId	60	# Maximum resource group ID
+TMaxSsyId	50	# Maximum sub system ID
+TMaxSsyPri	16	# Maximum sub system priority
+
+TSysStkSz	2048	# Default system stack size (byte)
+TSVCLimit	2	# SVC protection level
+TTimPeriod	10	# Timer interval (msec)
+
+#
+#	T-Kernel/SM
+#
+TMaxRegDev	32	# Maximum number of devices registration
+TMaxOpnDev	64	# Maximum number of devices open
+TMaxReqDev	64	# Maximum number of device requests
+TDEvtMbfSz	1024 64	# Event notification message buffer size (byte),
+			# Maximum length of message (byte)
+
+#
+#	Task Event(1-8)
+#
+TEV_MsgEvt	1	# Message management : Receive message
+TEV_MsgBrk	2	# Message management : Release of an message waiting state
+TEV_GDI		3	# GDI interface
+TEV_FFLock	4	# Release of an FIFO lock waiting state
+
+#
+#	Segment manager
+#
+#RealMemEnd	0x40000000	# RAM bottom address (logical address)
+RealMemEnd	0xFFFFFFFF	# RAM bottom address (logical address)
+
+#
+#	Exception/Interrupt stack
+#
+AbtStkSz	64		# Abort(MMU)
+UndStkSz	64		# Undefined instruction
+IrqStkSz	512		# IRQ interrupt
+FiqStkSz	128		# FIQ interrupt
+
+
+#
+#	T2EX: Memory manager
+#
+TKmallocLvl	1		# Kmalloc/Vmalloc memory protection level
+
+#
+#	T2EX: System Exception manager
+#
+MaxPageFault	64		# Maximum number of page faults
+
+#
+#	T2EX: File System
+#
+FsMaxFile	32		# Maximum number of Open
+FsMaxFIMP	4		# Maximum number of FIMPs (>= 3)
+FsMaxCON	6		# Maximum number of Connections
+FsAccessTime	1		# Update of last access time(0:No, 1:Yes)
+
+#	T2EX: File System - FAT-FIMP
+FiFAT_TskPri	100		# Task priority
+FiFAT_StkSz	2048		# Task stack size
+FiFAT_FCacheSz	32768		# Cache size (bytes) for FAT
+FiFAT_FCacheNs	8		# Cache unit (sectors) for FAT
+FiFAT_RCacheSz	16384		# Cache size (bytes) for root directory
+FiFAT_RCacheNs	8		# Cache unit (sectors) for root directory
+FiFAT_DCacheSz	262144		# Cache size (bytes) for file data
+FiFAT_DCacheNs	0		# Cache unit (sectors) for file data
+				#	0 means Cluser size
+
+#
+#	T2EX: Network System
+#
+SoMaxSocket	64		# Maximum number of socket descriptors
+SoTaskBasePri	30		# Task base priority.
+SoDrvRxBufNum	12		# The Number of device receive buffers
+SoTcpTxBufSz	32768		# Send buffer size (bytes) for TCP/IP
+SoTcpRxBufSz	32768		# Receive buffer size (bytes) for TCP/IP
+SoUdpTxBufSz	9216		# Send buffer size (bytes) for UDP/IP
+SoUdpRxBufSz	41600		# Receive buffer size (bytes) for UDP/IP
+SoRawIPTxBufSz	8192		# Send buffer size (bytes) for RAW IP
+SoRawIPRxBufSz	8192		# Receive buffer size (bytes) for RAW IP
+SoRawTxBufSz	8192		# Send buffer size (bytes) for RAW sockets
+SoRawRxBufSz	8192		# Receive buffer size (bytes) for RAW sockets
+SoTcpDoAutoTx	0		# Enable automatic send buffer sizing
+SoTcpIncAutoTx	16384		# Step size of automatic send buffer
+SoTcpMaxAutoTx	262144		# Maximum size of automatic send buffer
+SoTcpDoAutoRx	0		# Enable automatic receive buffer sizing
+SoTcpIncAutoRx	16384		# Step size of automatic receive buffer
+SoTcpMaxAutoRx	262144		# Maximum size of automatic receive buffer
+
+#
+#	T2EX: Program load functions
+#
+PmMaxProg	10		# Maximum number of program modules opened
+

@@ -1,0 +1,63 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile (common description)
+#
+#	RomInfo / SYSCONF / DEVCONF
+#
+
+# source file path
+S	= ../../src/sysdepend/$(TETYPE)_$(MACHINE)
+VPATH	+= $(S)
+
+# generate C source from configuration file
+define CONV_CONF
+	echo '$< -> $@'
+	$(PERL) -e '						\
+		chop($$source = `basename $<`);			\
+		print "#include <basic.h>\n";			\
+		print "EXPORT UB $$source [] = {\n";		\
+		while ( <> ) {					\
+			chop;					\
+			s/#.*$$//;				\
+			s/\s{2,}/ /g;				\
+			s/\s$$//g;				\
+			print "\t\"$$_\\n\"\n" unless /^$$/;	\
+		}						\
+		print "};\n";					\
+	'
+endef
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean install
+
+ALL = $(S)/SYSCONF $(S)/DEVCONF rominfo.mot
+
+all: $(ALL)
+
+rominfo.mot: rominfo
+	$(OBJCOPY) $(OUTPUT_SREC) $< $@
+
+rominfo: rominfo.o sysconf.o devconf.o launch.o
+	$(LINK.o) -nostdlib -T rominfo$(_GCCVER).lnk $^ $(OUTPUT_OPTION)
+
+sysconf.c: $(S)/SYSCONF;	@$(CONV_CONF) $< > $@
+devconf.c: $(S)/DEVCONF;	@$(CONV_CONF) $< > $@
+
+clean:
+	$(RM) rominfo.o rominfo rominfo.mot
+	$(RM) sysconf.[co] devconf.[co] launch.o
+
+install: $(addprefix $(EXE_INSTALLDIR)/, $(ALL))

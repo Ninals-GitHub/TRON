@@ -1,0 +1,70 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	T-Kernel/SE - Common (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target object
+TARGET	= tkse_common.o
+TKSE_INSTALL_DIR = ../../../build/$(TETYPE)_$(MACHINE)
+
+S	= ../../src
+
+# common source files
+SRC	+=	quesearch.c quesearchge.c quesearchgeu.c \
+		quesearchgt.c quesearchgtub.c quesearchh.c \
+		quesearchne.c quesearchneh.c quesearchrevltu.c \
+		bitclr.c bitnot.c bitsclr.c bitsearch0.c \
+		bitsearch1.c bitset.c bitsset.c bittest.c \
+		ffs.c strchr.c strcasecmp.c memset_w.c \
+		div.c abs.c
+
+HEADER_TKSE = $(BD)/tkse/include $(BD)/include/tkse
+VPATH	+= $(S)
+HEADER	:= $(S) $(HEADER_TKSE) $(HEADER)
+
+OBJ = $(addsuffix .o, $(basename $(SRC)))
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean install
+
+ALL = $(TARGET)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+install:
+#	$(BD)/etc/backup_copy -t $(TARGET) $(TKSE_INSTALL_DIR)
+	$(CP) $(TARGET) $(TKSE_INSTALL_DIR)
+
+clean:
+	$(RM) $(OBJ) $(ALL) $(DEPS)
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)

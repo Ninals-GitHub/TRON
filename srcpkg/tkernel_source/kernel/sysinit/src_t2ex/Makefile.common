@@ -1,0 +1,86 @@
+#
+# ----------------------------------------------------------------------
+#    T-Kernel 2.0 Software Package
+#
+#    Copyright 2011 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#    Modified by T-Engine Forum at 2013/03/14.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	sysinit (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# T-Kernel common standard library
+include ../../../tstdlib/Makefile.tstdlib
+
+# target object
+TARGET	= sysinit.o
+
+# t2ex source file path
+S	= ../../src_t2ex
+
+# original tk2 source file path
+S_TK2	= ../../src
+
+# common source files
+SRC	+= sysinit_main.c sysstartup.c gdevcnf.c gsyscnf.c \
+	patch.c inittask_def.c vdebug.c
+VPATH	+= $(S) $(S_TK2)
+HEADER	+= $(S) $(S_TK2)
+
+# additional source files (cpu dependent)
+VPATH	+= ../../../sysdepend_t2ex/cpu/$(MACHINE) ../../../sysdepend/cpu/$(MACHINE)
+HEADER	+= ../../../sysdepend_t2ex/cpu/$(MACHINE) ../../../sysdepend/cpu/$(MACHINE)
+
+# additional source files (device dependent)
+VPATH	+= ../../../sysdepend_t2ex/device/$(TETYPE)_$(MACHINE) ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+HEADER	+=  ../../../sysdepend_t2ex/device/$(TETYPE)_$(MACHINE) ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+
+# additional source files (inittask_dev.c)
+VPATH	+= ../../../sysmain/src
+
+# additional source files (user define)
+VPATH	+= ../../../usermain
+HEADER	+=  ../../../usermain
+#VPATH	+= ../../../usermain_drv
+#HEADER	+=  ../../../usermain_drv
+
+# header file path (kernel settings)
+HEADER  += ../../../tkernel/src_t2ex ../../../tkernel/src
+
+OBJ	= $(addsuffix .o, $(basename $(SRC)))
+
+# compiler options
+CFLAGS	+= $(CFLAGS_WARNING)
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean
+
+ALL = $(TARGET) $(CRT0)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+clean:
+	$(RM) $(OBJ) $(ALL) $(DEPS)
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)

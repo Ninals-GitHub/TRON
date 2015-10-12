@@ -1,0 +1,114 @@
+/*
+ *----------------------------------------------------------------------
+ *    T-Kernel 2.0 Software Package
+ *
+ *    Copyright 2011 by T-Engine Forum
+ *    This software is distributed under the T-License 2.0.
+ *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *
+ *----------------------------------------------------------------------
+ */
+
+==============================================================================
+Transfer to the target machine and operation check procedure (for tef_em1d)
+==============================================================================
+
+Transfer the program and check the operation by the following
+procedures to run T-Kernel on the T-Engine reference board
+(tef_em1d).
+
+------------------------------
+1. Connection with a terminal
+------------------------------
+
+Connect the UART connector with CN3, and connect it with the COM port
+of the host PC for development for the T-Engine reference board
+(tef_em1d).  On host PC for development, start the communication
+software by the following setting.
+
+    Communication speed 115200 bps
+    Data eight bits
+    Parity none
+    Stop bit one bit
+    Flow control none
+
+------------------------------
+2. Setting DIP switch
+------------------------------
+
+Set DIP switch (U11) as follows for the T-Engine reference board
+(tef_em1d).
+
+    SW1, SW2, SW3  All off
+    SW4  	       on (T-Monitor start)
+
+------------------------------
+3. Writing ROM image to the target machine
+------------------------------
+
+It is necessary to write the program in the Flash ROM of the target
+machine to operate the program on T-Kernel on the target machine
+(target).  Use either of the following methods.
+
+(1) Writing ROM image by ICE (PARTNER-Jet)
+
+Use configuration file (JETARM.CFG) supplied in this package to start
+the PARTNER-Jet.  After it starts, write T-Monitor into Flash ROM
+using the following commands.
+
+
+    > rd c:\tmonitor.mot,0x90000000
+
+    * Add the offset of 0x90000000 to the ROM image address to make it
+      become the address where the Flash ROM exists (0x00000000-) as
+      the ROM image address is the run-time address while
+      T-Monitor/T-Kernel are executed.  
+
+Write ROM information (rominfo.mot) and T-Kernel (kernel-rom.mot)
+by the same procedure.
+
+(2) Writing ROM image by T-Monitor
+
+When T-Monitor has already been written in the Flash ROM, an
+additional code can be written by using the FLLO command of T-Monitor.
+Operate it as follows from T-Monitor.
+
+    TM> fllo
+    Copy Flash ROM Image to RAM Area 
+    > Load S-Format Data of Flash ROM
+
+        * It may take a while until the above message is displayed.
+          After the above message is displayed Execute a communication
+          software, and send ".mot" file to be written by asynchronous
+          communication.
+
+        * Moreover, it takes time until the transfer is completed
+          according to the size of the file that is being written.
+
+    Loaded: 70020000 -> 700202A3
+    Writing Flash ROM at 70020000 [1 blks] ... wait 
+    TM>
+
+------------------------------
+4. Checking operation on the target machine
+------------------------------
+
+T-Monitor starts when the power of the target machine is turned on
+with T-Monitor written in the Flash ROM.  
+
+    T-Monitor/tef_em1d Version2 .00.00 
+
+Further, T-Kernel starts by executing the bd command at T-Monitor
+prompt ("TM>") if T-Kernel is written in the Flash ROM.
+
+    TM> bd
+
+    T-Kernel Version 2.00.00
+
+    Push any key to shutdown the T-Kernel.
+
+    << SYSTEM SHUTDOWN >>
+
+[EOF]

@@ -1,0 +1,106 @@
+#! /bin/sh -e
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#	backup_copy
+#
+usage='usage: backup_copy [-p] [-t] [-c] [-d old_dir] src... dst_dir'
+
+cp_opt=''
+pfx=''
+old_dir=''
+src=''
+dst=''
+cmp_test=''
+
+while test $# -gt 1
+do
+	case $1 in
+	  -p)	cp_opt="$cp_opt $1" ;;
+	  -t)	pfx='#' ;;
+	  -c)	cmp_test='t' ;;
+	  -d)	old_dir="/$2" ; shift ;;
+	  -*)	echo "$usage" 1>&2 ; exit 1 ;;
+
+	  *)	if test ! -f $1
+		then
+			echo "$usage" 1>&2
+			exit 1
+		fi
+		src="$src $1"
+		;;
+	esac
+	shift
+done
+
+case $# in
+  1)	dst=$1 ;;
+  *)	echo "$usage" 1>&2 ; exit 1 ;;
+esac
+
+case $src in
+  '')	echo "$usage" 1>&2 ; exit 1 ;;
+esac
+
+if test ! -d $dst
+then
+	echo "$usage" 1>&2 ; exit 1
+fi
+
+if test ! -d $dst$old_dir
+then
+	mkdir $dst$old_dir
+fi
+
+# backup file suffix
+tm1=`date +%y%m%d`
+tm2=`date +%H%M%S`
+
+for i in $src
+do
+	fname=`basename $i`
+
+	if test -f $dst/$fname
+	then
+
+		if test $cmp_test && cmp -s $i $dst/$fname
+		then
+			continue
+		fi
+
+		# need to backup
+
+		tm=$tm1
+		if test -f $dst$old_dir/$pfx$fname.$tm
+		then # exist same file name
+
+			tm=$tm1.$tm2
+			if test -f $dst$old_dir/$pfx$fname.$tm
+			then # cannot backup file
+				echo "cannot backup file : $dst/$fname"
+				exit 1
+			fi
+		fi
+
+		# backup
+		mv $dst/$fname $dst$old_dir/$pfx$fname.$tm
+		# update file access time
+		file $dst$old_dir/$pfx$fname.$tm > /dev/null
+	fi
+
+	# file copy
+	echo "$i -> $dst/$fname"
+	cp $cp_opt $i $dst/$fname
+done
+
+exit 0

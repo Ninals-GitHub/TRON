@@ -1,0 +1,98 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#     Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+
+#
+#	Makefile for gmake
+#	libdrvif - Driver Interface library (common description)
+#
+
+# library version
+LIB_VERSION = 2
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target files
+TARGET_BASE = libdrvif
+
+TARGET.a = $(TARGET_BASE).a
+TARGET.so = $(TARGET_BASE).so.$(LIB_VERSION)
+
+# source file path
+S	= ../../src
+I	= $(S)/include
+IFSRC	= $(S)/$(TETYPE)_$(MACHINE)
+
+VPATH := $(VPATH):$(IFSRC):$(S)
+SRC = gdrvif.c sdrvif.c
+HEADER := $(I) $(HEADER)
+
+OBJ = $(addsuffix .o, $(basename $(notdir $(SRC))))
+
+CFLAGS   += $(CFLAGS_WARNING)
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean install
+
+ifeq ($(LIBTYPE), so)
+  EXE_INST = $(TARGET.so) $(TARGET.so).map
+  ALL      = $(EXE_INST) $(TARGET.a)
+else
+  ALL = $(TARGET.a)
+endif
+
+all: $(ALL)
+	echo $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+
+$(TARGET.a): $(OBJ)
+	$(AR) $(ARFLAGS) $@ $?
+  ifdef RANLIB
+	$(RANLIB) $@
+  endif
+
+$(TARGET.so): $(OBJ)
+	$(LINK.o) $(LDOBJS) $^ $(LOADLIBES) $(LDLIBS) $(OUTPUT_OPTION)
+
+ifeq ($(LIBTYPE), so)
+install: $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+install: $(addprefix $(EXE_INSTALLDIR)/, $(EXE_INST))
+else
+install: $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+endif
+
+clean:
+	$(RM) *.o $(ALL)
+	$(RM) $(DEPS)
+
+ifeq ($(LIBTYPE), so)
+clean_install: 
+	$(RM) $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+	$(RM) $(addprefix $(EXE_INSTALLDIR)/, $(EXE_INST))
+else
+clean_install: 
+	$(RM) $(addprefix $(LIB_INSTALLDIR)/, $(ALL))
+endif
+
+# generate dependencies
+ifdef DEPENDENCIES_OUTPUT
+  $(DEPS): ; touch $(DEPS)
+else
+  $(DEPS): $(SRC) ; $(MAKEDEPS) $@ $?
+endif
+-include $(DEPS)

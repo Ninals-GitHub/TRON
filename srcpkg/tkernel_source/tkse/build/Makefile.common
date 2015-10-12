@@ -1,0 +1,63 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+
+#
+#	Makefile for gmake
+#	T-Kernel/Standard Extension - build (common description)
+#
+
+TKSE_BUILD_DIR = $(BD)/tkse/extension/build/$(TETYPE)_$(MACHINE)
+KERNEL_BUILD_DIR = $(BD)/kernel/sysmain/build_tkse/$(TETYPE)_$(MACHINE)
+LOADER_BUILD_DIR = $(BD)/loader/build/$(TETYPE)_$(MACHINE)
+
+TKSE_OBJ =	filemgr.o gnamemgr.o memory.o msgmgr.o \
+		process.o tcmgr.o clkmgr.o devmgr.o \
+		eventmgr.o seio.o common.o
+KERNEL_OBJ =	kernel_image.bin
+KERNEL_SYS =	KERNEL.SYS
+LOADER_OBJ = 	kernel_rom.mot
+
+# ----------------------------------------------------------------------------
+KERNEL_MAP = $(KERNEL_OBJ:%.bin=%.map)
+LOADER_MAP = $(LOADER_OBJ:%.mot=%.map)
+ALL = $(LOADER_OBJ) $(LOADER_MAP) $(KERNEL_MAP) $(KERNEL_SYS)
+
+all: tkse kernel loader
+
+tkse:
+	cd $(TKSE_BUILD_DIR) ; \
+	make ; \
+	cp $(TKSE_OBJ) $(KERNEL_BUILD_DIR)
+
+kernel:
+	cd $(KERNEL_BUILD_DIR) ; \
+	make ; \
+	cp $(KERNEL_OBJ) $(LOADER_BUILD_DIR)
+	cp $(KERNEL_BUILD_DIR)/$(KERNEL_MAP) .
+	cp $(KERNEL_BUILD_DIR)/$(KERNEL_SYS) .
+
+loader:
+	cd $(LOADER_BUILD_DIR) ; \
+	make
+	cp $(LOADER_BUILD_DIR)/$(LOADER_OBJ) .
+	cp $(LOADER_BUILD_DIR)/$(LOADER_MAP) .
+
+install: $(addprefix $(EXE_INSTALLDIR)/, $(ALL))
+
+clean:
+	cd $(TKSE_BUILD_DIR) ; make clean
+	cd $(KERNEL_BUILD_DIR) ; make clean ;  rm -f $(TKSE_OBJ)
+	cd $(LOADER_BUILD_DIR) ; make clean ;  rm -f $(KERNEL_OBJ)
+	rm -f $(ALL)
+

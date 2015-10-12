@@ -1,0 +1,67 @@
+============================================================================
+"Modification of T-Kernel 2.0 Source Code Package Ver 2.01.03"
+                                                        December 12, 2012
+
+- Modification of T-Kernel Ver 2.01.03 -
+
+----
+UPDATE OF SOURCE CODE:
+
+[K-20103-1] bms_printf() has been replaced with tm_printf()/tm_sprintf().
+
+[K-20103-2] CONST is added to the declarations of read-only variables.
+
+[K-20103-3] Fixed typos in comment and other spots.
+
+----
+UPDATE OF DEVELOPMENT ENVIRONMENT:
+
+[K-20103-4] Eclipse is upgraded from Release 3.2.2 to 3.7.2. 
+
+[K-20103-5] gterm.exe is now part of the package.
+
+[K-20103-6] Handling of environment variables, BD, GNU_BD, and GNUarm_2
+  - GNUarm_2 is now GNUARM_2
+  - Explanatory note is added about how to set them up.
+  - Using fixed paths when these are undefined is no longer effective.
+
+[K-20103-7] Added execution permission to files which lacked these.
+  - tkernel_source/drv/tef_em1d/clk/build/mkdrvsvc, mksvc
+  - tkernel_source/drv/tef_em1d/console/build/mkdrvsvc, mksvc
+  - tkernel_source/etc/*
+
+[K-20103-8] Fixed emulator bug
+  - It no longer crashes when BKPT or CLREX instruction is executed.
+
+----
+UPDATE OF DOCUMENTS:
+
+  - Added T-License 2.0 (PDF) 
+      TEF000-215-120911.pdf
+
+  - The documents are now in UTF-8 instead of Shift-JIS.
+
+  - T-Kernel Build Manual Using Eclipse (for tef_em1d) 
+      srcpkg/doc/en/eclipse_guide.txt
+        - Updated the description to match Eclipse 3.7
+        - Removed the description for items that need no setup
+
+  - Eclipsed-based Development Environment Installation Procedure
+      srcpkg/doc/en/eclipse_setup_guide.txt
+        - Updated the description to match Eclipse 3.7
+        - Updated the description to match the new packaging
+
+  - GNU Development Environment and Installation Procedure (Cygwin)
+      srcpkg/doc/en/gcc_setup_guide_cygwin.txt
+        - Updated the explanation to set up environment variables
+        - Updated the description to match the new packaging
+
+  - GNU Development Environment and Installation Procedure (Linux)
+      srcpkg/doc/en/gcc_setup_guide_linux.txt
+        - Updated the explanation to set up environment variables
+
+  - tef_em1d Implementation Specification
+      srcpkg/doc/en/impl-tef_em1d.txt
+        - Modified the user initialization program for explanatory purposes
+                                                                End of Memo
+============================================================================

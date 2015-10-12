@@ -1,0 +1,461 @@
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2014/07/31.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#    Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	Makefile for gmake
+#	sysmain (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+MDIR = $(TETYPE)_$(MACHINE)
+
+export MDIR
+export T2EX
+
+# ----------------------------------------------------------------------------
+# kernel install path
+KERNEL_INSTALLDIR	= $(BD)/kernel/bin/$(MDIR)
+
+# kernel modules path
+BLD_TKERNEL_PATH	= $(BD)/kernel/tkernel/build$(T2EX_MM)/$(MDIR)
+BLD_SYSMGR_PATH		= $(BD)/kernel/sysmgr/build$(T2EX_MM)/$(MDIR)
+BLD_SYSINIT_PATH	= $(BD)/kernel/sysinit/build$(T2EX_MM)/$(MDIR)
+
+ifdef T2EX
+  BLD_DATETIME_PATH	= $(BD)/t2ex/datetime/build/$(MDIR)
+  BLD_LOAD_PATH		= $(BD)/t2ex/load/build/$(MDIR)
+  BLD_FS_PATH		= $(BD)/t2ex/fs/build/$(MDIR)
+  BLD_NET_PATH		= $(BD)/t2ex/network/build/$(MDIR)
+  BLD_T2EX_PATH		= $(BD)/t2ex/build/$(MDIR)
+endif
+
+# device driver path
+BLD_DRIVER_PATH		= $(BD)/driver/$(MDIR)/build$(T2EX)
+BLD_DRV_PATH		= $(BD)/drv/$(MDIR)
+
+# config modules path
+BLD_CONFIG_PATH		= $(BD)/config/build$(T2EX)/$(MDIR)
+
+# monitor path
+BLD_MONITOR_PATH	= $(BD)/monitor/tmmain/build/$(MDIR)
+
+# library path
+BLD_LIBS_PATH		= $(BD)/lib/build$(T2EX)/$(MDIR)
+
+# tkse path
+BLD_TKSE_PATH		= $(BD)/tkse/extension/common/build/$(MDIR)
+
+# ----------------------------------------------------------------------------
+# target objects
+TARGET_RAM	= kernel$(T2EX)-ram.sys
+TARGET_ROM	= kernel$(T2EX)-rom.rom
+TARGET_IMG	= kernel$(T2EX).img
+TARGET_RAMCRT0	= icrt0$(T2EX_MM)_ram.o
+TARGET_ROMCRT0	= icrt0$(T2EX_MM).o
+TARGET_IMGCRT0	= icrt0$(T2EX_MM).o
+
+MULTI_BOOT	= multiboot$(T2EX_MM).o
+
+ROM_INFO	= $(BLD_CONFIG_PATH)/rominfo
+
+# grub rescue disk image
+TARGET_GRUB	= grub_rescue.iso
+GRUB_COMMAND	= grub-mkrescue
+GRUB_PATH	= ../../../../../rescue
+
+# emulator targets
+TARGET_EMU	= rom$(T2EX).bin
+TARGET_DBG_EMU	= rom$(T2EX)-dbg.bin
+
+#S	= ../../src
+S	= ../../src
+
+VPATH	+= $(S)
+HEADER	+= $(S)
+
+# user-level source files
+SRC_USR	+=
+
+# additional source files (cpu-dependent)
+ifneq ($(T2EX_MM),)
+  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+endif
+VPATH   += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
+HEADER  += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
+
+# additional source files (device-dependent)
+ifneq ($(T2EX_MM),)
+  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
+  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
+endif
+VPATH   += $(BD)/kernel/sysdepend/device/$(MDIR)
+HEADER  += $(BD)/kernel/sysdepend/device/$(MDIR)
+
+# header file path (kernel settings)
+HEADER  += $(BD)/kernel/tkernel/src
+ifdef  T2EX
+  HEADER  += $(BD)/include/t2ex/
+endif
+
+# object files (system-level)
+OBJ	= $(addsuffix .o, $(basename $(SRC_SYS)))
+
+# object files (user-level)
+U_OBJ	= $(addsuffix .uo, $(basename $(SRC_USR)))
+
+# T-Kernel modules
+K_OBJ	+=	$(BLD_TKERNEL_PATH)/tkernel.o \
+		$(BLD_SYSMGR_PATH)/sysmgr.o \
+		$(BLD_SYSINIT_PATH)/sysinit.o \
+		$(BLD_TKSE_PATH)/tkse_common.o
+
+# T2EX function objects
+ifdef  T2EX
+
+  ifdef  T2EX_DT
+    # T2EX calendar date / time
+    K_OBJ += $(BLD_T2EX_PATH)/datetime.o
+    ADD_MODULES += datetime
+    CPPFLAGS += -DUSE_T2EX_DT
+    LDUSRLIBS += -ldatetime
+  endif
+
+  LDUSRLIBS += -lc
+
+  ifdef  T2EX_PM
+    # T2EX program load
+    K_OBJ += $(BLD_T2EX_PATH)/load.o
+    ADD_MODULES += load
+    CPPFLAGS += -DUSE_T2EX_PM
+    LDUSRLIBS += -lload
+  endif
+
+  ifdef  T2EX_FS
+    # T2EX file management
+    K_OBJ += $(BLD_T2EX_PATH)/fs.o $(BLD_T2EX_PATH)/fimp.o
+    ADD_MODULES += fs
+    CPPFLAGS += -DUSE_T2EX_FS
+    LDUSRLIBS += -lfs
+  endif
+
+  ifdef  T2EX_NET
+    # T2EX network communication
+    K_OBJ += $(BLD_T2EX_PATH)/network.o
+    ADD_MODULES += net
+    CPPFLAGS += -DUSE_T2EX_NET
+    LDUSRLIBS += -lnetwork
+  endif
+
+endif
+
+# gcc standard library
+STDLIB = -lgcc
+
+# additional library
+#LDSYSLIBS = -ltk -lsys -ltm -lsvc
+LDSYSLIBS = -ltk -ltm -lsvc
+LDLIBS += $(LDUSRLIBS) $(LDSYSLIBS)
+
+# linker options
+LDFLAGS += -static -nostdlib -T $(LINKSCRIPT) -Wl,-Map=$(TARGET_IMG:%.img=%.map)
+
+LINKSCRIPT = kernel$(T2EX_MM)-ram$(_GCCVER).lnk
+$(TARGET_ROM): LINKSCRIPT = kernel$(T2EX_MM)-rom$(_GCCVER).lnk
+$(TARGET_IMG): LINKSCRIPT = kernel$(T2EX_MM)_img$(_GCCVER).lnk
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+CPPFLAGS += -DTKERNEL_ONLY
+
+# suppress debug options for the system codes
+# (comment out to debug the whole kernel)
+#DBGOPT := mode=
+
+# ----------------------------------------------------------------------------
+
+# make targets
+.PHONY: all emu clean install install_emu
+.PHONY: source clean_source clean_all
+.PHONY: tkernel sysmgr sysinit libraries drivers config monitor tkse
+.PHONY: clean_libraries clean_drivers clean_config clean_monitor clean_tkse
+ifdef  T2EX
+.PHONY: datetime load fs net
+endif
+
+REQ_MODULES = libraries tkernel sysmgr sysinit drivers tkse $(ADD_MODULES)
+
+ifeq ($(TETYPE)_$(MACHINE),std_x86)
+ALL += $(TARGET_IMG)
+
+all: $(REQ_MODULES) $(MULTI_BOOT) $(TARGET_IMGCRT0)
+	$(MAKE) $(ALL)
+	$(MAKE) install
+
+else
+ALL  = $(TARGET_ROM) $(TARGET_ROM:%.rom=%.map) $(TARGET_ROM:%.rom=%.mot)
+ALL += $(TARGET_RAM) $(TARGET_RAM:%.sys=%.map) $(TARGET_RAM:%.sys=%.mot)
+ALL += $(TARGET_RAM:%.sys=%.bin)
+EMU  = $(TARGET_EMU) $(TARGET_DBG_EMU)
+
+# default make targets
+all: $(REQ_MODULES) $(TARGET_RAMCRT0) $(TARGET_ROMCRT0)
+	$(MAKE) $(ALL)
+	$(MAKE) install
+endif
+
+CLEAN_TARGETS  = $(TARGET_IMG) $(TARGET_IMG:%.img=%.map)
+CLEAN_TARGETS += $(TARGET_RAM) $(TARGET_RAM:%.sys=%.map) $(TARGET_RAM:%.sys=%.mot)
+CLEAN_TARGETS += $(TARGET_ROM) $(TARGET_ROM:%.rom=%.map) $(TARGET_ROM:%.rom=%.mot)
+CLEAN_TARGETS += $(TARGET_GRUB) $(MULTI_BOOT)
+
+# make targets for emulator
+emu: all config monitor
+	$(MAKE) $(EMU)
+	$(MAKE) install_emu
+
+# objects for x86 image
+$(TARGET_IMG): $(MULTI_BOOT) $(TARGET_IMGCRT0) $(OBJ) $(U_OBJ) $(I_OBJ) $(K_OBJ) $(ROM_INFO) $(TKSE_COMMON)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+#$(TARGET_IMG:%.img=%.map): $(TARGET_IMG)
+#	$(NM) $(NMFLAGS) $< > $@
+
+rominfo:
+	( cd $(BLD_CONFIG_PATH) ; make )
+
+$(ROM_INFO): $(TARGET_IMG)
+	( cd $(BLD_CONFIG_PATH) ; make )
+
+# make grub rescue disk image
+cd:$(TARGET_IMG)
+	cp $(TARGET_IMG) $(GRUB_PATH)
+	$(GRUB_COMMAND) --output=$(TARGET_GRUB) $(GRUB_PATH)
+
+# objects for RAM
+$(TARGET_RAM): $(TARGET_RAMCRT0) $(OBJ) $(U_OBJ) $(K_OBJ) $(I_OBJ)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+$(TARGET_RAM:%.sys=%.map): $(TARGET_RAM)
+	$(NM) $(NMFLAGS) $< > $@
+
+$(TARGET_RAM:%.sys=%.mot): $(TARGET_RAM)
+	$(OBJCOPY) $(OUTPUT_SREC) $< $@
+
+$(TARGET_RAM:%.sys=%.bin): $(TARGET_RAM)
+	$(OBJCOPY) -O binary $< $@
+
+# objects for ROM
+$(TARGET_ROM): $(TARGET_ROMCRT0) $(OBJ) $(U_OBJ) $(K_OBJ) $(I_OBJ)
+	$(CC) $(TARGET_ARCH) $(LDFLAGS) $^ $(LDLIBS) $(STDLIB) $(OUTPUT_OPTION)
+
+$(TARGET_ROM:%.rom=%.map): $(TARGET_ROM)
+	$(NM) $(NMFLAGS) $< > $@
+
+$(TARGET_ROM:%.rom=%.mot): $(TARGET_ROM)
+	$(OBJCOPY) $(OUTPUT_SREC) $< $@
+
+# objects for emulator rom images
+EMU_OBJ	= 	$(BLD_MONITOR_PATH)/tmonitor.mot \
+	  	$(BLD_CONFIG_PATH)/rominfo$(T2EX)-rom.mot \
+	  	$(TARGET_ROM:%.rom=%.mot)
+
+DBG_EMU_OBJ =	$(BLD_MONITOR_PATH)/tmonitor.mot \
+	  	$(BLD_CONFIG_PATH)/rominfo$(T2EX)-ram.mot
+
+$(TARGET_EMU): $(EMU_OBJ)
+	$(BD)/etc/mergesrec $^ > _rom.mot
+	$(OBJCOPY) -I srec -O binary _rom.mot $@
+	$(RM) _rom.mot
+
+$(TARGET_DBG_EMU): $(DBG_EMU_OBJ)
+	$(BD)/etc/mergesrec $^ > _rom-dbg.mot
+	$(OBJCOPY) -I srec -O binary _rom-dbg.mot $@
+	$(RM) _rom-dbg.mot
+
+# required modules
+tkernel:
+	( cd $(BLD_TKERNEL_PATH) ; $(MAKE) $(DBGOPT) )
+
+sysmgr:
+	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) )
+
+sysinit:
+	( cd $(BLD_SYSINIT_PATH) ; $(MAKE) $(DBGOPT) )
+
+ifdef  T2EX
+datetime:
+	( cd $(BLD_DATETIME_PATH) ; $(MAKE) $(DBGOPT) install )
+
+load:
+	( cd $(BLD_LOAD_PATH) ; $(MAKE) $(DBGOPT) install )
+
+fs:
+	( cd $(BLD_FS_PATH) ; $(MAKE) $(DBGOPT) install)
+
+net:
+	( cd $(BLD_NET_PATH) ; $(MAKE) $(DBGOPT) install)
+endif
+
+libraries:
+	( cd $(BLD_LIBS_PATH) ; $(MAKE) $(DBGOPT) )
+
+clean_libraries:
+	( cd $(BLD_LIBS_PATH) ; $(MAKE) $(DBGOPT) clean )
+
+drivers:
+	( cd $(BLD_DRIVER_PATH) ; $(MAKE) $(DBGOPT) )
+
+clean_drivers:
+	( cd $(BLD_DRIVER_PATH) ; $(MAKE) $(DBGOPT) clean )
+
+tkse:
+	( cd $(BLD_TKSE_PATH) ; $(MAKE) $(DBGOPT) )
+
+clean_tkse:
+	( cd $(BLD_TKSE_PATH) ; $(MAKE) $(DBGOPT) clean )
+
+config:
+	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) )
+
+clean_config:
+	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) clean )
+
+monitor:
+	( cd $(BLD_MONITOR_PATH) ; $(MAKE) $(DBGOPT) )
+
+clean_monitor:
+	( cd $(BLD_MONITOR_PATH) ; $(MAKE) $(DBGOPT) clean )
+
+# make source files of svc interface 
+source:
+	( cd $(BLD_LIBS_PATH) ; $(MAKE) $(DBGOPT) source )
+	( cd $(BLD_DRIVER_PATH) ; $(MAKE) $(DBGOPT) source )
+ifdef  T2EX
+	( cd $(BLD_DATETIME_PATH) ; $(MAKE) $(DBGOPT) source )
+	( cd $(BLD_LOAD_PATH) ; $(MAKE) $(DBGOPT) source )
+	( cd $(BLD_FS_PATH) ; $(MAKE) $(DBGOPT) source )
+	( cd $(BLD_NET_PATH) ; $(MAKE) $(DBGOPT) source )
+endif
+
+# drivers
+ifdef DRV_CONSOLE
+console:
+ifneq ($(TETYPE)_$(MACHINE),std_x86)
+	( cd $(BLD_DRV_PATH)/console/build ; $(MAKE) source )
+endif
+	( cd $(BLD_DRV_PATH)/console/build ; $(MAKE) )
+	( cd $(BLD_DRV_PATH)/console/build ; $(MAKE) install )
+endif
+ifdef DRV_CLOCK
+clk:
+ifneq ($(TETYPE)_$(MACHINE),std_x86)
+	( cd $(BLD_DRV_PATH)/clk/build ; $(MAKE) source )
+endif
+	( cd $(BLD_DRV_PATH)/clk/build ; $(MAKE) )
+	( cd $(BLD_DRV_PATH)/clk/build ; $(MAKE) install )
+endif
+ifdef DRV_KBPD
+kbpd:
+	( cd $(BLD_DRV_PATH)/clk/build ; $(MAKE) )
+	( cd $(BLD_DRV_PATH)/clk/build ; $(MAKE) install )
+endif
+
+# clean source files of svc interface 
+clean_source:
+	( cd $(BLD_LIBS_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+	( cd $(BLD_DRIVER_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+ifdef  T2EX
+	( cd $(BLD_DATETIME_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+	( cd $(BLD_LOAD_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+	( cd $(BLD_FS_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+	( cd $(BLD_NET_PATH) ; $(MAKE) $(DBGOPT) clean_source )
+endif
+ifneq ($(TETYPE)_$(MACHINE),std_x86)
+ifdef DRV_CONSOLE
+	( cd $(BLD_DRV_PATH)/console/build ; $(MAKE) clean_source )
+endif
+endif
+
+# clean all objects
+clean:	clean_libraries clean_drivers
+	( cd $(BLD_TKERNEL_PATH) ; $(MAKE) $(DBGOPT) clean )
+	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) clean )
+	( cd $(BLD_SYSINIT_PATH) ; $(MAKE) $(DBGOPT) clean )
+	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) clean )
+ifdef  T2EX
+	( cd $(BLD_LOAD_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )
+	( cd $(BLD_DATETIME_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )
+	( cd $(BLD_FS_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )
+	( cd $(BLD_NET_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )
+endif
+ifdef DRV_CONSOLE
+	( cd $(BLD_DRV_PATH)/console/build ; $(MAKE) $(DBGOPT) clean clean_install )
+endif
+	$(RM) $(OBJ) $(U_OBJ) $(TARGET_RAMCRT0) $(TARGET_ROMCRT0) $(ALL) $(DEPS)
+	$(RM) $(TARGET_EMU) $(TARGET_DBG_EMU)
+	$(RM) $(CLEAN_TARGETS)
+
+# clean all objects and source files of svc interface 
+clean_all: clean clean_source
+
+# install kernel target
+install: $(addprefix $(EXE_INSTALLDIR)/, $(ALL))
+
+# install emualtor target
+install_emu: $(addprefix $(EXE_INSTALLDIR)/, $(EMU))
+
+$(addprefix $(EXE_INSTALLDIR)/, $(TARGET)): $(EXE_INSTALLDIR)/%: %
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)
+

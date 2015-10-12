@@ -1,0 +1,417 @@
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2013/03/07.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	@(#)Makefile.src_bsd
+#
+#
+
+VPATH += $(S_BSD)/arpa_inet
+SRC_BSD +=	\
+	htonl.c	\
+	htons.c	\
+	ntohl.c	\
+	ntohs.c	\
+	inet_addr.c	\
+	inet_ntop.c	\
+	inet_pton.c	\
+
+VPATH += $(S_BSD)/ctype
+SRC_BSD +=	\
+	isctype.c	\
+	ctype_.c	\
+	toupper_.c	\
+	tolower_.c	\
+
+VPATH += $(S_BSD)/complex
+SRC_BSD +=	\
+	s_cabs.c	\
+	s_cabsf.c	\
+	s_cacos.c	\
+	s_cacosf.c	\
+	s_cacosh.c	\
+	s_cacoshf.c	\
+	s_carg.c	\
+	s_cargf.c	\
+	s_casin.c	\
+	s_casinf.c	\
+	s_casinh.c	\
+	s_casinhf.c	\
+	s_catan.c	\
+	s_catanf.c	\
+	s_catanh.c	\
+	s_catanhf.c	\
+	s_ccos.c	\
+	s_ccosf.c	\
+	s_ccosh.c	\
+	s_ccoshf.c	\
+	s_cexp.c	\
+	s_cexpf.c	\
+	s_cimag.c	\
+	s_cimagf.c	\
+	s_clog.c	\
+	s_clogf.c	\
+	s_conj.c	\
+	s_conjf.c	\
+	s_cpow.c	\
+	s_cpowf.c	\
+	s_cproj.c	\
+	s_cprojf.c	\
+	s_creal.c	\
+	s_crealf.c	\
+	s_csin.c	\
+	s_csinf.c	\
+	s_csinh.c	\
+	s_csinhf.c	\
+	s_csqrt.c	\
+	s_csqrtf.c	\
+	s_ctan.c	\
+	s_ctanf.c	\
+	s_ctanh.c	\
+	s_ctanhf.c	\
+
+VPATH += $(S_BSD)/inttypes
+SRC_BSD +=	\
+	imaxabs.c	\
+	imaxdiv.c	\
+	strtoimax.c	\
+	strtoumax.c	\
+
+VPATH += $(S_BSD)/math
+SRC_BSD +=	\
+	e_acos.c	\
+	e_acosf.c	\
+	e_acosh.c	\
+	e_acoshf.c	\
+	e_asin.c	\
+	e_asinf.c	\
+	s_asinh.c	\
+	s_asinhf.c	\
+	s_atan.c	\
+	s_atanf.c	\
+	e_atan2.c	\
+	e_atan2f.c	\
+	e_atanh.c	\
+	e_atanhf.c	\
+	s_cbrt.c	\
+	s_cbrtf.c	\
+	s_ceil.c	\
+	s_ceilf.c	\
+	s_copysign.c	\
+	s_copysignf.c	\
+	s_cos.c	\
+	s_cosf.c	\
+	e_cosh.c	\
+	e_coshf.c	\
+	s_erf.c	\
+	s_erff.c	\
+	e_exp.c	\
+	e_expf.c	\
+	s_exp2.c	\
+	s_exp2f.c	\
+	s_expm1.c	\
+	s_expm1f.c	\
+	s_fabs.c	\
+	s_fabsf.c	\
+	s_fdim.c	\
+	s_floor.c	\
+	s_floorf.c	\
+	s_fma.c	\
+	s_fmaf.c	\
+	s_fmax.c	\
+	s_fmaxf.c	\
+	s_fmin.c	\
+	s_fminf.c	\
+	e_fmod.c	\
+	e_fmodf.c	\
+	frexp.c	\
+	s_frexpf.c	\
+	e_hypot.c	\
+	e_hypotf.c	\
+	s_ilogb.c	\
+	s_ilogbf.c	\
+	e_j0.c	\
+	e_j1.c	\
+	e_jn.c	\
+	ldexp.c	\
+	s_llrint.c	\
+	s_llrintf.c	\
+	s_llround.c	\
+	s_llroundf.c	\
+	e_log.c	\
+	e_logf.c	\
+	e_log10.c	\
+	e_log10f.c	\
+	s_log1p.c	\
+	s_log1pf.c	\
+	e_log2.c	\
+	e_log2f.c	\
+	s_logb.c	\
+	s_logbf.c	\
+	s_lrint.c	\
+	s_lrintf.c	\
+	s_lround.c	\
+	s_lroundf.c	\
+	modf.c	\
+	s_modff.c	\
+	s_nan.c	\
+	s_nearbyint.c	\
+	s_nextafter.c	\
+	s_nextafterf.c	\
+	s_nexttowardf.c	\
+	e_pow.c	\
+	e_powf.c	\
+	e_remainder.c	\
+	e_remainderf.c	\
+	s_remquo.c	\
+	s_remquof.c	\
+	s_rint.c	\
+	s_rintf.c	\
+	s_round.c	\
+	s_roundf.c	\
+	s_scalbln.c	\
+	s_scalbn.c	\
+	s_scalbnf.c	\
+	s_sin.c	\
+	s_sinf.c	\
+	e_sinh.c	\
+	e_sinhf.c	\
+	e_sqrt.c	\
+	e_sqrtf.c	\
+	s_tan.c	\
+	s_tanf.c	\
+	s_tanh.c	\
+	s_tanhf.c	\
+	b_tgamma.c	\
+	s_trunc.c	\
+	s_truncf.c	\
+	e_lgamma_r.c	\
+	e_lgammaf_r.c	\
+	e_scalb.c	\
+	b_exp__D.c	\
+	b_log__D.c	\
+	e_rem_pio2.c	\
+	e_rem_pio2f.c	\
+	fpclassify.c	\
+	isfinite.c	\
+	isinf.c	\
+	isnan.c	\
+	isnormal.c	\
+	k_cos.c	\
+	k_cosf.c	\
+	k_rem_pio2.c	\
+	k_rem_pio2f.c	\
+	k_sin.c	\
+	k_sinf.c	\
+	k_tan.c	\
+	k_tanf.c	\
+	signbit.c	\
+
+VPATH += $(S_BSD)/search
+SRC_BSD +=	\
+	hcreate.c	\
+	insque.c	\
+	remque.c	\
+	lsearch.c	\
+	tfind.c	\
+	tsearch.c	\
+	hash_func.c	\
+
+VPATH += $(S_BSD)/stdio
+SRC_BSD +=	\
+	clrerr.c	\
+	fclose.c	\
+	fdopen.c	\
+	feof.c	\
+	ferror.c	\
+	ferror.c	\
+	fflush.c	\
+	fgetc.c	\
+	fgetpos.c	\
+	fgets.c	\
+	fileno.c	\
+	findfp.c	\
+	flags.c	\
+	fopen.c	\
+	fprintf.c	\
+	fputc.c	\
+	fputs.c	\
+	fread.c	\
+	freopen.c	\
+	fscanf.c	\
+	fseek.c	\
+	fsetpos.c	\
+	ftell.c	\
+	fvwrite.c	\
+	fwalk.c	\
+	fwrite.c	\
+	getc.c	\
+	getchar.c	\
+	makebuf.c	\
+	printf.c	\
+	putc.c	\
+	putchar.c	\
+	puts.c	\
+	refill.c	\
+	rewind.c	\
+	rget.c	\
+	scanf.c	\
+	setbuf.c	\
+	setvbuf.c	\
+	snprintf.c	\
+	sprintf.c	\
+	sscanf.c	\
+	stdio.c	\
+	ungetc.c	\
+	vfprintf.c	\
+	vfscanf.c	\
+	vprintf.c	\
+	vscanf.c	\
+	vsnprintf.c	\
+	vsprintf.c	\
+	vsscanf.c	\
+	wbuf.c	\
+	wsetup.c	\
+	assert.c	\
+
+ifneq ($(NO_MULTIBYTE), 1)
+SRC_BSD +=	\
+	__mb_cur_max.c	\
+	multibyte_citrus.c	\
+	runetable.c	\
+	citrus_ctype.c	\
+	citrus_none.c	\
+	citrus_utf8.c
+endif
+
+VPATH += $(S_BSD)/stdlib
+SRC_BSD +=	\
+	abs.c	\
+	labs.c	\
+	llabs.c	\
+	atof.c	\
+	atoi.c	\
+	atol.c	\
+	atoll.c	\
+	bsearch.c	\
+	div.c	\
+	ldiv.c	\
+	lldiv.c	\
+	qsort.c	\
+	rand.c	\
+	drand48.c	\
+	lrand48.c	\
+	mrand48.c	\
+	srand48.c	\
+	seed48.c	\
+	lcong48.c	\
+	erand48.c	\
+	_rand48.c	\
+	realpath.c	\
+	strtod.c	\
+	strtof.c	\
+	strtold.c	\
+	strtol.c	\
+	strtoll.c	\
+	strtoul.c	\
+	strtoull.c	\
+	dmisc.c	\
+	dtoa.c	\
+	gdtoa.c	\
+	gethex.c	\
+	gmisc.c	\
+	hd_init.c	\
+	hdtoa.c	\
+	hexnan.c	\
+	ldtoa.c	\
+	locks.c	\
+	misc.c	\
+	smisc.c	\
+	strtodg.c	\
+	strtord.c	\
+	sum.c	\
+	ulp.c	\
+
+VPATH += $(S_BSD)/string
+SRC_BSD +=	\
+	memccpy.c	\
+	memccpy.c	\
+	memchr.c	\
+	memcmp.c	\
+	memset.c	\
+	strcat.c	\
+	strcmp.c	\
+	strcoll.c	\
+	strcpy.c	\
+	strcspn.c	\
+	strdup.c	\
+	strlen.c	\
+	strncat.c	\
+	strncmp.c	\
+	strncpy.c	\
+	strpbrk.c	\
+	strspn.c	\
+	strstr.c	\
+	strtok.c	\
+	strxfrm.c	\
+	strlcpy.c	\
+	strlcat.c	\
+	bcmp.c	\
+	bcopy.c	\
+	bzero.c	\
+	ffs.c	\
+	index.c	\
+	rindex.c	\
+	strcasecmp.c	\
+
+VPATH += $(S_BSD)/time
+SRC +=	\
+	asctime.c	\
+	difftime.c	\
+	strftime.c	\
+	strptime.c	\
+

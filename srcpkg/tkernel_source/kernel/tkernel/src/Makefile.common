@@ -1,0 +1,78 @@
+#
+# ----------------------------------------------------------------------
+#     T-Kernel 2.0 Software Package
+#
+#     Copyright 2011 by Ken Sakamura.
+#     This software is distributed under the T-License 2.0.
+# ----------------------------------------------------------------------
+#
+#     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#
+# ----------------------------------------------------------------------
+#
+
+#
+#	Makefile for gmake
+#	T-Kernel/OS (common description)
+#
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target object
+TARGET	= tkernel.o
+
+S	= ../../src
+
+# common source files
+SRC	+=	tkstart.c timer.c wait.c task.c klock.c \
+		task_manage.c task_sync.c \
+		semaphore.c mutex.c eventflag.c \
+		mailbox.c messagebuf.c rendezvous.c \
+		mempool.c mempfix.c time_calls.c misc_calls.c \
+		subsystem.c objname.c \
+		tkdev_init.c cpu_calls.c cpu_init.c cpu_support.S \
+		version.c
+
+VPATH	+= $(S)
+HEADER	+= $(S)
+
+# additional source files (cpu-dependent)
+VPATH   += ../../../sysdepend/cpu/$(MACHINE)
+HEADER	+= ../../../sysdepend/cpu/$(MACHINE)
+
+# additional source files (device-dependent)
+VPATH   += ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+HEADER	+= ../../../sysdepend/device/$(TETYPE)_$(MACHINE)
+
+# header file path (T-Kernel common standard library)
+HEADER  += ../../../tstdlib
+
+OBJ = $(addsuffix .o, $(basename $(SRC)))
+
+ASM_SRC = $(filter %.S, $(SRC))
+ASM_OBJ	= $(addsuffix .o, $(basename $(ASM_SRC)))
+
+# compiler options
+CFLAGS += $(CFLAGS_WARNING)
+
+CPPFLAGS += -DTKERNEL_CHECK_CONST
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+clean:
+	$(RM) $(OBJ) $(TARGET) $(DEPS)
+
+# generate dependencies
+$(DEPS): ; touch $(DEPS)
+-include $(DEPS)
