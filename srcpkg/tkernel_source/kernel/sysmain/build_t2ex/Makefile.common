@@ -431,6 +431,8 @@ clean:	clean_libraries clean_drivers
 	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) clean )
 	( cd $(BLD_SYSINIT_PATH) ; $(MAKE) $(DBGOPT) clean )
 	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) clean )
+	( cd $(BLD_TKSE_PATH) ; $(MAKE) $(DBGOPT) clean )
+	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) clean )
 ifdef  T2EX
 	( cd $(BLD_LOAD_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )
 	( cd $(BLD_DATETIME_PATH) ; $(MAKE) $(DBGOPT) clean clean_install )

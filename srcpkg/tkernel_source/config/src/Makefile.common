@@ -62,5 +62,6 @@ devconf.c: $(S)/DEVCONF;	@$(CONV_CONF) $< > $@
 clean:
 	$(RM) rominfo.o rominfo rominfo.mot
 	$(RM) sysconf.[co] devconf.[co]
+	$(RM) Dependencies
 
 install: $(addprefix $(EXE_INSTALLDIR)/, $(ALL))

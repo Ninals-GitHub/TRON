@@ -72,6 +72,7 @@ clean:
 	for dir in $(DRV_TARGET); do \
 		( cd $$dir/build ; $(MAKE) clean clean_install ) ; \
 	done ) ;
+	$(RM) ../*.o
 
 source:
 	@( cd ../../../drv/$(MDIR) ; \

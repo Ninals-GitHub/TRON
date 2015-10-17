@@ -7,6 +7,7 @@
 # ----------------------------------------------------------------------
 #
 #     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#    Modified by Nina Petipa at 2015/10/17
 #
 # ----------------------------------------------------------------------
 #
@@ -43,4 +44,4 @@ clean:
 	for dir in $(LIB_CPUDEP_TARGET); do \
 		( cd $$dir/build/$(MACHINE) ; make clean ) ; \
 	done ) ;
-	rm -rf $(addsuffix .a, $(LIB_ARCHIVE_OBJ)) *.o \#*.o.* \#*.a.*
+	rm -rf $(addsuffix .a, $(LIB_ARCHIVE_OBJ)) *.a *.o \#*.o.* \#*.a.*

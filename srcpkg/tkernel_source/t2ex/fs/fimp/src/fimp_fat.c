@@ -242,6 +242,7 @@ LOCAL	void	fcl_to_dirent(FATFS *fs, FAT_DIRENT *dirent, UW fcl)
 /*
  *  Disk read
  */
+IMPORT ER tk_srea_dev_d( ID dd, D start_d, void *buf, W size, W *asize ) __asm__("tk_srea_dev_d");
 LOCAL	ER	fatDiskRead(FATFS *fs, D start, void *buf, W size)
 {
 	W	asize;
@@ -6218,17 +6219,14 @@ LOCAL	ER	fatfs_attachfn(coninf_t *coninf, void *exinf)
 
 	/* Check boot sector and calc number of free cluster */
 	err = fatCheckFileSystem(fs);
-		printf("2:%d\n", err);
 	if (err < E_OK) goto exit2;
 
 	/* Initialize Disk cache */
 	err = fatDCacheInit(fs);
-		printf("3:%d\n", err);
 	if (err < E_OK) goto exit2;
 
 	/* Initialize FAT map */
 	err = fatMapFATInit(fs);
-		printf("4:%d\n", err);
 	if (err < E_OK) goto exit3;
 
 	/* Count of the number of empty clusters */

@@ -228,7 +228,7 @@ int_tksyscall_\int_num:
 	
 	subl	$8, %esp			# argument7 + argument 8
 	
-	pushl	%ebx				# argument6
+	pushl	%ebp				# argument6
 	pushl	%edi				# argument5
 	pushl	%esi				# argument4
 	pushl	%edx				# argument3

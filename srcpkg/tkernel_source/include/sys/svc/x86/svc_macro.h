@@ -43,9 +43,15 @@
 Csym(\func_name):
 	pushl	%ebp
 	movl	%esp, %ebp
+	pushl	%ebx
+	pushl	%esi
+	pushl	%edi
 	movl	$\func_code, %eax
 	int	$SWI_SVC
-	pop	%ebp
+	popl	%edi
+	popl	%esi
+	popl	%ebx
+	popl	%ebp
 	ret
 .endm
 
@@ -60,14 +66,18 @@ Csym(\func_name):
 	.globl	Csym(\func_name)
 	.type	Csym(\func_name), %function
 Csym(\func_name):
-	pushl	%ebx
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	12(%ebp), %ebx
+	pushl	%ebx
+	pushl	%esi
+	pushl	%edi
+	movl	8(%ebp), %ebx
 	movl	$\func_code, %eax
 	int	$SWI_SVC
-	popl	%ebp
+	popl	%edi
+	popl	%esi
 	popl	%ebx
+	popl	%ebp
 	ret
 .endm
 
@@ -82,17 +92,21 @@ Csym(\func_name):
 	.globl	Csym(\func_name)
 	.type	Csym(\func_name), %function
 Csym(\func_name):
-	pushl	%ecx
-	pushl	%ebx
 	pushl	%ebp
 	movl	%esp, %ebp
-	movl	20(%ebp), %ecx		# 2nd
-	movl	16(%ebp), %ebx		# 1st
+	pushl	%ecx
+	pushl	%ebx
+	pushl	%esi
+	pushl	%edi
+	movl	12(%ebp), %ecx		# 2nd
+	movl	8(%ebp), %ebx		# 1st
 	movl	$\func_code, %eax
 	int	$SWI_SVC
-	popl	%ebp
+	popl	%edi
+	popl	%esi
 	popl	%ebx
 	popl	%ecx
+	popl	%ebp
 	ret
 .endm
 
@@ -107,20 +121,24 @@ Csym(\func_name):
 	.globl	Csym(\func_name)
 	.type	Csym(\func_name), %function
 Csym(\func_name):
+	pushl	%ebp
+	movl	%esp, %ebp
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
-	pushl	%ebp
-	movl	%esp, %ebp
-	movl	28(%ebp), %edx		# 3rd
-	movl	24(%ebp), %ecx		# 2nd
-	movl	20(%ebp), %ebx		# 1st
+	pushl	%esi
+	pushl	%edi
+	movl	16(%ebp), %edx		# 3rd
+	movl	12(%ebp), %ecx		# 2nd
+	movl	8(%ebp), %ebx		# 1st
 	movl	$\func_code, %eax
 	int	$SWI_SVC
-	popl	%ebp
+	popl	%edi
+	popl	%esi
 	popl	%ebx
 	popl	%ecx
-	popl	%edx
+	addl	$4, %esp		# edx
+	popl	%ebp
 	ret
 .endm
 
@@ -135,23 +153,25 @@ Csym(\func_name):
 	.globl	Csym(\func_name)
 	.type	Csym(\func_name), %function
 Csym(\func_name):
+	pushl	%ebp
+	movl	%esp, %ebp
 	pushl	%esi
 	pushl	%edx
 	pushl	%ecx
 	pushl	%ebx
-	pushl	%ebp
-	movl	%esp, %ebp
-	movl	36(%ebp), %esi		# 4th
-	movl	32(%ebp), %edx		# 3rd
-	movl	28(%ebp), %ecx		# 2nd
-	movl	24(%ebp), %ebx		# 1st
+	pushl	%edi
+	movl	20(%ebp), %esi		# 4th
+	movl	16(%ebp), %edx		# 3rd
+	movl	12(%ebp), %ecx		# 2nd
+	movl	8(%ebp), %ebx		# 1st
 	movl	$\func_code, %eax
 	int	$SWI_SVC
-	popl	%ebp
+	popl	%edi
 	popl	%ebx
 	popl	%ecx
-	popl	%edx
+	addl	$4, %esp		# edx
 	popl	%esi
+	popl	%ebp
 	ret
 .endm
 
@@ -160,6 +180,7 @@ Csym(\func_name):
 	invoke svc specified with 5 arguments
 ----------------------------------------------------------------------------------
 */
+.extern see_argument5
 .macro define_svc_arg5 func_name func_code
 	.text
 	.balign	4
@@ -172,12 +193,12 @@ Csym(\func_name):
 	pushl	%ecx
 	pushl	%ebx
 	pushl	%ebp
-	movl	%esp, %ebp
-	movl	44(%ebp), %edi		# 5th
-	movl	40(%ebp), %esi		# 4th
-	movl	36(%ebp), %edx		# 3rd
-	movl	32(%ebp), %ecx		# 2nd
-	movl	28(%ebp), %ebx		# 1st
+	movl	48(%esp), %ebp		# 6th
+	movl	44(%esp), %edi		# 5th
+	movl	40(%esp), %esi		# 4th
+	movl	36(%esp), %edx		# 3rd
+	movl	32(%esp), %ecx		# 2nd
+	movl	28(%esp), %ebx		# 1st
 	movl	$\func_code, %eax
 	int	$SWI_SVC
 	popl	%ebp

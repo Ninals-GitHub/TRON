@@ -7,6 +7,7 @@
 # ----------------------------------------------------------------------
 #
 #     Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+#    Modified by Nina Petipa at 2015/10/17
 #
 # ----------------------------------------------------------------------
 #
@@ -115,10 +116,12 @@ $(EXE_INSTALLDIR)/%.so.$(LIB_VERSION): %.so.$(LIB_VERSION)
 
 ### install executable ###
 $(EXE_INSTALLDIR)/%: %
-	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
+	$(BD)/etc/backup_copy -t $< $(EXE_INSTALLDIR)
+#	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
 
 define EXE_INSTALL_STRIP
-	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
+	$(BD)/etc/backup_copy -t $< $(EXE_INSTALLDIR)
+#	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
 	$(STRIP) $@
 endef
 

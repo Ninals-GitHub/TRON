@@ -125,7 +125,7 @@ else
 endif
 
 #CFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -mstructure-size-boundary=8 -ffreestanding
-CFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -ffreestanding
+CFLAGS += $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -ffreestanding -mno-accumulate-outgoing-args -mpush-args -mno-stack-arg-probe
 
 CFLAGS_WARNING      = -Wall -Wno-pointer-sign
 CFLAGS_WARNING_FULL = -pedantic -W -Wall

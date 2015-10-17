@@ -94,6 +94,7 @@ clean:
 	for dir in $(LIB_T2EXBLD_TARGET); do \
 		( cd $$dir/build_t2ex/$(TETYPE)_$(MACHINE) ; $(MAKE) clean clean_install ) ; \
 	done )
+	( cd ../../build/$(TETYPE)_$(MACHINE) ; $(MAKE) clean ) ;
 
 install:
 	
