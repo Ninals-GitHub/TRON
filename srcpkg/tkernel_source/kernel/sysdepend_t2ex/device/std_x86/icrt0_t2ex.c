@@ -221,6 +221,8 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 	/* -------------------------------------------------------------------- */
 	if (info->flags & MULTIBOOT_INFO_MEM_MAP) {
 		struct multiboot_entry *mmap;
+		unsigned long len = 0;
+		int mmap_len;
 		
 		vd_printf("mmap_addr = 0x%08X, mmap_length = 0x%X\n",
 			info->mmap_addr, info->mmap_length );
@@ -230,6 +232,9 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 			(info->mmap_addr | KERNEL_BASE_ADDR);
 		boot_info.lowmem_top = 0;
 		boot_info.lowmem_limit = 0;
+		
+		mmap_len = info->mmap_length / (0x14 + sizeof(mmap->size));
+		vd_printf("mmap_len = %d\n", mmap_len);
 		
 		for (mmap = (struct multiboot_entry*)info->mmap_addr;
 			(unsigned long)mmap <
@@ -255,7 +260,9 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 
 				end -= KERNEL_BASE_ADDR;
 
-				if (boot_info.lowmem_limit < limit) {
+				if ((boot_info.lowmem_limit < limit) &&
+					len < mmap->len) {
+					len = mmap->len;
 					boot_info.lowmem_top = mem_addr;
 					boot_info.lowmem_limit = limit;
 					boot_info.lowmem_base = mem_addr;
@@ -276,6 +283,7 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 		boot_info.num_mmap_entries = 0;
 		boot_info.mmap = NULL;
 	}
+	vd_printf("---------------------------------------------\n");
 	/* -------------------------------------------------------------------- */
 	/* is there a boot device set?						*/
 	/* -------------------------------------------------------------------- */
@@ -291,10 +299,11 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 	if (info->flags & MULTIBOOT_INFO_CMDLINE) {
 		int len;
 		vd_printf("cmdline = %s\n", info->cmdline);
-		len = strlen(info->cmdline);
+		len = strlen((const char*)info->cmdline);
 		boot_info.cmdline = (char*)allocLowMemory(len + 1);
 		if (boot_info.cmdline) {
-			strncpy(info->cmdline, boot_info.cmdline, len);
+			strncpy((char*)info->cmdline,
+						(char*)boot_info.cmdline, len);
 		}
 	} else {
 		boot_info.cmdline = NULL;
