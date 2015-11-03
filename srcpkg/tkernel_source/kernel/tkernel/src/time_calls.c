@@ -293,13 +293,13 @@ LOCAL void call_cychdr( CYCCB *cyccb )
 	cyc_timer_insert(cyccb, cyc_next_time(cyccb));
 
 	/* Execute cyclic handler / Enable interrupt nest */
-#ifdef STD_X86
+#ifdef _STD_X86_
 	BEGIN_ENABLE_INTERRUPT;
 #else
 	ENABLE_INTERRUPT_UPTO(TIMER_INTLEVEL);
 #endif
 	CallUserHandlerP1(cyccb->exinf, cyccb->cychdr, cyccb);
-#ifdef STD_X86
+#ifdef _STD_X86_
 	END_ENABLE_INTERRUPT;
 #else
 	DISABLE_INTERRUPT;

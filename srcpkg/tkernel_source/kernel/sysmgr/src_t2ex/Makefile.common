@@ -71,8 +71,12 @@ VPATH += $(S_TK2) $(S_TK2)/sysdepend/$(TETYPE)_$(MACHINE)
 HEADER += $(S_TK2) $(S_TK2)/sysdepend/$(TETYPE)_$(MACHINE)
 
 # common source files
-SRC	+=	smmain.c system.c imalloc_t2ex.c syslog.c \
-		device.c deviceio.c
+ifndef BTRON
+SRC	+=	smmain.c system.c  syslog.c device.c deviceio.c \
+		imalloc_t2ex.c
+else
+SRC	+=	smmain.c system.c  syslog.c device.c deviceio.c
+endif
 
 VPATH	+= $(S)
 HEADER	+= $(S)
@@ -104,7 +108,9 @@ $(TARGET): $(OBJ)
 	$(LINK_R.o) $^ $(OUTPUT_OPTION)
 
 clean:
-	$(RM) $(OBJ) $(ALL) $(DEPS)
+	$(RM) *.o $(ALL) $(DEPS)
+
+#	$(RM) $(OBJ) $(ALL) $(DEPS)
 
 # generate dependencies
 $(DEPS): ; touch $(DEPS)

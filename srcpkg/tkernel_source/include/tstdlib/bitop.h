@@ -22,6 +22,7 @@
 #ifndef	_BITOP_
 #define _BITOP_
 
+#include <typedef.h>
 #include <stdtype.h>
 #include <compiler.h>
 
@@ -72,13 +73,17 @@ typedef __wchar_t	wchar_t;
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
-extern void tstdlib_bitclr( void *base, W offset );
-extern void tstdlib_bitset( void *base, W offset );
+extern BOOL tstdlib_bitclr( void *base, W offset );
+extern BOOL tstdlib_bitset( void *base, W offset );
+extern void
+tstdlib_bitset_window( void *base, W offset, int window_len );
 extern BOOL tstdlib_bittest( void *base, W offset );
  
 extern W tstdlib_bitsearch0( void *base, W offset, W width );
 extern W tstdlib_bitsearch1( void *base, W offset, W width );
 extern W tstdlib_bitsearch1_binsearch( UW* base, W offset, W width );
+extern long
+tstdlib_bitsearch0_window( void *base, W width, int window_len );
 
 #define	MAKE_BIT32(bit_num)		((uint32_t)1UL << bit_num)
 #define	MAKE_MASK_SHIFT32(start, end)	((uint32_t)~1UL >> (31 - (end - start)))

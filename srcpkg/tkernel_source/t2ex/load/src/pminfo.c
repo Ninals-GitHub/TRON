@@ -77,6 +77,7 @@ EXPORT ER pmInitInfo( INT n )
 	pmInfoTable = (ProgInfo*)Kcalloc(n, sizeof(ProgInfo));
 
 	if ( pmInfoTable == NULL ) {
+		vd_printf("%s:Kcalloc\n", __func__);
 		er = EX_NOMEM;
 		goto err_ret;
 	}

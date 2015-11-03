@@ -50,7 +50,7 @@
 #if TEF_EM1D
 #  include <sys/sysdepend/tef_em1d/rominfo_depend.h>
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <sys/sysdepend/std_x86/rominfo_depend.h>
 #endif
 

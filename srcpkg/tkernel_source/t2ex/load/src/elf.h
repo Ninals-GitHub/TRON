@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/10/18
  *
  *----------------------------------------------------------------------
  */
@@ -245,6 +246,47 @@ typedef struct {
 #define	R_386_RELATIVE	8
 #define	R_386_GOTOFF	9
 #define	R_386_GOTPC	10
+#define	R_386_32PLT	11
+#define	R_386_TLS_TPOFF		14	/* offset in static TLS block		*/
+#define	R_386_TLS_IE		15	/* address of GOT entry for static TLS	*/
+					/* block offset				*/
+#define	R_386_TLS_GOTIE		16	/* GOT entry for static TLS block	*/
+#define	R_386_TLS_LE		17	/* offset relative to static TLS block	*/
+#define	R_386_TLS_GD		18	/* direct 32 bit for GNU version of	*/
+					/* general dynamic thread local data	*/
+#define	R_386_TLS_LDM		19	/* direct 32 bit for GNU version of local*/
+					/* dynamic thread local data in LE code	*/
+#define	R_386_16		20
+#define	R_386_PC16		21
+#define	R_386_8			22
+#define	R_386_PC8		23
+#define	R_386_TLS_GD_32		24	/* direct 32 bit for general dynamic	*/
+					/* thread local data			*/
+#define	R_386_TLS_GD_PUSH	25	/* tag for pushl in GD TLS code		*/
+#define	R_386_TLS_GD_CALL	26	/* relocation for call to __tls_get_addr*/
+#define	R_386_TLS_GD_POP	27	/* tag for popl in GD TLS code		*/
+#define	R_386_TLS_LDM_32	28	/* direct 32 bit for local dynamic	*/
+					/* thread local data in LE code		*/
+#define	R_386_TLS_LDM_PUSH	29	/* tag for pushl in LDM TLS code	*/
+#define	R_386_TLS_LDM_CALL	30	/* relocation for call to __tls_get_addr*/
+					/* in LDM code				*/
+#define	R_386_TLS_LDM_POP	31	/* tag for popl in LDM TLS code		*/
+#define	R_386_TLS_LDO_32	32	/* offset relative to TLS block		*/
+#define	R_386_TLS_IE_32		33	/* GOT entry for negated static TLS	*/
+					/* block offset				*/
+#define	R_386_TLS_LE_32		34	/* negated offset relative to static	*/
+					/* TLS block				*/
+#define	R_386_TLS_DTPMOD32	35	/* ID of module containig symbol	*/
+#define	R_386_TLS_DTPOFF32	36	/* offset in TLS block			*/
+#define	R_386_TLS_GOTDESC	39	/* GOT offset for TLS descriptor	*/
+#define	R_386_TLS_DESC_CALL	40	/* marker of call through TLS descriptor*/
+					/* for relaxation			*/
+#define	R_386_TLS_DESC		41	/* TLS descriptor containing pointer	*/
+					/* to code and to argument, returning	*/
+					/* the TLS offset for the symbol	*/
+#define	R_386_IRELATIVE		42	/* adjust indirectly by program base	*/
+#define	R_386_NUM		43
+
 
 /* SH Relocation Type */
 #define R_SH_NONE	0	/* No relocation */

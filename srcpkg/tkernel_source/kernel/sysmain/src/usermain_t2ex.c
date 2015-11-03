@@ -9,6 +9,7 @@
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by T-Engine Forum at 2013/03/04.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/03
  *
  *----------------------------------------------------------------------
  */

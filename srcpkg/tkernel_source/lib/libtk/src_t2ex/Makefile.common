@@ -70,6 +70,16 @@ VPATH += $(S_TK2) $(S_TK2)/sysdepend/$(TETYPE)_$(MACHINE)
 HEADER += $(S_TK2) $(S_TK2)/sysdepend/$(TETYPE)_$(MACHINE)
 
 # source files
+ifdef BTRON
+SRC_SYS += libinit.c knlinit.c _commarea.c liblock.c \
+	fastlock.c fastmlock.c \
+	chkspc.c chkspc2.c chkspc3.c \
+	memalloc.c memcheck.c tkminit.c \
+	dbgmode.c fsrcvmode.c getdembf.c \
+	prreg.c _exit.c
+
+SRC_USR +=  fastulock.c fastumlock.c malloc.c
+else
 SRC_SYS += libinit.c knlinit.c _commarea.c liblock.c \
 	fastlock.c fastmlock.c \
 	chkspc.c chkspc2.c chkspc3.c \
@@ -79,7 +89,8 @@ SRC_SYS += libinit.c knlinit.c _commarea.c liblock.c \
 	prreg.c _exit.c
 
 SRC_USR +=  fastulock.c fastumlock.c malloc.c \
-	smalloc.c smcheck.c 
+	smalloc.c smcheck.c
+endif
 
 OBJ	= $(addsuffix .o, $(basename $(notdir $(SRC_SYS)))) \
 	$(addsuffix .uo, $(basename $(notdir $(SRC_USR)))) \

@@ -109,7 +109,7 @@ LOCAL ID pmLoadProg( const struct pm* prog, UINT attr, FP* entry )
 
 	/* Open program load source */
 	er = pmOpenSource(&source, prog);
-	if ( er < E_OK ) goto err_ret1;
+		if ( er < E_OK ) goto err_ret1;
 
 	/* Read object header */
 	er = source.read(&source, 0, &hdr, sizeof(ObjectHeader));
@@ -123,13 +123,14 @@ LOCAL ID pmLoadProg( const struct pm* prog, UINT attr, FP* entry )
 	     && hdr.elf.e_ident[EI_MAG3] == ELFMAG3 ) {
 		/* ELF format */
 		er = elf_load(pginfo, &source, attr, &(hdr.elf));
+	     	printf("pmLoadProg 04\n");
 	}
 	else {
 		/* Unsupported format */
 		er = EX_NOEXEC;
 		goto err_ret2;
 	}
-	if ( er < E_OK ) goto err_ret2;
+	if ( er < E_OK ) {printf("pmLoadProg 06\n");goto err_ret2;}
 
 	source.close(&source);
 

@@ -328,6 +328,7 @@ EXPORT ID _tk_opn_dev( CONST UB *devnm, UINT omode )
 	devcb = searchDevCB(pdevnm);
 	if ( devcb == NULL || unitno > devcb->ddev.nsub ) {
 		ercd = E_NOEXS;
+		vd_printf("3 ");
 		goto err_ret2;
 	}
 

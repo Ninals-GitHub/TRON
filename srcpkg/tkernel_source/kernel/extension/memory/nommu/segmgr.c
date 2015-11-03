@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/11/01
  *
  *----------------------------------------------------------------------
  */
@@ -17,7 +18,7 @@
  */
 
 #include "sysmgr.h"
-#include "cache_info.h"
+#include <device/cache_info.h>
 #include <sys/segment.h>
 #include <sys/svc/ifsegment.h>
 

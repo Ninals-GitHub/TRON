@@ -50,7 +50,7 @@ LOCAL QUEUE	timer_queue;
 /*
  * Initialization of timer module
  */
-#ifdef STD_X86
+#ifdef _STD_X86_
 EXPORT ER timer_initialize(void)
 #else
 EXPORT void timer_initialize(void);
@@ -73,7 +73,7 @@ EXPORT void timer_initialize(void);
 	QueInit(&timer_queue);
 
 	/* Start timer interrupt */
-#ifdef STD_X86
+#ifdef _STD_X86_
 	return(start_hw_timer());
 #else
 	start_hw_timer();

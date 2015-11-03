@@ -35,7 +35,6 @@ IMPORT unsigned long end_usr;
 
 LOCAL void handle_multiboot1(struct multiboot_info *info);
 LOCAL void handle_multiboot2(void *info);
-LOCAL void* allocLowMemory(uint32_t size);
 
 /*
 ==================================================================================
@@ -155,6 +154,33 @@ EXPORT int copyInitramfs(void)
 	}
 	
 	return(0);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:allocLowMemory
+ Input		:uint32_t size
+		 < size to allocate >
+ Output		:void
+ Return		:void*
+		 < allocated memory address >
+ Description	:allocate a memory area from lowmem
+		 this method only use for boot sequence after analyzing memory map
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void* allocLowMemory(uint32_t size)
+{
+	unsigned long allocated;
+	
+	if (!size) {
+		return(NULL);
+	}
+	
+	allocated = boot_info.lowmem_top | KERNEL_BASE_ADDR;
+	boot_info.lowmem_top += size;
+	
+	return((void*)allocated);
 }
 
 /*
@@ -403,31 +429,6 @@ LOCAL void handle_multiboot2(void *info)
 	vd_printf("multiboot2 has not been yet implemented\n");
 }
 
-/*
-==================================================================================
- Funtion	:allocLowMemory
- Input		:uint32_t size
-		 < size to allocate >
- Output		:void
- Return		:void*
-		 < allocated memory address >
- Description	:allocate a memory area from lowmem
-		 this method only use for boot sequence after analyzing memory map
-==================================================================================
-*/
-LOCAL void* allocLowMemory(uint32_t size)
-{
-	unsigned long allocated;
-	
-	if (!size) {
-		return(NULL);
-	}
-	
-	allocated = boot_info.lowmem_top | KERNEL_BASE_ADDR;
-	boot_info.lowmem_top += size;
-	
-	return((void*)allocated);
-}
 
 
 /*

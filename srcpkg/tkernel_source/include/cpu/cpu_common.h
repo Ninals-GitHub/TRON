@@ -32,7 +32,7 @@
 #endif
 #if TEF_EM1D
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <cpu/x86/cpu_insn.h>
 #  include <cpu/x86/cpuid.h>
 #  include <cpu/x86/descriptor.h>

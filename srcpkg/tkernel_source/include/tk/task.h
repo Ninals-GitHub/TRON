@@ -21,20 +21,14 @@
 #ifndef _TASK_
 #define _TASK_
 
-#ifndef __mtxcb__
-#define __mtxcb__
-typedef struct mutex_control_block	MTXCB;
-#endif
-
-#ifndef __tcb__
-#define __tcb__
-typedef struct task_control_block	TCB;
-#endif
-
 #include <sys/queue.h>
 #include <sys/str_align.h>
 #include <tk/timer.h>
 #include <tk/winfo.h>
+#include <tstdlib/list.h>
+
+
+struct process;
 
 /*
  * Internal expression of task state
@@ -68,7 +62,8 @@ Inline BOOL task_alive( TSTAT state )
 /*
  * Task control block (TCB)
  */
-struct task_control_block {
+//struct task_control_block {
+struct task {
 	QUEUE	tskque;		/* Task queue */
 	ID	tskid;		/* Task ID */
 	void	*exinf;		/* Extended information */
@@ -159,6 +154,8 @@ CONST	WSPEC	*wspec;		/* Wait specification */
 #if USE_OBJECT_NAME
 	UB	name[OBJECT_NAME_LENGTH];	/* name */
 #endif
+	struct process	*proc;		/* main process			*/
+	struct list	task_node;	/* node of task group list	*/
 };
 
 /*
@@ -254,5 +251,62 @@ IMPORT void rotate_ready_queue_run( void );
  * Scheduling by time slice
  */
 IMPORT TCB* time_slice_schedule( TCB *tcb );
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < current task >
+ Description	:get current task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct task* get_current_task(void);
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_scheduled_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < next task >
+ Description	:get next scheduled task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct task* get_scheduled_task(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < allocated task >
+ Description	:allocate a empty task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct task* alloc_task(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_task
+ Input		:struct task *task
+		 < to be freed >
+ Output		:void
+ Return		:void
+ Description	:free a task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER free_task(struct task *task);
 
 #endif /* _TASK_ */

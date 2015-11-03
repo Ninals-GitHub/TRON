@@ -32,6 +32,8 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <compiler.h>
+#include <stddef.h>
 
 typedef int8_t		B;	/* Signed 8 bit integer */
 typedef int16_t		H;	/* Signed 16 bit integer */
@@ -93,6 +95,24 @@ typedef UH		TC;		/* TRON character code */
 typedef uint16_t	UINT16;
 typedef uint32_t	UINT32;
 typedef uint64_t	UINT64;
+
+/*
+ * miscellaneous types
+ */
+#ifndef __mtxcb__
+#define __mtxcb__
+typedef struct mutex_control_block	MTXCB;
+#endif
+
+#ifndef __tcb__
+#define __tcb__
+typedef struct task			TCB;
+#endif
+
+#ifndef __ctxb__
+#define __ctxb__
+typedef struct task_context_block	CTXB;
+#endif
 
 #if 0
 /*

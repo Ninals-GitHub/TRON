@@ -52,6 +52,7 @@
 #define __ERRNO_H__
 
 #include <tk/errno.h>
+#include <bk/uapi/btron/errno.h>
 
 #ifdef	__cplusplus
 extern	"C" {
@@ -87,6 +88,7 @@ typedef	int	errno_t;
  *  Error numbers:
  *	(*) will not occur in T2EX implementation
  */
+#if 0
 #define EPERM		1	/* Operation not permitted		*/
 #define ENOENT		2	/* No such file or directory		*/
 #define ESRCH		3	/* No such process(*)			*/
@@ -166,9 +168,12 @@ typedef	int	errno_t;
 
 #define EOVERFLOW	84	/* Value too large to be stored in data type */
 #define EILSEQ		85	/* Illegal byte sequence		*/
+#endif
 #define ENOTSUP 	86	/* Unsupported				*/
 
 #define	ELAST		86	/* The last error number		*/
+
+#define EFTYPE		79	/* Inappropriate file type or format	*/
 
 
 /* 

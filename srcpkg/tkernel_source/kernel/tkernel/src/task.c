@@ -75,7 +75,7 @@ EXPORT ER task_initialize( void )
 	if ( tcb_table == NULL ) {
 		return E_NOMEM;
 	}
-
+	
 	/* Initialize task execution control information */
 	ctxtsk = schedtsk = NULL;
 	ready_queue_initialize(&ready_queue);
@@ -298,6 +298,43 @@ SYSCALL INT _td_rdy_que( PRI pri, ID list[], INT nent )
 	END_DISABLE_INTERRUPT;
 
 	return n;
+}
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < current task >
+ Description	:get current task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct task* get_current_task(void)
+{
+	return((struct task*)ctxtsk);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_scheduled_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < next task >
+ Description	:get next scheduled task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct task* get_scheduled_task(void)
+{
+	return((struct task*)schedtsk);
 }
 
 #endif /* USE_DBGSPT */

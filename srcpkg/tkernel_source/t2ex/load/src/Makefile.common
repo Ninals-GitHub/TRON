@@ -125,7 +125,7 @@ SRC_SVC = load_svc.S
 # ----------------------------------------------------------------------------
 
 clean:
-	$(RM) $(MGROBJ) $(LIBOBJ) $(ALL) $(DEPS) $(DEPS_SRC)
+	$(RM) $(MGROBJ) *.o $(LIBOBJ) $(ALL) $(DEPS) $(DEPS_SRC)
 
 install: $(addprefix $(T2EX_INSTALLDIR)/, $(TARGET_OBJ)) \
 	$(addprefix $(LIB_INSTALLDIR)/, $(TARGET_LIB))

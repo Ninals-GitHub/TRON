@@ -474,27 +474,32 @@ LOCAL ER GetELFLoadInfo( ELF_LoadInfo *eli, Elf32_Ehdr *hdr, LoadSource *ldr, BO
 
 	switch ( hdr->e_type ) {
 	  case ET_EXEC:
+#if 0
 	  	if ( relsec ) {
+	  		printf("GetELFLoadInfoShdr\n");
 			/* Get loading information from section header */
 			eli->vir_or_off = TRUE;
 			er = GetELFLoadInfoShdr(eli, hdr, ldr);
 		} else {
+			printf("GetELFLoadInfoPhdr\n");
 			/* Get loading information from program header */
 			er = GetELFLoadInfoPhdr(eli, hdr, ldr);
 		}
-		if ( er < E_OK ) goto err_ret;
+#endif
+		er = GetELFLoadInfoPhdr(eli, hdr, ldr);
+			if ( er < E_OK ) {goto err_ret;}
 		break;
 
 	  case ET_DYN:
 		/* Get loading information from program header */
 		er = GetELFLoadInfoPhdr(eli, hdr, ldr);
-		if ( er < E_OK ) goto err_ret;
+		if ( er < E_OK ) {goto err_ret;}
 		break;
 
 	  case ET_REL:
 		/* Get loading information from section header */
 		er = GetELFLoadInfoShdr(eli, hdr, ldr);
-		if ( er < E_OK ) goto err_ret;
+		if ( er < E_OK ) {goto err_ret;}
 		break;
 
 	  default:
@@ -1034,11 +1039,11 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 
 	/* Dynamic link library is not allowed as program module */
 	if ( hdr->e_type == ET_DYN )
-		{ er = EX_NOEXEC; goto err_ret1; }
+			{ printf("elf_load 01\n");er = EX_NOEXEC; goto err_ret1; }
 
 	/* Get ELF loading information */
 	er = GetELFLoadInfo(&eli, hdr, ldr, relsec);
-	if ( er < E_OK ) goto err_ret1;
+	if ( er < E_OK ) {printf("elf_load 02\n");goto err_ret1;}
 
 	top_adr = PageAlignL(eli.text_ladr);
 
@@ -1051,7 +1056,7 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 
 		/* Allocate memory for loading program */
 		er = tk_get_smb((void**)&ladr, npage, attr);
-		if ( er < E_OK ) { er = EX_NOMEM; goto err_ret1; }
+		if ( er < E_OK ) { printf("elf_load 03\n");er = EX_NOMEM; goto err_ret1; }
 	}
 
 	pg->loadadr = ladr; /* load address */
@@ -1060,26 +1065,27 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	lofs = ladr - top_adr;
 
 	/* Read text area */
+	printf("ldr:0x%08X eli.text_fofs:0x%08X eli.text_ladr + lofs:0x%08X eli.text_size:0x%08X\n",ldr, eli.text_fofs, eli.text_ladr + lofs, eli.text_size);
 	er = ldr->read(ldr, eli.text_fofs, eli.text_ladr + lofs, eli.text_size);
-	if ( er < E_OK ) goto err_ret2;
+	if ( er < E_OK ) {printf("elf_load 04\n");goto err_ret2;}
 	if ( er < eli.text_size ) { er = EX_NOEXEC; goto err_ret2; }
 
 	/* Read data area */
 	er = ldr->read(ldr, eli.data_fofs, eli.data_ladr + lofs, eli.data_size);
-	if ( er < E_OK ) goto err_ret2;
+	if ( er < E_OK ) {printf("elf_load 05\n");goto err_ret2;}
 	if ( er < eli.data_size ) { er = EX_NOEXEC; goto err_ret2; }
 
 	if ( hdr->e_type == ET_REL
 			|| ( hdr->e_type == ET_EXEC && eli.vir_or_off) ) {
 		/* Relocation */
 		er = elf_relocation(pg, ldr, &eli, lofs);
-		if ( er < E_OK ) goto err_ret2;
+				if ( er < E_OK ) {printf("elf_load 06\n");goto err_ret2;}
 	}
 
 	/* Make text area executable, and non-writable */
 	sz = eli.text_ladr + eli.text_size - top_adr;
 	er = SetMemoryAccess(ladr, sz, MM_READ|MM_EXECUTE);
-	if ( er < 0 ) goto err_ret2;
+	if ( er < 0 ) {printf("elf_load 07\n");goto err_ret2;}
 
 	/* Flush memory cache
 		data area is flushed as well, as it may be executed on some platforms(PowerPC) */

@@ -12,6 +12,7 @@
 #ifndef	__DISPATCH_H__
 #define	__DISPATCH_H__
 
+#include <typedef.h>
 #include <tk/typedef.h>
 #include <tk/kernel.h>
 
@@ -22,7 +23,7 @@
 
 ==================================================================================
 */
-struct task_context_block;
+//struct task_context_block;
 
 /*
 ==================================================================================
@@ -32,10 +33,11 @@ struct task_context_block;
 ==================================================================================
 */
 
-#ifndef __tcb__
-#define __tcb__
-typedef struct task_control_block	TCB;
-#endif
+//#ifndef __tcb__
+//#define __tcb__
+////typedef struct task_control_block	TCB;
+//typedef struct task			TCB;
+//#endif
 
 /*
 ==================================================================================

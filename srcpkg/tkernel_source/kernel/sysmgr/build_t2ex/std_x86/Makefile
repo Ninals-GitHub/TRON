@@ -70,18 +70,22 @@ SRC = chkplv.c power.c cache.c cpu_insn.c cpuid.c descriptor.c	\
 	int_handlers.c dispatch.c
 
 # Extension source files
+ifndef BTRON
 VPATH	+= ../../../extension/memory/$(MEMMGR)
 HEADER	+= ../../../extension/memory/$(MEMMGR)
 SRC += memmgr.c segmgr.c
+endif
 
 # Extension source files (T2EX specific)
 ifeq ($(MEMMGR), t2ex)
+ifndef BTRON
 CFLAGS	+= -DT2EX_MM_USE_TASKEXCEPTION=$(T2EX_MM_USE_TASKEXCEPTION)
 VPATH	+= ../../../extension/memory/$(MEMMGR)/sysdepend/$(MACHINE)
 HEADER	+= ../../../extension/memory/$(MEMMGR)/sysdepend/$(MACHINE)
 SRC += space.c excmgr.c excentry.S
 ifneq ($(T2EX_MM_USE_DEFAULT_FAULT_HANDLER), 0)
 SRC += exchdr.c
+endif
 endif
 endif
 

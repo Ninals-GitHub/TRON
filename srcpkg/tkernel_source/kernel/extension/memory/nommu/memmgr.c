@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
  *    Modified by T-Engine Forum at 2012/10/24.
+ *    Modified by Nina Petipa at 2015/11/01
  *
  *----------------------------------------------------------------------
  */
@@ -18,7 +19,7 @@
  */
 
 #include "sysmgr.h"
-#include "cache_info.h"
+#include <device/cache_info.h>
 #include <sys/rominfo.h>
 #include <sys/imalloc.h>
 

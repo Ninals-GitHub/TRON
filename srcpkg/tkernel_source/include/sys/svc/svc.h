@@ -32,7 +32,7 @@
 #endif
 #if TEF_EM1D
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <sys/svc/x86/svc_macro.h>
 #  include <sys/svc/x86/td_svc_macro.h>
 #endif

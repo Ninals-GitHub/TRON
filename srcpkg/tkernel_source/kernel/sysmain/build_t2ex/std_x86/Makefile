@@ -84,6 +84,10 @@ T2EX_PM = yes
 #T2EX_NET_SAMPLE = yes
 
 # ----------------------------------------------------------------------------
+# BTRON definitions
+BTRON = _btron
+
+# ----------------------------------------------------------------------------
 # default rules
 include $(BD)/etc/makerules
 
@@ -111,7 +115,8 @@ DRV_LOWKBPD = yes
 #DRV_NET     = yes
 
 #OBJ_DRIVER = $(BD)/driver/$(TETYPE)_$(MACHINE)/build
-OBJ_DRIVER = $(BD)/driver/$(TETYPE)_$(MACHINE)
+#OBJ_DRIVER = $(BD)/driver/$(TETYPE)_$(MACHINE)
+OBJ_DRIVER = ../../../../driver/$(TETYPE)_$(MACHINE)
 ifdef DRV_CONSOLE
   I_OBJ += $(OBJ_DRIVER)/console.o
   DRV_OBJS += console

@@ -639,6 +639,20 @@ LOCAL __inline__ void setInitramfsAddress(uint32_t start, uint32_t size)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:allocLowMemory
+ Input		:uint32_t size
+		 < size to allocate >
+ Output		:void
+ Return		:void*
+		 < allocated memory address >
+ Description	:allocate a memory area from lowmem
+		 this method only use for boot sequence after analyzing memory map
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void* allocLowMemory(uint32_t size);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:copyInitramfs
  Input		:void
  Output		:void
@@ -650,4 +664,4 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 IMPORT int copyInitramfs(void);
 
 #endif	/* __in_asm_source_		*/
-#endif	/* __MULTIBOOT__S		*/
+#endif	/* __MULTIBOOT__H		*/

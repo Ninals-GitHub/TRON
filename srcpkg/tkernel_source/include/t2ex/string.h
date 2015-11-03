@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/10/27
  *
  *----------------------------------------------------------------------
  */
@@ -52,7 +53,8 @@
 #define	_STRING_H_
 
 #include <basic.h>
-#include <errno.h>
+//#include <errno.h>
+#include <t2ex/errno.h>
 #include <tk/typedef.h>
 
 #ifdef __cplusplus
@@ -70,18 +72,19 @@ IMPORT	char	*strchr(const char *s, int c);
 IMPORT	int	strcmp(const char *s1, const char *s2);
 IMPORT	int	strcoll(const char *s1, const char *s2);
 IMPORT	char	*strcpy(char *dst, const char *src);
-IMPORT	size_t strcspn(const char *s1, const char *s2);
+IMPORT	size_t	strcspn(const char *s1, const char *s2);
 IMPORT	char	*strdup(const char *s);
-IMPORT	size_t strlen(const char *s);
+IMPORT	size_t	strlen(const char *s);
+IMPORT	size_t	strnlen(const char *s, size_t maxlen);
 IMPORT	char	*strncat(char *dst, const char *src, size_t n);
 IMPORT	int	strncmp(const char *s1, const char *s2, size_t n);
 IMPORT	char	*strncpy(char *dst, const char *src, size_t n);
 IMPORT	char	*strpbrk(const char *s1, const char *s2);
 IMPORT	char	*strrchr(const char *s, int c);
-IMPORT	size_t strspn(const char *s1, const char *s2);
+IMPORT	size_t	strspn(const char *s1, const char *s2);
 IMPORT	char	*strstr(const char *s1, const char *s2);
 IMPORT	char	*strtok_r(char *str, const char *sep, char **lasts);
-IMPORT	size_t strxfrm(char *dst, const char *src, size_t n);
+IMPORT	size_t	strxfrm(char *dst, const char *src, size_t n);
 IMPORT	int	strerror_r(errno_t errnum, char *buf, size_t buflen);
 IMPORT	int	strercd_r(ER ercd, char *buf, size_t buflen);
 

@@ -45,8 +45,8 @@
  * Conversion between physical address and logical address of
  * real memory area (physical space)
  */
-#define toLogicalAddress(paddr)		(void*)((char*)paddr + KERNEL_BASE_ADDR)
-#define toPhysicalAddress(laddr)	(void*)((unsigned long)laddr + KERNEL_BASE_ADDR)
+//  #define toLogicalAddress(paddr)	(void*)((char*)paddr - KERNEL_BASE_ADDR)
+//  #define toPhysicalAddress(laddr)	(void*)((unsigned long)laddr + KERNEL_BASE_ADDR)
 
 /*
  * Convert logical address into logical address of the cache off area

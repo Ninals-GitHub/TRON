@@ -167,14 +167,16 @@ EXPORT DevCB* searchDevCB( CONST UB *devnm )
 {
 	QUEUE	*q;
 	DevCB	*devcb;
-
+vd_printf("devnm:%s\n", devnm);
 	for ( q = UsedDevCB.next; q != &UsedDevCB; q = q->next ) {
 		devcb = (DevCB*)q;
-
+vd_printf("%s ", devcb->devnm);
 		if ( devcb->devnm[0] == devnm[0] && strcmp((char*)devcb->devnm, (char*)devnm) == 0 ) {
 			return devcb; /* Found */
 		}
 	}
+	
+	vd_printf("nothing foun\n");
 
 	return NULL;
 }

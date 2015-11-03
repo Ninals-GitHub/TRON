@@ -240,11 +240,13 @@ EXPORT	ER	SysDiskDrv(INT ac, UB *av[])
 	}
 #endif
 	/* Driver for RAM disk (mda) : DEVCONF: RAMDISK  size */
-#if STD_X86
+#if _STD_X86_
 	if (isInitramfs()) {
+		vd_printf("ramdisk ");
 		md_drv[0].iob = (UW)getInitramfsAddress();
 		md_drv[0].misc = getInitramfsSize();
-		CreTask((FP)ExecTask, (INT)&md_drv[0], md_drv[0].name4);
+		vd_printf("CreTask:%d\n", CreTask((FP)ExecTask, (INT)&md_drv[0], md_drv[0].name4));
+		vd_printf("E_SYS:%d\n", E_SYS);
 	}
 #else
 	if (GetDevConf("RAMDISK", v) > 0) {

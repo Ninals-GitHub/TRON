@@ -21,6 +21,7 @@
 #define __TK_SYSMGR_H__
 
 #include <basic.h>
+#include <tk/util.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,6 +109,15 @@ IMPORT ER tk_ref_smb( T_RSMB *pk_rsmb );
 IMPORT ER  _GetKernelCommonArea( CommArea **area );
 IMPORT int _syslog_send( const char *string, int len );
 /* [END SYSCALLS] */
+
+IMPORT INT _tk_get_cfn( CONST UB *name, INT *val, INT max );
+IMPORT void FlushCache( CONST void *laddr, INT len );
+IMPORT void FlushCacheM( CONST void *laddr, INT len, UINT mode );
+IMPORT ER ControlCacheM( void *laddr, INT len, UINT mode );
+IMPORT INT GetCacheLineSize( void );
+IMPORT UW smPageCount( UW byte );
+/* chkplv.c */
+IMPORT ER ChkCallPLevel( void );
 
 #ifdef __cplusplus
 }

@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/11/03
  *
  *----------------------------------------------------------------------
  */
@@ -17,7 +18,7 @@
  *	Resident system memory allocation
  */
 
-#include "libtk.h"
+#include <tk/libtk.h>
 
 #ifndef KMALLOCTEST
 

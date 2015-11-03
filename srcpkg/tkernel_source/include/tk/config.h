@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/10/22
  *
  *----------------------------------------------------------------------
  */
@@ -18,6 +19,14 @@
 
 #ifndef _CONFIG_
 #define _CONFIG_
+
+/* Process configuration */
+#define	MIN_PID		(1)
+#define	MAX_PID		(max_pid)
+#define	NUM_PID		(MAX_PID)
+#define CHK_PID(id)	((MIN_PID) <= (id) && (id) <= (MAX_PID))
+#define INDEX_PROC(id)	((id)-(MIN_PID))
+#define ID_PROC(index)	((index)+(MIN_PID))
 
 /* Task configuration */
 #define MIN_TSKID	(1)

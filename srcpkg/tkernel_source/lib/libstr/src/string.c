@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/10/27
  *
  *----------------------------------------------------------------------
  */
@@ -149,6 +150,34 @@ strlen( const char *s )
 		++cp;
 	}
 	return (size_t)(cp - s);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:strlen
+ Input		:const char *s
+		 < text string >
+		 size_t maxlen
+		 < maximum lenght of text string >
+ Output		:void
+ Return		:size_t
+		 < length of text string >
+ Description	:get text string length
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+size_t strnlen(const char *s, size_t maxlen)
+{
+	register char *cp;
+	size_t len = 0;
+	
+	cp = (char*)s;
+	
+	while (*cp && (len < maxlen)) {
+		++cp;
+		len++;
+	}
+	
+	return((size_t)(cp - s));
 }
 
 /* strcmp : perform text string comparison */

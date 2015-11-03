@@ -54,7 +54,7 @@
 #include "sysmgr.h"
 #include "segmgr.h"
 #include "pagedef.h"
-#include "cache_info.h"
+#include <device/cache_info.h>
 #include "mmu.h"
 #include <sys/rominfo.h>
 #include <sys/sysinfo.h>

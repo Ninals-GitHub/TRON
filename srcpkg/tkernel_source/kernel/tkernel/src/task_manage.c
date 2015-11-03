@@ -105,13 +105,14 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	stksz  = (stksz  + 7) / 8 * 8;
 
 	/* Allocate system stack area */
-#ifdef STD_X86
-	sstack = IAmalloc((UINT)8192, TA_RNG0);
-	sstksz = 8192;
+#ifdef _STD_X86_
+	sstack = IAmalloc((UINT)KERNEL_STACK_SIZE, TA_RNG0);
+	sstksz = KERNEL_STACK_SIZE;
 #else
 	sstack = IAmalloc((UINT)sstksz, TA_RNG0);
 #endif
 	if ( sstack == NULL ) {
+	vd_printf("failed IAmalloc1\n");
 		return E_NOMEM;
 	}
 
@@ -120,6 +121,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 		stack = IAmalloc((UINT)stksz, pk_ctsk->tskatr);
 		if ( stack == NULL ) {
 			IAfree(sstack, TA_RNG0);
+			vd_printf("failed IAmalloc2\n");
 			return E_NOMEM;
 		}
 	}
@@ -144,7 +146,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 #if USE_OBJECT_NAME
 	//if ( (pk_ctsk->tskatr & TA_DSNAME) != 0 ) {
 		tcb->name[0] = id + 0x30;
-	tcb->name[1] = NULL;
+		tcb->name[1] = NULL;
 		if(pk_ctsk->dsname[0])
 		strncpy((char*)tcb->name, (char*)pk_ctsk->dsname, OBJECT_NAME_LENGTH);
 	//}
@@ -161,13 +163,13 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	tcb->isstack = (VB*)sstack + sstksz - RESERVE_SSTACK(tcb->tskatr);
 	
 	if ( stksz > 0 ) {
-#ifdef STD_X86
+#ifdef _STD_X86_
 		tcb->istack = (VB*)stack + stksz - RESERVE_SSTACK(tcb->tskatr);
 #else
 		tcb->istack = (VB*)stack + stksz;
 #endif
 	} else {
-#ifdef STD_X86
+#ifdef _STD_X86_
 		if ((pk_ctsk->tskatr & TA_RNG3) == TA_RNG0) {
 			tcb->istack = tcb->isstack;
 		} else {
@@ -200,6 +202,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	END_CRITICAL_SECTION;
 
 	if ( ercd < E_OK ) {
+		vd_printf("failed create task\n");
 		IAfree(sstack, TA_RNG0);
 		if ( stksz > 0 ) {
 			IAfree(stack, pk_ctsk->tskatr);
@@ -223,7 +226,7 @@ LOCAL void _del_tsk( TCB *tcb )
 
 	if ( tcb->stksz > 0 ) {
 		/* Free user stack */
-#ifdef STD_X86
+#ifdef _STD_X86_
 		stack = (VB*)tcb->istack - tcb->stksz + + RESERVE_SSTACK(tcb->tskatr);
 #else
 		stack = (VB*)tcb->istack - tcb->stksz;
@@ -979,5 +982,147 @@ SYSCALL ER _td_inf_tsk_u( ID tskid, TD_ITSK_U *pk_itsk, BOOL clr )
 
 	return ercd;
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_task
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < allocated task >
+ Description	:allocate a empty task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct task* alloc_task(void)
+{
+	struct task	*tcb;
+	struct task	*current_task;
+	void		*sstack;
+	void		*stack;
+	unsigned long	sstksz;
+	unsigned long	stksz;
+	
+	/* -------------------------------------------------------------------- */
+	/* allocate kernel stack						*/
+	/* -------------------------------------------------------------------- */
+	sstack = IAmalloc((UINT)KERNEL_STACK_SIZE, TA_RNG0);
+	
+	if (!sstack) {
+		return(NULL);
+	}
+	
+	sstksz = KERNEL_STACK_SIZE;
+	
+#if 0
+	/* -------------------------------------------------------------------- */
+	/* allocate user stack							*/
+	/* -------------------------------------------------------------------- */
+	current_task = get_current_task();
+	
+	stksz = current_task->stksz;
+	
+	if (0 < stksz) {
+		stack = IAmalloc((UINT)stksz, current_task->tskatr);
+		
+		if (!stack) {
+			goto fail_user_stack;
+		}
+	}
+#endif
+	
+	/* -------------------------------------------------------------------- */
+	/* allocate task control block						*/
+	/* -------------------------------------------------------------------- */
+	BEGIN_CRITICAL_SECTION {
+		tcb = (TCB*)QueRemoveNext(&free_tcb);
+	} END_CRITICAL_SECTION;
+	
+	if (!tcb) {
+		goto fail_tcb;
+	}
+	
+	memset((void*)tcb, 0x00, sizeof(struct task));
+	
+	tcb->tskatr	= current_task->tskatr;
+	
+	tcb->sstksz 	= sstksz;
+	tcb->isstack	= (VB*)sstack + sstksz - RESERVE_SSTACK(tcb->tskatr);
+	tcb->stksz	= current_task->stksz;
+	tcb->istack	= current_task->istack;
+	
+	tcb->exinf	= current_task->exinf;
+	tcb->task	= NULL;
+	tcb->resid	= current_task->resid;
+	tcb->reqdct	= current_task->reqdct;
+	tcb->isysmode	= current_task->isysmode;
+	tcb->sysmode	= current_task->sysmode;
+	tcb->ipriority	= current_task->ipriority;
+	tcb->bpriority	= current_task->bpriority;
+	tcb->priority	= current_task->priority;
+	
+	tcb->state	= current_task->state;
+	tcb->nodiswai	= FALSE;
+	tcb->klockwait	= FALSE;
+	tcb->klocked	= FALSE;
+	
+	tcb->texhdr	= current_task->texhdr;
+	tcb->texmask	= current_task->texmask;
+	
+	tcb->texflg	= current_task->texflg;
+	tcb->execssid	= current_task->execssid;
+	
+	tcb->state	= TS_DORMANT;
+	
+	init_list(&tcb->task_node);
+	
+	return(tcb);
+	
+fail_tcb:
+	IAfree(sstack, TA_RNG0);
+fail_user_stack:
+#if 0
+	IAfree(stack, current_task->tskatr);
+#endif
+	return(NULL);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_task
+ Input		:struct task *task
+		 < to be freed >
+		 int free_all
+		 < 0:free only kernel stack. This assumes to be called from
+		     fork() when failed.
+		   1:completely free a task >
+ Output		:void
+ Return		:void
+ Description	:free a task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER free_task(struct task *task)
+{
+	TSTAT	state;
+	ER	ercd = E_OK;
+	
+	state = (TSTAT)task->state;
+	if (state != TS_DORMANT) {
+		ercd = (state == TS_NONEXIST)? E_NOEXS : E_OBJ;
+	} else {
+		_del_tsk(task);
+	}
+	
+	return(ercd);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
 
 #endif /* USE_DBGSPT */

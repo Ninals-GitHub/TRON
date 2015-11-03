@@ -62,6 +62,8 @@ IMPORT RomInfo rominfo;
 #define SCTAG_PRODUCTVER ((UB*)"ProductVer")	/* Product Version */
 #define SCTAG_PRODUCTNO	((UB*)"ProductNo")	/* Product Number [0]-[3] */
 
+/* BTRON */
+#define	SCTAG_BMAXPID	((UB*)"BMaxProcId")	/* Maximum process ID */
 
 /* T-Kernel/OS */
 #define SCTAG_TMAXTSKID	((UB*)"TMaxTskId")	/* Maximum task ID */

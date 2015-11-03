@@ -17,7 +17,7 @@
  *	Non-resident shared memory allocation
  */
 
-#include "libtk.h"
+#include <tk/libtk.h>
 
 #ifndef SMALLOCTEST
 

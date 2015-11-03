@@ -61,7 +61,7 @@
 #  include <tk/sysdepend/tef_em1d/cpuattr.h>
 #  include <tk/sysdepend/tef_em1d/cpudef.h>
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <tk/sysdepend/std_x86/cpuattr.h>
 #  include <tk/sysdepend/std_x86/cpudef.h>
 #endif

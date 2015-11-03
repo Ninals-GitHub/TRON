@@ -54,7 +54,7 @@
 #if TEF_EM1D
 #  include <tk/sysdepend/tef_em1d/dbgspt_depend.h>
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <tk/sysdepend/std_x86/dbgspt_depend.h>
 #endif
 

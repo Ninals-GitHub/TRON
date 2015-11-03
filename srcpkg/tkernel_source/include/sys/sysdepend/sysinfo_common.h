@@ -51,7 +51,7 @@
 #if TEF_EM1D
 #  include <sys/sysdepend/tef_em1d/sysinfo_depend.h>
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <sys/sysdepend/std_x86/sysinfo_depend.h>
 #  include <sys/sysdepend/std_x86/multiboot.h>
 #endif

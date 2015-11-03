@@ -33,7 +33,7 @@
 #if TEF_EM1D
 #  include <cpu/em1d/cpu_conf.h>
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <cpu/x86/cpu_conf.h>
 #endif
 

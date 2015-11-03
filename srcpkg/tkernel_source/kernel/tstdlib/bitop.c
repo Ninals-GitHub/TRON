@@ -29,17 +29,20 @@
 #else
 #define _BIT_SET_N(n) ( (UB)0x01 << ((n) & 7) )
 #define _BIT_SHIFT(n) ( (UB)n << 1 )
+#define _BIT_SET_LONG(n) ( 1UL << ((n) & (32 - 1)))
+#define _BIT_SHIFT_LONG(n) ( (unsigned long)n << 1 )
 #endif
 
 /*** bit operation ***/
 /* tstdlib_bitclr : clear specified bit */
-void
+BOOL
 tstdlib_bitclr( void *base, W offset )
 {
 	register UB *cp, mask;
+	register UB old;
 	
 	if (offset < 0) {
-		return;
+		return(FALSE);
 	}
 
 	cp = (UB*)base;
@@ -47,16 +50,41 @@ tstdlib_bitclr( void *base, W offset )
 
 	mask = _BIT_SET_N(offset);
 
+	old = *cp & mask;
 	*cp &= ~mask;
+	
+	return((!old)? FALSE:TRUE);
+}
+
+/* tstdlib_bitset : set specified bit */
+BOOL
+tstdlib_bitset( void *base, W offset )
+{
+	register UB *cp, mask;
+	register UB old;
+	
+	if (offset < 0) {
+		return(FALSE);
+	}
+
+	cp = (UB*)base;
+	cp += offset / 8;
+
+	mask = _BIT_SET_N(offset);
+	
+	old = *cp & mask;
+	*cp |= mask;
+	
+	return((!old)? FALSE:TRUE);
 }
 
 /* tstdlib_bitset : set specified bit */
 void
-tstdlib_bitset( void *base, W offset )
+tstdlib_bitset_window( void *base, W offset, int window_len )
 {
 	register UB *cp, mask;
 	
-	if (offset < 0) {
+	if ((offset < 0) || (window_len < 0 )) {
 		return;
 	}
 
@@ -64,8 +92,16 @@ tstdlib_bitset( void *base, W offset )
 	cp += offset / 8;
 
 	mask = _BIT_SET_N(offset);
-
-	*cp |= mask;
+	
+	while(window_len--) {
+		*cp |= mask;
+		if (mask == _BIT_SET_N(7)) {
+			mask = _BIT_SET_N(0);
+			cp++;
+		} else {
+			mask = _BIT_SHIFT(mask);
+		}
+	}
 }
 
 /* tstdlib_bittest : check specified bit */
@@ -128,6 +164,108 @@ tstdlib_bitsearch0( void *base, W offset, W width )
 	}
 
 	return -1;
+}
+
+/* tstdlib_bitsearch0 : perform 0 search on bit string and set*/
+BOOL
+tstdlib_bitsearch0_set( void *base, W offset, W width )
+{
+	register UB *cp, mask;
+	register W position;
+
+	if ((offset < 0) || (width < 0)) {
+		return -1;
+	}
+
+	cp = (UB*)base;
+	cp += offset / 8;
+
+	position = 0;
+	mask = _BIT_SET_N(offset);
+
+	while (position < width) {
+		if (*cp != 0xFF) {	/* includes 0 --> search bit of 0 */
+			while (1) {
+				if (!(*cp & mask)) {
+					if (position < width) {
+						int old;
+						old = (*cp & mask);
+						*cp |= mask;
+						return((BOOL)old);
+					} else {
+						return(FALSE);
+					}
+				}
+				mask = _BIT_SHIFT(mask);
+				++position;
+			}
+		} else {		/* all bits are 1 --> 1 Byte skip */
+			if (position) {
+				position += 8;
+			} else {
+				position = 8 - (offset & 7);
+				mask = _BIT_SET_N(0);
+			}
+			cp++;
+		}
+	}
+
+	return(FALSE);
+}
+
+
+/* tstdlib_bitsearch0 : perform 0 search on bit string and set based on window*/
+long
+tstdlib_bitsearch0_window( void *base, W width, int window_len )
+{
+	register unsigned long *cp, mask;
+	register long position;
+	long long first = 0;
+	long len = 0;
+
+	if ((width < 0) || (window_len < 0)) {
+		return -1;
+	}
+
+	cp = (unsigned long*)base;
+
+	position = 0;
+	mask = _BIT_SET_LONG(0);
+
+	while (position < width) {
+		if (*cp != ~0UL) {	/* includes 0 --> search bit of 0 */
+			while (1) {
+				if (!(*cp & mask)) {
+					if (position < width) {
+						if (!len) {
+							first = position;
+						}
+						if (len < window_len) {
+							len++;
+						} else {
+							return(first);
+						}
+					} else {
+						return -1;
+					}
+				} else {
+					len = 0;
+				}
+				if (mask == (_BIT_SHIFT_LONG(sizeof(unsigned long) * 8 - 1))) {
+					++position;
+					break;
+				}
+				mask = _BIT_SHIFT_LONG(mask);
+				++position;
+			}
+		} else {
+			mask = _BIT_SET_LONG(0);
+			position += sizeof(unsigned long) * 8;
+			cp++;
+		}
+	}
+
+	return(-1);
 }
 
 /* tstdlib_bitsearch1 : perform 1 search on bit string */
@@ -290,4 +428,3 @@ uint32_t bit_value(uint32_t value, uint32_t start, uint32_t end)
 		return((value >> start ) & MAKE_MASK_SHIFT32(start, end));
 	}
 }
-

@@ -9,6 +9,7 @@
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by T-Engine Forum at 2013/03/08.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/01
  *
  *----------------------------------------------------------------------
  */
@@ -53,7 +54,7 @@
 #include "sysmgr.h"
 #include "segmgr.h"
 #include "excmgr.h"
-#include "cache_info.h"
+#include <device/cache_info.h>
 #include "pagedef.h"
 #include <sys/segment.h>
 #include <sys/svc/ifsegment.h>

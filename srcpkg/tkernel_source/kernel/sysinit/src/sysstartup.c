@@ -19,6 +19,8 @@
 
 #include "sysinit.h"
 #include <tk/kernel.h>
+#include <bk/bprocess.h>
+#include <bk/slab.h>
 
 /*
  * Subsystem
@@ -74,6 +76,13 @@ EXPORT ER init_system( void )
 	if ( ercd < E_OK ) {
 		goto err_ret;
 	}
+#ifdef _BTRON_
+	ercd = init_proc_management();
+	if (ercd < E_OK) {
+		vd_printf("error init_proc_management\n");
+		goto err_ret;
+	}
+#endif
 
 	/* Initialize memory manager */
 	DispProgress(0x13);
@@ -82,12 +91,22 @@ EXPORT ER init_system( void )
 		goto err_ret;
 	}
 
+#ifdef _BTRON_
+	/* Initialize slab allocator */
+	DispProgress(0x14);
+	ercd = init_slab_allocator();
+	if ( ercd < E_OK ) {
+		vd_printf("init_slab_allocator\n");
+		goto err_ret;
+	}
+#else
 	/* Initialize Imalloc */
 	DispProgress(0x14);
 	ercd = init_Imalloc();
 	if ( ercd < E_OK ) {
 		goto err_ret;
 	}
+#endif
 
 	return(ercd);
 
@@ -113,12 +132,14 @@ EXPORT void start_system( void )
 		goto err_ret;
 	}
 
+#ifndef _BTRON_
 	/* Start memory manager */
 	DispProgress(0x31);
 	ercd = start_memmgr();
 	if ( ercd < E_OK ) {
 		goto err_ret;
 	}
+#endif
 
 	/* Initialize system manager */
 	DispProgress(0x32);
@@ -182,8 +203,10 @@ EXPORT void shutdown_system( INT fin )
 	/* Stop T-Kernel/SM */
 	SystemManager(-1, NULL);
 
+#ifndef _BTRON_
 	/* Stop memory manager */
 	finish_memmgr();
+#endif
 
 	/* Stop segment manager */
 	finish_segmgr();

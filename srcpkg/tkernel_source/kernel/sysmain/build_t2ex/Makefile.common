@@ -59,39 +59,59 @@ MDIR = $(TETYPE)_$(MACHINE)
 
 export MDIR
 export T2EX
+export BTRON
 
 # ----------------------------------------------------------------------------
 # kernel install path
 KERNEL_INSTALLDIR	= $(BD)/kernel/bin/$(MDIR)
 
 # kernel modules path
-BLD_TKERNEL_PATH	= $(BD)/kernel/tkernel/build$(T2EX_MM)/$(MDIR)
-BLD_SYSMGR_PATH		= $(BD)/kernel/sysmgr/build$(T2EX_MM)/$(MDIR)
-BLD_SYSINIT_PATH	= $(BD)/kernel/sysinit/build$(T2EX_MM)/$(MDIR)
+#BLD_TKERNEL_PATH	= $(BD)/kernel/tkernel/build$(T2EX_MM)/$(MDIR)
+#BLD_SYSMGR_PATH		= $(BD)/kernel/sysmgr/build$(T2EX_MM)/$(MDIR)
+#BLD_SYSINIT_PATH	= $(BD)/kernel/sysinit/build$(T2EX_MM)/$(MDIR)
+BLD_TKERNEL_PATH	= ../../../tkernel/build$(T2EX_MM)/$(MDIR)
+BLD_SYSMGR_PATH		= ../../../sysmgr/build$(T2EX_MM)/$(MDIR)
+BLD_SYSINIT_PATH	= ../../../sysinit/build$(T2EX_MM)/$(MDIR)
 
 ifdef T2EX
-  BLD_DATETIME_PATH	= $(BD)/t2ex/datetime/build/$(MDIR)
-  BLD_LOAD_PATH		= $(BD)/t2ex/load/build/$(MDIR)
-  BLD_FS_PATH		= $(BD)/t2ex/fs/build/$(MDIR)
-  BLD_NET_PATH		= $(BD)/t2ex/network/build/$(MDIR)
-  BLD_T2EX_PATH		= $(BD)/t2ex/build/$(MDIR)
+#  BLD_DATETIME_PATH	= $(BD)/t2ex/datetime/build/$(MDIR)
+#  BLD_LOAD_PATH		= $(BD)/t2ex/load/build/$(MDIR)
+#  BLD_FS_PATH		= $(BD)/t2ex/fs/build/$(MDIR)
+#  BLD_NET_PATH		= $(BD)/t2ex/network/build/$(MDIR)
+#  BLD_T2EX_PATH		= $(BD)/t2ex/build/$(MDIR)
+  
+  BLD_DATETIME_PATH	= ../../../../t2ex/datetime/build/$(MDIR)
+  BLD_LOAD_PATH		= ../../../../t2ex/load/build/$(MDIR)
+  BLD_FS_PATH		= ../../../../t2ex/fs/build/$(MDIR)
+  BLD_NET_PATH		= ../../../../t2ex/network/build/$(MDIR)
+  BLD_T2EX_PATH		= ../../../../t2ex/build/$(MDIR)
+endif
+
+ifdef BTRON
+  BLD_BTRON_PATH	= ../../../btron/build/$(MDIR)
+  BKERNEL_PATH		= ../../../btron/
 endif
 
 # device driver path
-BLD_DRIVER_PATH		= $(BD)/driver/$(MDIR)/build$(T2EX)
-BLD_DRV_PATH		= $(BD)/drv/$(MDIR)
+#BLD_DRIVER_PATH		= $(BD)/driver/$(MDIR)/build$(T2EX)
+#BLD_DRV_PATH		= $(BD)/drv/$(MDIR)
+BLD_DRIVER_PATH		= ../../../../driver/$(MDIR)/build$(T2EX)
+BLD_DRV_PATH		= ../../../../drv/$(MDIR)
 
 # config modules path
-BLD_CONFIG_PATH		= $(BD)/config/build$(T2EX)/$(MDIR)
+#BLD_CONFIG_PATH		= $(BD)/config/build$(T2EX)/$(MDIR)
+BLD_CONFIG_PATH		= ../../../../config/build$(T2EX)/$(MDIR)
 
 # monitor path
 BLD_MONITOR_PATH	= $(BD)/monitor/tmmain/build/$(MDIR)
 
 # library path
-BLD_LIBS_PATH		= $(BD)/lib/build$(T2EX)/$(MDIR)
+#BLD_LIBS_PATH		= $(BD)/lib/build$(T2EX)/$(MDIR)
+BLD_LIBS_PATH		= ../../../../lib/build$(T2EX)/$(MDIR)
 
 # tkse path
-BLD_TKSE_PATH		= $(BD)/tkse/extension/common/build/$(MDIR)
+#BLD_TKSE_PATH		= $(BD)/tkse/extension/common/build/$(MDIR)
+BLD_TKSE_PATH		= ../../../../tkse/extension/common/build/$(MDIR)
 
 # ----------------------------------------------------------------------------
 # target objects
@@ -126,22 +146,32 @@ SRC_USR	+=
 
 # additional source files (cpu-dependent)
 ifneq ($(T2EX_MM),)
-  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
-  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+#  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+#  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+  VPATH   += ../../../sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+  HEADER  += ../../../sysdepend$(T2EX_MM)/cpu/$(MACHINE)
+
 endif
-VPATH   += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
-HEADER  += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
+#VPATH   += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
+#HEADER  += $(BD)/kernel/sysdepend/cpu/$(MACHINE)
+VPATH   += ../../../sysdepend/cpu/$(MACHINE)
+HEADER  += ../../../sysdepend/cpu/$(MACHINE)
 
 # additional source files (device-dependent)
 ifneq ($(T2EX_MM),)
-  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
-  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
+#  VPATH   += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
+#  HEADER  += $(BD)/kernel/sysdepend$(T2EX_MM)/device/$(MDIR)
+  VPATH   += ../../../sysdepend$(T2EX_MM)/device/$(MDIR)
+  HEADER  += ../../../sysdepend$(T2EX_MM)/device/$(MDIR)
 endif
-VPATH   += $(BD)/kernel/sysdepend/device/$(MDIR)
-HEADER  += $(BD)/kernel/sysdepend/device/$(MDIR)
+#VPATH   += $(BD)/kernel/sysdepend/device/$(MDIR)
+#HEADER  += $(BD)/kernel/sysdepend/device/$(MDIR)
+VPATH   += ../../../sysdepend/device/$(MDIR)
+HEADER  += ../../../sysdepend/device/$(MDIR)
 
 # header file path (kernel settings)
-HEADER  += $(BD)/kernel/tkernel/src
+#HEADER  += $(BD)/kernel/tkernel/src
+HEADER  += ../../../kernel/tkernel/src
 ifdef  T2EX
   HEADER  += $(BD)/include/t2ex/
 endif
@@ -197,6 +227,11 @@ ifdef  T2EX
 
 endif
 
+ifdef BTRON
+  K_OBJ += $(BKERNEL_PATH)/bkernel.o
+endif
+
+
 # gcc standard library
 STDLIB = -lgcc
 
@@ -232,6 +267,9 @@ ifdef  T2EX
 endif
 
 REQ_MODULES = libraries tkernel sysmgr sysinit drivers tkse $(ADD_MODULES)
+ifdef BTRON
+  REQ_MODULES += bkernel
+endif
 
 ifeq ($(TETYPE)_$(MACHINE),std_x86)
 ALL += $(TARGET_IMG)
@@ -324,6 +362,9 @@ $(TARGET_DBG_EMU): $(DBG_EMU_OBJ)
 # required modules
 tkernel:
 	( cd $(BLD_TKERNEL_PATH) ; $(MAKE) $(DBGOPT) )
+
+bkernel:
+	( cd $(BLD_BTRON_PATH) ; $(MAKE) $(DBGOPT) )
 
 sysmgr:
 	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) )
@@ -428,6 +469,9 @@ endif
 # clean all objects
 clean:	clean_libraries clean_drivers
 	( cd $(BLD_TKERNEL_PATH) ; $(MAKE) $(DBGOPT) clean )
+ifdef  BTRON
+	( cd $(BLD_BTRON_PATH) ; $(MAKE) $(DBGOPT) clean )
+endif
 	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) clean )
 	( cd $(BLD_SYSINIT_PATH) ; $(MAKE) $(DBGOPT) clean )
 	( cd $(BLD_CONFIG_PATH) ; $(MAKE) $(DBGOPT) clean )

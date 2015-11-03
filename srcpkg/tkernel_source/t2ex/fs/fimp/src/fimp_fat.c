@@ -294,7 +294,6 @@ LOCAL	ER	fatDiskOpen(const coninf_t *coninf, FATFS *fs)
 		fs->ff_c.fs_rdonly = TRUE;
 		err = tk_opn_dev((UB *)coninf->devnm, OPEN_MODE(TD_READ));
 	}
-	//printf("tk_open_dev:%d\n", err);
 	if (err < E_OK) goto exit0;
 	fs->ff_c.fs_devid = err;
 
@@ -6212,7 +6211,7 @@ LOCAL	ER	fatfs_attachfn(coninf_t *coninf, void *exinf)
 		err = EX_NOMEM;
 		goto exit0;
 	}
-
+	
 	/* Open device */
 	err = fatDiskOpen(coninf, fs);
 	if (err < E_OK) goto exit1;

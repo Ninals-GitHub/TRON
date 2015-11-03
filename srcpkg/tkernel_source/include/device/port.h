@@ -32,7 +32,7 @@
 #endif
 #if TEF_EM1D
 #endif
-#if STD_X86
+#if _STD_X86_
 #  include <device/std_x86/port.h>
 #endif
 

@@ -117,7 +117,7 @@ EXPORT int main( void )
 	DO_DEBUG( tm_monitor(); )
 
 	/* Initialize sequence before T-Kernel starts */
-	if (err = init_system()) {
+	if ((err = init_system())) {
 		return(err);
 	}
 

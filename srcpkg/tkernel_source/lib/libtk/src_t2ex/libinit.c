@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/03
  *
  *----------------------------------------------------------------------
  */
@@ -54,7 +55,7 @@
  *	quite large.
  */
 
-#include "libtk.h"
+#include <tk/libtk.h>
 #include <sys/util.h>
 #include <sys/memalloc.h>
 #include <t2ex/util.h>
@@ -108,10 +109,12 @@ EXPORT void _InitLibtk( void )
 	CreateULock(&_SmacbLock, "ultk");
 #endif
 
+#ifndef _BTRON_
 	/* malloc initialization */
 	_tkm_init((UINT)rng, &_Kmacb);			/* Kmalloc init */
 	_tkm_init((UINT)rng|TA_NORESIDENT, &_Vmacb);	/* Vmalloc init */
 	_tkm_init(TA_RNG3|TA_NORESIDENT, &_Smacb);	/* Smalloc init */
+#endif
 
 	libtk_init_done = TRUE;  /* Initialization complete */
 }

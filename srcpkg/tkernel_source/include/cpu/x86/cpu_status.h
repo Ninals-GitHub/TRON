@@ -26,6 +26,12 @@
 #include <tk/sysdef.h>
 #include <cpu.h>
 
+IMPORT TCB	*ctxtsk;
+IMPORT TCB	*schedtsk;
+
+IMPORT INT	dispatch_disabled;
+IMPORT UINT	lowpow_discnt;
+
 /*
  * Start/End critical section
  */
@@ -95,8 +101,6 @@
  */
 #define in_loc()	( isDI(saveFlags())		\
 			|| in_indp() )
-//#define in_loc()	( isDI(getCPSR())		\
-//			|| in_indp() )
 
 /*
  * When a system call is called during executing the quasi task part, TRUE
@@ -179,11 +183,7 @@ struct task_context_block {
 	uint32_t	need_iret:1;	/* need iret for first dispatch	*/
 };
 
-
-#ifndef __ctxb__
-#define __ctxb__
-typedef struct task_context_block	CTXB;
-#endif
+#define	KERNEL_STACK_SIZE	8192
 
 /*
  * CPU information

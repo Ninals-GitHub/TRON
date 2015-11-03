@@ -151,6 +151,7 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 	}
 	
 	vd_printf("ramdisk attatch %d\n", fs_attach("mda", "ram", FIMP_FAT, 0, NULL));
+
 exit0:
 	return sts;
 }

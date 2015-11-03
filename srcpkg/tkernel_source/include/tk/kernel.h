@@ -43,7 +43,8 @@
 
 #ifndef __tcb__
 #define __tcb__
-typedef struct task_control_block	TCB;
+//typedef struct task_control_block	TCB;
+typedef struct task			TCB;
 #endif
 
 /*

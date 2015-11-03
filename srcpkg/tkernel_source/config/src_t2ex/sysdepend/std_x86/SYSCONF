@@ -73,6 +73,11 @@ ProductNo	0x0000 0x0000 0x0000 0x0000
 				# Product Number [0]-[3]
 
 #
+#	BTRON/OS
+#
+BMaxProcId	512	# Maximum process ID
+
+#
 #	T-Kernel/OS
 #
 TMaxTskId	150	# Maximum task ID

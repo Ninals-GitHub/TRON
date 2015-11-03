@@ -132,6 +132,7 @@ EXPORT	ER	pm_main(INT ac, UB* av[])
 	/* Create lock */
 	er = CreateLock(&pmLock, "pmLk");
 	if ( er < E_OK ) {
+		vd_printf("%s:CreateLock\n", __func__);
 		goto err_ret0;
 	}
 
@@ -141,6 +142,7 @@ EXPORT	ER	pm_main(INT ac, UB* av[])
 
 	er = pmInitInfo(maxprog);
 	if ( er < E_OK ) {
+		vd_printf("%s:pmInitInfo\n", __func__);
 		goto err_ret1;
 	}
 

@@ -17,7 +17,7 @@
  *	Non resident system memory allocation
  */
 
-#include "libtk.h"
+#include <tk/libtk.h>
 #include <sys/util.h>
 
 EXPORT void* malloc( size_t size )

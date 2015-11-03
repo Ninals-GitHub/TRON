@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/11/03
  *
  *----------------------------------------------------------------------
  */
@@ -22,7 +23,7 @@
  *	quite large.
  */
 
-#include "libtk.h"
+#include <tk/libtk.h>
 #include <sys/util.h>
 #include <sys/memalloc.h>
 #include <tk/util.h>
@@ -56,10 +57,12 @@ EXPORT void _InitLibtk( void )
 	/* Create exclusive control lock for library sharing */
 	_init_liblock();
 
+#ifndef _BTRON_
 	/* malloc initialization */
 	_tkm_init((UINT)rng, &_Kmacb);			/* Kmalloc init */
 	_tkm_init((UINT)rng|TA_NORESIDENT, &_Vmacb);	/* Vmalloc init */
 	_tkm_init(TA_RNG3|TA_NORESIDENT, &_Smacb);	/* Smalloc init */
+#endif
 
 	libtk_init_done = TRUE;  /* Initialization complete */
 }
