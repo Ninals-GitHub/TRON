@@ -58,6 +58,8 @@
 
 #define	SWI_SYSCALL		0x80
 #define	int_syscall		int_syscall_0x80
+#define	int_syscall_return 	int_syscall_return_0x80
+
 
 #define	INT_DIV_0		0
 #define	INT_DEBUG		1

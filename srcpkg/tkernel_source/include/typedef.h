@@ -96,6 +96,7 @@ typedef uint16_t	UINT16;
 typedef uint32_t	UINT32;
 typedef uint64_t	UINT64;
 
+//typedef int64_t		off_t;
 /*
  * miscellaneous types
  */

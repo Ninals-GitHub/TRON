@@ -273,6 +273,22 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:void
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+EXPORT int syscall_test(int eax)
+{
+	printf("\nsyscall!!!!!!!!!!!\n");
+	printf("eax = %d\n", eax);
+	for(;;);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -313,7 +329,7 @@ LOCAL void handle_division_by_0(struct ctx_reg *reg)
 */
 LOCAL void handle_debug(struct ctx_reg *reg)
 {
-	static count = 0;
+	static int count = 0;
 	
 	if (!count) {
 		vd_printf("debug\n");
@@ -523,7 +539,7 @@ LOCAL void handle_double_fault(struct ctx_reg *reg, uint32_t error_code)
 */
 LOCAL void handle_tss_error(struct ctx_reg *reg, uint32_t error_code)
 {
-	static tss_error = 0;
+	static int tss_error = 0;
 	
 	if (tss_error++) {
 		vd_printf("error code:%u\n", error_code);
@@ -598,6 +614,7 @@ LOCAL void handle_gfp(struct ctx_reg *reg, uint32_t error_code)
 		vd_printf("ss:0x%08X\n", reg->ss);
 
 		count++;
+		for(;;);
 	}
 }
 

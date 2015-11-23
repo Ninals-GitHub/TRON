@@ -38,6 +38,7 @@
 .extern no_support
 .extern svc_ientry
 .extern _tdsvctbl
+.extern syscall_test
 
 
 
@@ -167,6 +168,7 @@ interrupt_\int_num:
 */
 .macro setup_int_syscall int_num
 .globl int_syscall_\int_num
+.globl int_syscall_return_\int_num
 
 int_syscall_\int_num:
 #	pushl	%eax
@@ -192,10 +194,12 @@ int_syscall_\int_num:
 	movw	%cx, %es
 	movw	%cx, %gs
 	movw	%cx, %fs
+	pushl	%eax				# argument 0 for test
 	cld
-	
+	call	syscall_test
 	#call	*syscall_table(,%eax,4)		# systemcall dispatch
-	addl	$24, %esp			# remove 6 arguments
+int_syscall_return_\int_num:
+	#addl	$24, %esp			# remove 6 arguments
 	
 	popl	%fs
 	popl	%gs

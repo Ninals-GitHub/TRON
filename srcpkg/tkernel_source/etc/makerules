@@ -106,21 +106,23 @@ DATABOX_HEADER	= $(BD)/bappl/dbox
 
 ### install common library ###
 $(LIB_INSTALLDIR)/%.so.$(LIB_VERSION): %.so.$(LIB_VERSION)
-	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+	$(CP) $< $(LIB_INSTALLDIR)
+#	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
 
 $(LIB_INSTALLDIR)/%.map: %.map
-	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
+	$(CP) $< $(LIB_INSTALLDIR)
+#	$(BD)/etc/backup_copy -t $< $(LIB_INSTALLDIR)
 
 $(EXE_INSTALLDIR)/%.so.$(LIB_VERSION): %.so.$(LIB_VERSION)
 	$(EXE_INSTALL_STRIP)
 
 ### install executable ###
 $(EXE_INSTALLDIR)/%: %
-	$(CP) $<  $< $(EXE_INSTALLDIR)
+	$(CP) $< $(EXE_INSTALLDIR)
 #	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
 
 define EXE_INSTALL_STRIP
-	$(CP) $<  $< $(EXE_INSTALLDIR)
+	$(CP) $< $(EXE_INSTALLDIR)
 #	$(BD)/etc/backup_copy -t -d !OLD $< $(EXE_INSTALLDIR)
 	$(STRIP) $@
 endef

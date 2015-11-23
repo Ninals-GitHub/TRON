@@ -33,12 +33,14 @@
 #if TEF_EM1D
 #endif
 #if _STD_X86_
+#  include <cpu/x86/cpu_task.h>
 #  include <cpu/x86/cpu_insn.h>
 #  include <cpu/x86/cpuid.h>
 #  include <cpu/x86/descriptor.h>
 #  include <cpu/x86/interrupt.h>
 #  include <cpu/x86/register.h>
 #  include <cpu/x86/dispatch.h>
+#  include <cpu/x86/cpu_status.h>
 #endif
 
 /*

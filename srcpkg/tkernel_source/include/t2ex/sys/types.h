@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/08
  *
  *----------------------------------------------------------------------
  */
@@ -51,15 +52,18 @@
 #ifndef __SYS_TYPES_H__
 #define __SYS_TYPES_H__
 
+#include <stdint.h>
+
 typedef	long		time_t;		/* Date/time */
 
 typedef	unsigned int	ino_t;		/* File serial number */
 
 typedef	long		off_t;		/* File size (offset) */
-typedef	long long	off64_t;		/* File size (offset) */
+
+typedef	long long	off64_t;	/* File size (offset) */
 
 typedef	unsigned int	mode_t;		/* File attribute */
-typedef	unsigned int	nlink_t;		/* Number of links */
+typedef	unsigned int	nlink_t;	/* Number of links */
 typedef	unsigned int	dev_t;		/* Device number */
 typedef	unsigned int	uid_t;		/* User ID */
 typedef	unsigned int	gid_t;		/* Group ID */

@@ -66,6 +66,8 @@
 #include <cpu.h>
 #include <libstr.h>
 
+#include <bk/bprocess.h>
+
 /*
 ==================================================================================
 
@@ -120,7 +122,8 @@ LOCAL	UW	SysRamLimit;
  */
 Inline PDE* GetPDE( const void *laddr )
 {
-	return SysPDEBase + PDIR_INDEX(laddr);
+//	return SysPDEBase + PDIR_INDEX(laddr);
+	return (PDE*)(get_current_mspace()->pde + PDIR_INDEX(laddr));
 }
 
 /*
@@ -387,7 +390,8 @@ EXPORT INT _SetMemoryAccess( CONST void *addr, INT len, UINT mode )
 
 		/* Check the page table entries if page table is defined */
 		pte = getFirstPteFromPde(pde);
-		for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		//for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		for ( i = PAGE_INDEX(la); i < N_PTE; i++ ) {
 			if ( !pte[i].val & PD_Present ) goto ret;
 
 			/* Set PTE value */
@@ -458,7 +462,8 @@ EXPORT INT _CnvPhysicalAddr( CONST void *laddr, INT len, void **paddr )
 		}
 		/* Check the page table entries if page table is defined */
 		pte = getFirstPteFromPde(pde);
-		for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		//for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		for ( i = PAGE_INDEX(la); i < N_PTE; i++ ) {
 			if ( !(pte[i].val & PT_Present) ) goto ret;
 
 			/* Disable cache */
@@ -544,10 +549,19 @@ EXPORT INT _ChkSpaceLen( CONST void *laddr, INT len, UINT mode, UINT env, INT ls
 		}
 		/* Check the page table entries if page table is defined */
 		pte = getFirstPteFromPde(pde);
-		for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+
+		//for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		for ( i = PAGE_INDEX(la); i < N_PTE; i++ ) {
+#if 1
 			if ( !(pte[i].val & PT_Present) ) goto ret;
 			if ( chk_u && !(pte[i].val & PT_User) ) goto ret;
 			if ( chk_w && !(pte[i].val & PT_Writable) ) goto ret;
+#endif
+#if 0
+			if ( !(pte[i].val & PT_Present) ) {printf("not present:0x%08X ", pte[i].val);printf("addr:0x%08X\n", la);goto ret;}
+			if ( chk_u && !(pte[i].val & PT_User) ) {printf("not user page:0x%08X\n", pte[i].val);goto ret;}
+			if ( chk_w && !(pte[i].val & PT_Writable) ) {printf("not writable:0x%08X\n", pte[i].val);goto ret;}
+#endif
 			//if ( chk_x && pte[i].a.xn ) goto ret;
 
 			/* Next page */
@@ -558,10 +572,11 @@ EXPORT INT _ChkSpaceLen( CONST void *laddr, INT len, UINT mode, UINT env, INT ls
 ret:
 	UnlockSEG();
 	
-	if ((unsigned long)la < (unsigned long)laddr)
+	if ((unsigned long)la < (unsigned long)laddr) 
 		return 0;
 
 	alen = (unsigned long)la - (unsigned long)laddr;
+
 	return (len < alen)? len: alen;
 }
 
@@ -600,7 +615,8 @@ EXPORT INT _ChkSpaceTstr( CONST TC *str, INT max, UINT mode, UINT env )
 
 		/* Check the page table entries if page table is defined */
 		pte = getFirstPteFromPde(pde);
-		for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		//for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		for ( i = PAGE_INDEX(la); i < N_PTE; i++ ) {
 			if ( !(pte[i].val & PT_Present) ) goto ret;
 			if ( chk_u && !(pte[i].val & PT_User) ) goto ret;
 			if ( chk_w && !(pte[i].val & PT_Writable) ) goto ret;
@@ -658,7 +674,8 @@ EXPORT INT _ChkSpaceBstr( CONST UB *str, INT max, UINT mode, UINT env )
 
 		/* Check the page table entries if page table is defined */
 		pte = getFirstPteFromPde(pde);
-		for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		//for ( i = PTBL_INDEX(la); i < N_PTE; i++ ) {
+		for ( i = PAGE_INDEX(la); i < N_PTE; i++ ) {
 			if ( !(pte[i].val & PT_Present) ) goto ret;
 			if ( chk_u && !(pte[i].val & PT_User) ) goto ret;
 			if ( chk_w && !(pte[i].val & PT_Writable) ) goto ret;
@@ -692,7 +709,7 @@ EXPORT ER InitLogicalSpace( void )
 	void *laddr;
 	PDE *pde;
 	PTE *pte;
-	uint32_t cr4_flags;
+	int err;
 
 	struct boot_info *info = getBootInfo();
 
@@ -742,7 +759,7 @@ EXPORT ER InitLogicalSpace( void )
 		paddr =  (unsigned long)PageAlignU(REALMEMORY_TOP);
 		paddr <= (REALMEMORY_TOP + SysRamLimit) ;
 		paddr += PDIRSIZE, laddr = (void*)((char*)laddr + PDIRSIZE)) {
-		pde = GetPDE(laddr);
+		pde = SysPDEBase + PDIR_INDEX(laddr);
 		pte = GetPTE(laddr);
 		pde->val = ((unsigned long)pte - KERNEL_BASE_ADDR) & PAGE_MASK;
 		pde->val |= PDE_SYS_RW;
@@ -769,6 +786,14 @@ EXPORT ER InitLogicalSpace( void )
 	"flush_tlb_after_load_pdbr:"
 	);
 	/* after load to cr3, tlb is flushed					*/
+	/* -------------------------------------------------------------------- */
+	/* set up kernel tss							*/
+	/* -------------------------------------------------------------------- */
+	err = initKernelTss();
+	
+	if (err) {
+		vd_printf("error:set up kernel tss\n");
+	}
 	
 	/* -------------------------------------------------------------------- */
 	/* copy initrams to the memory which will be managed by the kernel	*/
@@ -837,6 +862,21 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT unsigned long getPtePfaFromLaddr(unsigned long laddr)
 {
 	return(GetPTE((const void*)laddr)->val & PAGE_MASK);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_system_pde
+ Input		:void
+ Output		:void
+ Return		:unsigned long
+ 		 < address of SysPDEBase >
+ Description	:get SysPDEBase
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT unsigned long get_system_pde(void)
+{
+	return((unsigned long)SysPDEBase);
 }
 
 /*

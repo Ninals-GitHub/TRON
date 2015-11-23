@@ -21,6 +21,9 @@
 #ifndef _TASK_
 #define _TASK_
 
+#include <cpu.h>
+#include <typedef.h>
+#include <tk/kernel.h>
 #include <sys/queue.h>
 #include <sys/str_align.h>
 #include <tk/timer.h>
@@ -151,6 +154,7 @@ CONST	WSPEC	*wspec;		/* Wait specification */
 #endif
 	_align64		/* alignment for CTXB.ssp */
 	CTXB	tskctxb;	/* Task context block */
+//	struct task_context_block	tskctxb;	/* Task context block */
 #if USE_OBJECT_NAME
 	UB	name[OBJECT_NAME_LENGTH];	/* name */
 #endif
@@ -258,8 +262,6 @@ IMPORT TCB* time_slice_schedule( TCB *tcb );
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
-
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_current_task
@@ -270,8 +272,40 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:get current task
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct task* get_current_task(void);
+LOCAL INLINE struct task* get_current_task(void)
+{
+	return((struct task*)ctxtsk);
+}
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:set_current_task
+ Input		:struct task *new
+ 		 < new current task >
+ Output		:void
+ Return		:void
+ Description	:set current task
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE void set_current_task(struct task *new)
+{
+	ctxtsk = (TCB*)new;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_ctxb
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < current task >
+ Description	:get current task context block
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE struct task_context_block* get_current_ctxb(void)
+{
+	return((struct task_context_block*)&ctxtsk->tskctxb);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -283,7 +317,38 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:get next scheduled task
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct task* get_scheduled_task(void);
+LOCAL INLINE struct task* get_scheduled_task(void)
+{
+	return((struct task*)schedtsk);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_scheduled_ctxb
+ Input		:void
+ Output		:void
+ Return		:struct task*
+		 < current task >
+ Description	:get next task context block
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE struct task_context_block* get_scheduled_ctxb(void)
+{
+	return((struct task_context_block*)&schedtsk->tskctxb);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_task_id
+ Input		:struct task *task
+ 		 < task to get its id >
+ Output		:void
+ Return		:ID
+ 		 < task id >
+ Description	:get task id calculated from task_table
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ID get_task_id(struct task *task);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -308,5 +373,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER free_task(struct task *task);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_task_id
+ Input		:struct task *task
+ 		 < task to get its id >
+ Output		:void
+ Return		:ID
+ 		 < task id >
+ Description	:get task id calculated from task_table
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ID get_task_id(struct task *task);
 
 #endif /* _TASK_ */

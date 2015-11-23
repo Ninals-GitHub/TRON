@@ -55,6 +55,8 @@
 #define	PAGE_SHIFT	12
 #define	PAGESIZE	(1UL << PAGE_SHIFT)	/* page size (in bytes) */
 #define	PAGE_MASK	(~(PAGESIZE - 1))
+#define	PAGE_ALIGN(p)	((unsigned long)p & PAGE_MASK)
+#define	PT_ENTRIES	(PAGESIZE / sizeof(unsigned long))
 
 /*
  * Page size
@@ -103,6 +105,7 @@ Inline VP NextPage( const void *addr )
 #define	PDIR_INDEX_SHIFT	(32 - PDIR_SHIFT)
 
 #define	NUM_PDIR		((PDIR_MASK >> PDIR_SHIFT) + 1)
+
 
 #define SECTIONSIZE		( PAGESIZE * PDIR_ENTRIES )	/* section size (in bytes) */
 

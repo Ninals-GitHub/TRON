@@ -13,6 +13,9 @@
 #include <tk/kernel.h>
 #include <tk/task.h>
 #include <cpu.h>
+#include <bk/uapi/errno.h>
+#include <bk/memory/vm.h>
+#include <bk/memory/page.h>
 
 #include <debug/vdebug.h>
 
@@ -24,7 +27,6 @@
 ==================================================================================
 */
 IMPORT void low_pow( void );	// symgr.h
-//LOCAL void next_to(void);
 void next_to(void);
 
 
@@ -59,13 +61,87 @@ IMPORT UINT	lowpow_discnt;
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
+ Funtion	:start_task
+ Input		:unsigned long start_text
+ 		 < start address >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:execute new user process forcibly
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int start_task(unsigned long start_text)
+{
+	struct process *current = get_current();
+	struct task *current_task = get_current_task();
+	struct task_context_block *current_ctxb = get_current_ctxb();
+	
+	pte_t *pte;
+	pde_t *pde;
+	char *com;
+	
+	if (KERNEL_BASE_ADDR <= start_text) {
+		return(-EINVAL);
+	}
+	
+	current_task->tskatr |= TA_RNG3;
+	
+	/* -------------------------------------------------------------------- */
+	/* iret flag is cleared							*/
+	/* -------------------------------------------------------------------- */
+	current_ctxb->need_iret = FALSE;
+	
+	/* -------------------------------------------------------------------- */
+	/* setup user task context						*/
+	/* -------------------------------------------------------------------- */
+	current_ctxb->ip = start_text;
+	current_ctxb->ds = SEG_USER_DS;
+	current_ctxb->es = SEG_USER_DS;
+	current_ctxb->gs = SEG_USER_DS;
+	current_ctxb->fs = SEG_USER_DS;
+	current_ctxb->sysenter_cs = SEG_USER_CS;
+	current_ctxb->sp = current->mspace->end_stack;
+	
+	dispatch_disabled = DDS_ENABLE;
+	
+	update_tss_esp0(getEsp());
+	
+	/* -------------------------------------------------------------------- */
+	/* execute in user space						*/
+	/* -------------------------------------------------------------------- */
+	ASM (
+		"movw %[fs], %%fs		\n\t"
+		"movw %[gs], %%gs		\n\t"
+		"movw %[es], %%es		\n\t"
+		"movl %[esp], %%eax		\n\t"
+		"pushl %[ds]			\n\t"
+		"pushl %%eax			\n\t"
+		"pushl %[eflags]		\n\t"
+		"pushl %[cs]			\n\t"
+		"pushl %[start_func]		\n\t"
+		"movw %[ds], %%ds		\n\t"
+		"cld				\n\t"
+		"iret				\n\t"
+		:
+		:[fs]"m"(current_ctxb->fs), [gs]"m"(current_ctxb->gs),
+		 [es]"m"(current_ctxb->es), [ds]"m"(current_ctxb->ds),
+		 [cs]"m"(current_ctxb->sysenter_cs), [esp]"m"(current_ctxb->sp),
+		 [start_func]"m"(current_ctxb->ip),
+		 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL)
+		 :"memory"
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:force_dispatch
  Input		:void
  Output		:void
  Return		:void
  Description	:Throw away the current task context. and forcibly dispatch to
  		 the task that should be performed next.
- 		 Use at system startup and 'tk_ext_tsk, tk_exd_tsk.'
+ 		 Use at kernel task dispatch, system startup, 'tk_ext_tsk and
+ 		 tk_exd_tsk.'
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void force_dispatch(void)
@@ -128,7 +204,7 @@ EXPORT void force_dispatch(void)
 			 [es]"m"(next_ctxb->es), [ds]"m"(next_ctxb->ds),
 			 [cs]"m"(next_ctxb->sysenter_cs), [esp]"m"(next_ctxb->sp),
 			 [start_func]"m"(next_ctxb->ip),
-			 [eflags]"i"(EFLAGS_IF)
+			 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL)
 			:"eax","memory"
 		);
 	} else {
@@ -142,7 +218,7 @@ EXPORT void force_dispatch(void)
 			:
 			:[cs]"m"(next_ctxb->sysenter_cs), [esp]"m"(next_ctxb->ssp),
 			 [start_func]"m"(next_ctxb->ip),
-			 [eflags]"i"(EFLAGS_IF)
+			 [eflags]"i"(EFLAGS_ID | EFLAGS_IF)
 			:"eax","memory"
 		);
 	}
@@ -180,7 +256,7 @@ EXPORT void setup_context( TCB *tcb )
 		ctxb->gs = SEG_USER_DS;
 		ctxb->fs = SEG_USER_DS;
 		ctxb->sysenter_cs = SEG_USER_CS;
-		ctxb->sp = (unsigned long)tcb->istack;
+		//ctxb->sp = (unsigned long)tcb->istack;
 	}
 
 	ctxb->cr2 = 0;
@@ -240,7 +316,7 @@ wake_up_from_low_power:
 		current_ctxb = &ctxtsk->tskctxb;
 		next_ctxb = &schedtsk->tskctxb;
 		BARRIER();
-		if (next_ctxb->need_iret) {
+		if (UNLIKELY(next_ctxb->need_iret)) {
 			unsigned long *esp0 = get_tss_esp0();
 			//vd_printf("iret next : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
 			ASM (
@@ -319,6 +395,71 @@ wake_up_from_low_power:
 	} //ENABLE_INTERRUPT;
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setup_stacd
+ Input		:struct task *tcb
+ 		 < tcb to be set up >
+ 		 INT stacd
+ 		 < stacd to set up >
+ Output		:void
+ Return		:void
+ Description	:set up stacd for T-Kernel
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void setup_stacd( struct task *tcb, INT stacd )
+{
+	W rng;
+	unsigned long *sp;
+	
+	rng = (tcb->tskatr & TA_RNG3) >> 8;
+	
+	if (rng) {
+		sp = (unsigned long*)tcb->tskctxb.sp;
+	} else {
+		sp = (unsigned long*)tcb->tskctxb.ssp;
+	}
+	
+	//ssp->r[0] = stacd;
+	//ssp->r[1] = (VW)tcb->exinf;
+	*sp = (VW)tcb->exinf;
+	sp--;
+	*sp = stacd;
+	sp--;
+	
+	if (rng) {
+		tcb->tskctxb.sp  -= sizeof(unsigned long) * 2;
+	} else {
+		tcb->tskctxb.ssp -= sizeof(unsigned long) * 2;
+	}
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setup_user_stack
+ Input		:struct process *proc
+ 		 < current >
+ Output		:void
+ Return		:void
+ Description	:set up cpu dependent user stack
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void setup_user_stack(struct process *proc)
+{
+	struct task_context_block *ctxb;
+	
+	ctxb = get_current_ctxb();
+	
+	ctxb->sp = proc->mspace->end_stack;
+	ctxb->need_iret = TRUE;
+	ctxb->sysenter_cs = SEG_USER_CS;
+	ctxb->ds = SEG_USER_DS;
+	ctxb->es = SEG_USER_DS;
+	ctxb->gs = SEG_USER_DS;
+	ctxb->fs = SEG_USER_DS;
+	
+	ctxb->ip = proc->mspace->start_code;
+}
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

@@ -66,7 +66,6 @@ LOCAL ER readFileSource(struct LoadSource* ldr, long ofs, void* adr, size_t sz)
 	if (ofs != ldr->li.file.cur) {
 		er = fs_lseek(ldr->li.file.fd, ofs, SEEK_SET);
 		if ( er < E_OK ) {
-			printf("readFileSource error 01:%d\n", er);
 			return er;
 		}
 		ldr->li.file.cur = ofs;
@@ -74,11 +73,8 @@ LOCAL ER readFileSource(struct LoadSource* ldr, long ofs, void* adr, size_t sz)
 
 	/* Read from file */
 	for ( pos = 0; pos < sz; ) {
-		printf("ldr->li.file.fd:%d adr + pos:0x%08X sz - pos:0x%08X\n", ldr->li.file.fd, (B*)adr + pos, sz - pos);
-			
 		er = fs_read(ldr->li.file.fd, (B*)adr + pos, sz - pos);
 		if ( er <= E_OK ) {
-			printf("readFileSource error 02:%d\n", er);
 			break;
 		}
 		pos += er;

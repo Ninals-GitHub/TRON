@@ -44,9 +44,14 @@
 #define	__BK_PAGE_H__
 
 #include <typedef.h>
+#include <bk/typedef.h>
+#include <bk/bprocess.h>
+#include <bk/memory/prot.h>
+#include <bk/memory/vm.h>
 #include <tk/typedef.h>
 #include <tk/sysmgr.h>
 #include <tk/errno.h>
+#include <tk/task.h>
 
 #if STD_SH7727
 #endif
@@ -75,7 +80,11 @@
 #  include <bk/memory/sysdepend/x86/memdef.h>
 #  include <bk/memory/sysdepend/x86/mmu.h>
 #  include <bk/memory/sysdepend/x86/pagedef.h>
+#  include <bk/memory/sysdepend/x86/vm.h>
 #endif
+
+#include <bk/memory/vm.h>
+#include <bk/memory/prot.h>
 
 
 /*
@@ -87,6 +96,7 @@
 */
 struct kmem_cache;
 struct slab;
+struct vm;
 
 /*
 ==================================================================================
@@ -165,6 +175,19 @@ IMPORT unsigned long page_to_address(struct page *page);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:page_to_paddr
+ Input		:struct page *page
+ 		 < page information to get its physical address >
+ Output		:void
+ Return		:unsigned long
+ 		 < physical address to which page attributes >
+ Description	:get page physical address
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT unsigned long page_to_paddr(struct page *page);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:alloc_pages
  Input		:int num
  		 < number of pages to allocate >
@@ -175,42 +198,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT struct page* alloc_pages(int num);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:alloc_page
- Input		:void
- Output		:void
- Return		:struct page*
- 		 < page information >
- Description	:allocate a page from page allocator
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-#define alloc_page() alloc_pages(1)
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:alloc_pagetable
- Input		:void
- Output		:void
- Return		:struct page*
- 		 < page information >
- Description	:allocate a page for a page talbe from page allocator
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-#define alloc_pagetable() alloc_pages(1)
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:alloc_pagedir
- Input		:void
- Output		:void
- Return		:struct page*
- 		 < page information >
- Description	:allocate a page for a page directory from page allocator
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-#define alloc_pagedir() alloc_pages(1)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -263,6 +250,221 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void free_pages(struct page *page, int num);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_page
+ Input		:void
+ Output		:void
+ Return		:struct page*
+ 		 < page information >
+ Description	:allocate a page from page allocator
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define alloc_page() alloc_pages(1)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_pagetable
+ Input		:void
+ Output		:void
+ Return		:pte_t*
+ 		 < page table address >
+ Description	:allocate a page for a page talbe from page allocator
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pte_t* alloc_pagetable(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_pagedir
+ Input		:void
+ Output		:void
+ Return		:pde_t*
+ 		 < page directory address >
+ Description	:allocate a page for a page directory from page allocator
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pde_t* alloc_pagedir(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagetable
+ Input		:pte_t *pte
+ 		 < address of page table to free >
+ Output		:void
+ Return		:void
+ Description	:free page table
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void free_pagetable(pte_t *pte);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagetables_all
+ Input		:pde_t *pde
+ 		 < address of page direcotry to free page talbes >
+ Output		:void
+ Return		:void
+ Description	:free all page talbes
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void free_pagetables_all(pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagetables
+ Input		:pde_t *pde
+ 		 < address of page direcotry to free page talbes >
+ Output		:void
+ Return		:void
+ Description	:free page talbes only for user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void free_pagetables(pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagedir
+ Input		:pde_t *pde
+ 		 < page directory to free >
+ Output		:void
+ Return		:void
+ Description	:free page directory and page tables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void free_pagedir(pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagedir_tables
+ Input		:pde_t *pde
+ 		 < page directory to free >
+ Output		:void
+ Return		:void
+ Description	:free page directory and page tables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void free_pagedir_tables(pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_page_pde
+ Input		:struct page *page
+ 		 < page infromation >
+ 		 pde_t *pde
+ 		 < page directory >
+ Output		:void
+ Return		:pde_t*
+ 		 < page directory entry which struct page represents >
+ Description	:get page directory entry from page struct
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pde_t* get_page_pde(struct page *page, pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_page_pte
+ Input		:struct page *page
+ 		 < page infromation >
+ 		 pde_t *pde
+ 		 < page directory >
+ Output		:void
+ Return		:pte_t*
+ 		 < page table entry which struct page represents >
+ Description	:get page table entry from page struct
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pte_t* get_page_pte(struct page *page, pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_pagetable
+ Input		:struct process *from
+ 		 < copy from >
+ 		 struct process *to
+ 		 < copy to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy pagetables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int copy_pagetable(struct process *from, struct process *to);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_user_pde
+ Input		:void
+ Output		:void
+ Return		:pde_t*
+ 		 < get pde of current user space >
+ Description	:get pde of current user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pde_t* get_user_pde(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:map_page_to_vm
+ Input		:struct prcess *proc
+ 		 < process to map pages to vm >
+ 		 struct vm *vm
+ 		 < vm to map pages to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:map pages to user space vm
+ 		 this function is currently used for test only
+ 		 future work;
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+map_pages_to_vm(struct process *proc, struct vm *vm);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_la_pde
+ Input		:unsigned long laddr
+ 		 < logical address of user space >
+ Output		:void
+ Return		:pde_t*
+ 		 < page directory entry indexed by specified user address >
+ Description	:get pde entry of current user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pde_t* get_la_pde(unsigned long laddr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_la_pagetable
+ Input		:unsigned long laddr
+ 		 < logical address of user space >
+ Output		:void
+ Return		:pte_t*
+ 		 < page table indexed by specified user address >
+ Description	:get page table of current user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pte_t* get_la_pagetable(unsigned long laddr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_la_pte
+ Input		:unsigned long laddr
+ 		 < logical address of user space >
+ Output		:void
+ Return		:pte_t*
+ 		 < page table entry indexed by specified user address >
+ Description	:get page table entry of current user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pte_t* get_la_pte(unsigned long laddr);
+
+/*
+----------------------------------------------------------------------------------
+	T-Kernel Interface
+----------------------------------------------------------------------------------
+*/
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:GetSysMemBlk

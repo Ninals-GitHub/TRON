@@ -66,13 +66,13 @@ DEPENDENCIES_OUTPUT := $(DEPS)
 # ----------------------------------------------------------------------------
 
 # target object
-TARGET	= bkernel.o
+TARGET	= kernel.o
 
 # btron source file path
 S	= .
 
 # common source files
-SRC	+=	bprocess.c process.c
+SRC	+=	bprocess.c fork.c exec.c
 
 VPATH	+= $(S)
 HEADER	+= $(S)
@@ -86,8 +86,6 @@ VPATH   += ../sysdepend_t2ex/device/$(TETYPE)_$(MACHINE) ../sysdepend/device/$(T
 HEADER	+= ../sysdepend_t2ex/device/$(TETYPE)_$(MACHINE) ../sysdepend/device/$(TETYPE)_$(MACHINE)
 
 OBJ = $(addsuffix .o, $(basename $(SRC)))
-
-OBJ += memory/build/$(TETYPE)_$(MACHINE)/memory.o
 
 ASM_SRC = $(filter %.S, $(SRC))
 ASM_OBJ	= $(addsuffix .o, $(basename $(ASM_SRC)))

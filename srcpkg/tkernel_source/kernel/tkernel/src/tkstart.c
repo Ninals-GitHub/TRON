@@ -21,6 +21,7 @@
 #include <tk/timer.h>
 #include <tk/task.h>
 #include <tm/tmonitor.h>
+#include <bk/bprocess.h>
 
 /*
  * Start initial task
@@ -130,8 +131,13 @@ IMPORT	void DispProgress( W n );	/* sysinit */
 	/*
 	 * Create/start initial task
 	 */
+#ifdef _BTRON_
+	DispProgress(0x22);
+	init_proc(inittask);
+#else
 	DispProgress(0x22);
 	init_task_startup(inittask);
+#endif
 
 	/*
 	 * Dispatch to initial task and start kernel operation.

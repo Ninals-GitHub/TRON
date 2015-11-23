@@ -53,6 +53,7 @@
 #include <tk/task.h>
 #include <tk/timer.h>
 #include <tk/winfo.h>
+#include <bk/memory/vm.h>
 
 /*
 ==================================================================================
@@ -123,22 +124,22 @@ struct p_user {
 #define P_RUN		0x8000		/* running				*/
 
 struct process {
-	long		state;
-	unsigned int	flags;
-	long		priority;
-	struct list	list_tasks;
+	long			state;
+	unsigned int		flags;
+	long			priority;
+	struct list		list_tasks;
 	
-	pid_t		pid;
-	pid_t		tgid;
+	pid_t			pid;
+	pid_t			tgid;
 	
-	struct process	*parent;
-	struct list	list_children;	/* list of the children of the process	*/
-	struct list	sibling;	/* list entry of list_children		*/
-	struct task	*group_leader;	/* task group leader			*/
-	cputime_t	utime;
-	cputime_t	stime;
+	struct process		*parent;
+	struct list		list_children;	/* list of the children of 	*/
+	struct list		sibling;	/* list entry of list_children	*/
+	struct task		*group_leader;	/* task group leader		*/
+	cputime_t		utime;
+	cputime_t		stime;
 	
-	//struct memory	memory;
+	struct memory_space	*mspace;
 };
 
 /*
@@ -171,6 +172,22 @@ LOCAL INLINE struct process* get_current(void)
 {
 	return(get_current_task()->proc);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_mspace
+ Input		:void
+ Output		:void
+ Return		:struct memory_space*
+		 < memory_space of current process >
+ Description	:get memory space of current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE struct memory_space* get_current_mspace(void)
+{
+	return(get_current()->mspace);
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

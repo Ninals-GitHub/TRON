@@ -26,7 +26,7 @@
 LOCAL INLINE void setGdt(int gdt_num, uint32_t hi, uint32_t low);
 LOCAL INLINE void setGateDesc(int idt_num, uint32_t dpl, uint32_t gate_type,
 				uint32_t sel, unsigned long *handler);
-LOCAL void initKernelTss(void);
+LOCAL char* alloc_io_bitmap(unsigned long bitmap_size);
 
 #define	setSysTaskGate(idt_num, tss_addr)					\
 do {										\
@@ -43,7 +43,7 @@ do {										\
 #define	setUserIntGate(idt_num, handler)					\
 do {										\
 	setGateDesc(idt_num, GATEDESC_DPL_3, GATEDESC_INT,			\
-			SEG_USER_CS, handler );					\
+			SEG_KERNEL_CS, handler );				\
 } while(0)
 
 #define	setSysTrapGate(idt_num, handler)					\
@@ -55,7 +55,7 @@ do {										\
 #define	setUserTrapGate(idt_num, handler)					\
 do {										\
 	setGateDesc(idt_num, GATEDESC_DPL_3, GATEDESC_TRAP,			\
-			SEG_USER_CS, handler );					\
+			SEG_KERNEL_CS, handler );				\
 } while(0)
 
 
@@ -151,7 +151,8 @@ IMPORT unsigned long interrupt_255;
 
 #define	SEGDESC_TSS_LOW			0x00000000
 #define	SEGDESC_TSS_HI			(SEGDESC_TSS_HI_P | SEGDESC_TSS_HI_DPL	\
-					| SEGDESC_TSS_HI_TYPE)
+						| SEGDESC_TSS_HI_TYPE)
+//#define	SEGDESC_TSS_HI			(SEGDESC_TSS_HI_P | SEGDESC_TSS_HI_TYPE)
 
 
 /* [5:Task Code segment]
@@ -160,7 +161,8 @@ IMPORT unsigned long interrupt_255;
    flags        : G=1, D/B=1, AVL=0, P=1, DPL=0x3, S=1, type=0x2
    */
 #define	SEGDESC_TASK_CODE_LOW		0x0000FFFF
-#define	SEGDESC_TASK_CODE_HI		0x00CFFA00
+//#define	SEGDESC_TASK_CODE_HI		0x00CFFA00
+#define	SEGDESC_TASK_CODE_HI		0x00CFFE00
 
 /* [6:Task Data segment]
    base address : 0x00000000
@@ -315,7 +317,9 @@ LOCAL struct gate_desc gate_descriptor[NUM_IDT_DESCS] __attribute__((aligned(4))
 LOCAL struct gdt_t gdt __attribute__((aligned(4)));
 LOCAL struct idt_t idt __attribute__((aligned(4)));
 
-LOCAL struct tss_t tss __attribute__((aligned(4)));
+//LOCAL struct tss_t tss __attribute__((aligned(4)));
+LOCAL struct tss_t *tss;
+LOCAL char *io_bitmap;
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -375,7 +379,7 @@ EXPORT void initGdt(void)
 	BARRIER();
 	loadGdt((unsigned long*)((unsigned long)&gdt.size));
 	BARRIER();
-	initKernelTss();
+	//initKernelTss();
 }
 
 /*
@@ -443,7 +447,7 @@ EXPORT void initIdt(void)
 	/* -------------------------------------------------------------------- */
 	/* setup idt for system call						*/
 	/* -------------------------------------------------------------------- */
-	setSysTrapGate(SWI_SYSCALL, &int_syscall);
+	setUserTrapGate(SWI_SYSCALL, &int_syscall);
 #if 0
 	setSysTrapGate(SWI_MONITOR, &int_syscall_mon);
 #endif
@@ -480,7 +484,83 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT uint32_t *get_tss_esp0(void)
 {
-	return(&tss.esp0);
+	return(&tss->esp0);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:initKernelTss
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:initialize tss of kernel and load it to the register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int initKernelTss(void)
+{
+	//uint32_t base = (uint32_t)&tss;
+	uint32_t base;
+	uint32_t limit;
+	uint32_t hi = SEGDESC_TSS_HI;
+	uint32_t low;
+	
+	align_low_memory(4);
+	
+	tss = (struct tss_t*)allocLowMemory(sizeof(struct tss_t));
+	
+	if (!tss) {
+		return(-1);
+	}
+	
+	io_bitmap = alloc_io_bitmap(IO_BITMAP_SIZE);
+	
+	if (!io_bitmap) {
+		return(-1);
+	}
+	
+	base = (uint32_t)tss;
+	limit = sizeof(tss) + IO_BITMAP_SIZE;
+
+	/* -------------------------------------------------------------------- */
+	/* setup tss descriptor							*/
+	/* -------------------------------------------------------------------- */
+	hi |= base & MASK_BASEADDRESS_HI;
+	hi |= (base & MASK_BASEADDRESS_MID) >> BASEADDRESS_MID_SHIFT;
+	hi |= limit & MASK_LIMIT_HI;
+
+	low = (base & MASK_BASEADDRESS_LOW) << BASEADDRESS_LOW_SHIFT;
+	low |= limit & SEGDESC_MASK_LIMIT_LOW;
+	
+	setGdt(TSS_DESCRIPTOR, hi, low);
+
+	/* -------------------------------------------------------------------- */
+	/* setup tss								*/
+	/* -------------------------------------------------------------------- */
+	tss->cs = SEG_KERNEL_CS;
+	tss->ss = SEG_KERNEL_DS;
+	tss->ds = SEG_KERNEL_DS;
+	tss->fs = SEG_KERNEL_DS;
+	tss->gs = SEG_KERNEL_DS;
+	tss->ss0 = SEG_KERNEL_DS;
+	tss->esp0 = getEsp();
+	
+	tss->io = (uint16_t)((unsigned long)io_bitmap - (unsigned long)tss);
+	
+	/* -------------------------------------------------------------------- */
+	/* load tss								*/
+	/* -------------------------------------------------------------------- */
+	BARRIER();
+	ASM (
+	"movw %[tss_sel], %%ax		\n\t"
+	"ltr %%ax			\n\t"
+	:
+	:[tss_sel]"i"(SEG_TSS_SEL)
+	:"eax"
+	);
+	
+	return(0);
 }
 
 /*
@@ -563,55 +643,38 @@ LOCAL INLINE void setGateDesc(int idt_num, uint32_t dpl, uint32_t gate_type,
 
 /*
 ==================================================================================
- Funtion	:initKernelTss
- Input		:void
+ Funtion	:alloc_io_bitmap
+ Input		:unsigned long bitmap_size
+ 		 < size of bitmap to allocate >
  Output		:void
- Return		:void
- Description	:initialize tss of kernel and load it to the register
+ Return		:char*
+ 		 < bitmap address >
+ Description	:allocate memory for io bitmap
 ==================================================================================
 */
-LOCAL void initKernelTss(void)
+LOCAL char* alloc_io_bitmap(unsigned long bitmap_size)
 {
-	uint32_t base = (uint32_t)&tss;
-	uint32_t limit = sizeof(tss);
-
-	uint32_t hi = SEGDESC_TSS_HI;
-	uint32_t low;
-
-	/* -------------------------------------------------------------------- */
-	/* setup tss descriptor							*/
-	/* -------------------------------------------------------------------- */
-	hi |= base & MASK_BASEADDRESS_HI;
-	hi |= (base & MASK_BASEADDRESS_MID) >> BASEADDRESS_MID_SHIFT;
-	hi |= limit & MASK_LIMIT_HI;
-
-	low = (base & MASK_BASEADDRESS_LOW) << BASEADDRESS_LOW_SHIFT;
-	low |= limit & SEGDESC_MASK_LIMIT_LOW;
+	int i;
+	char *bitmap;
 	
-	setGdt(TSS_DESCRIPTOR, hi, low);
-
+	bitmap = (char*)allocLowMemory(bitmap_size);
+	
+	if (!bitmap) {
+		return(0);
+	}
+	
 	/* -------------------------------------------------------------------- */
-	/* setup tss								*/
+	/* 0-clear								*/
 	/* -------------------------------------------------------------------- */
-	tss.cs = SEG_KERNEL_CS;
-	tss.ss = SEG_KERNEL_DS;
-	tss.ds = SEG_KERNEL_DS;
-	tss.fs = SEG_KERNEL_DS;
-	tss.gs = SEG_KERNEL_DS;
-	tss.ss0 = SEG_KERNEL_DS;
-	tss.esp0 = getEsp();
-
+	for (i = 0;i < (IO_BITMAP_SIZE - 1);i++) {
+		bitmap[i] = 0x00;
+	}
 	/* -------------------------------------------------------------------- */
-	/* load tss								*/
+	/* last byte is filled with 1						*/
 	/* -------------------------------------------------------------------- */
-	BARRIER();
-	ASM (
-	"movw %[tss_sel], %%ax		\n\t"
-	"ltr %%ax			\n\t"
-	:
-	:[tss_sel]"i"(SEG_TSS_SEL)
-	:"eax"
-	);
+	bitmap[IO_BITMAP_SIZE - 1] = 0xFF;
+	
+	return(bitmap);
 }
 
 /*

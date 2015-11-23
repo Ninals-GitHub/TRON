@@ -45,6 +45,8 @@
 #include <bk/bprocess.h>
 #include <bk/uapi/berrno.h>
 #include <bk/uapi/errcode.h>
+#include <bk/memory/vm.h>
+#include <bk/memory/page.h>
 #include <tk/sysmgr.h>
 #include <sys/rominfo.h>
 #include <sys/sysinfo.h>
@@ -228,6 +230,16 @@ EXPORT struct process* alloc_process(pid_t pid)
 		
 		new_proc->utime = 0;
 		new_proc->stime = 0;
+		
+		/* ------------------------------------------------------------ */
+		/* initialize memory space for init				*/
+		/* ------------------------------------------------------------ */
+		new_proc->mspace = alloc_memory_space();
+		
+		if (!new_proc) {
+			return(NULL);
+		}
+		
 		/* ------------------------------------------------------------ */
 		/* link to parent process					*/
 		/* ------------------------------------------------------------ */
@@ -256,30 +268,34 @@ EXPORT void free_process(pid_t pid)
 	}
 	
 	proc = &proc_table[pid];
-	
+	/* -------------------------------------------------------------------- */
+	/* give children up for adoption to init				*/
+	/* -------------------------------------------------------------------- */
 	if (!is_empty_list(&proc->list_children)) {
 		struct process *child_proc;
-		/* ------------------------------------------------------------ */
-		/* give children up for adoption to init			*/
-		/* ------------------------------------------------------------ */
+
 		list_for_each_entry(child_proc, &proc->list_children, sibling) {
 			del_list(&child_proc->sibling);
 			add_list_tail(&child_proc->sibling, &init->list_children);
 		}
 	}
-	
+	/* -------------------------------------------------------------------- */
+	/* free all tasks							*/
+	/* -------------------------------------------------------------------- */
 	if (!is_empty_list(&proc->list_tasks)) {
 		struct task *task;
 		struct task *temp;
-		/* ------------------------------------------------------------ */
-		/* free all tasks						*/
-		/* ------------------------------------------------------------ */
+
 		list_for_each_entry_safe(task, temp,
 						&proc->list_tasks, task_node) {
 			del_list(&task->task_node);
 			free_task(task);
 		}
 	}
+	/* -------------------------------------------------------------------- */
+	/* free all vm and page tables						*/
+	/* -------------------------------------------------------------------- */
+	free_vm_all(proc);
 	
 	proc->state		= P_NONEXIST;
 	proc->flags		= 0;
@@ -327,6 +343,11 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 	init_task = get_scheduled_task();
 	
 	/* -------------------------------------------------------------------- */
+	/* set current task as init						*/
+	/* -------------------------------------------------------------------- */
+	set_current_task(init_task);
+	
+	/* -------------------------------------------------------------------- */
 	/* allocate pid for init						*/
 	/* -------------------------------------------------------------------- */
 	init_pid = alloc_pid();
@@ -354,15 +375,16 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 	/* -------------------------------------------------------------------- */
 	/* attribute init task to init process					*/
 	/* -------------------------------------------------------------------- */
-	init->state = P_DORMANT;
-	
 	init->priority = 80;
 	init->parent = init;
 	init->group_leader = init_task;
 	
 	add_list_tail(&init_task->task_node, &init->list_tasks);
 	
-	
+	/* -------------------------------------------------------------------- */
+	/* set initial pde							*/
+	/* -------------------------------------------------------------------- */
+	init->mspace->pde = (pde_t*)get_system_pde();
 	
 	return(EC_OK);
 }

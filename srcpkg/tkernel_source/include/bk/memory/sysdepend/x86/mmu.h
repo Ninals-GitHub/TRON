@@ -181,9 +181,9 @@ typedef union PageDirectryEntry {
 #define	PDE_SYS_RO	( PD_Present )
 #define PDE_SYS_EXEC	( PD_Present )
 
-#define	PDE_USR_RW	( PD_User|PDE_SYS_RW )
-#define	PDE_USR_RO	( PD_User|PDE_SYS_RO )
-#define PDE_USR_EXEC	( PD_User|PDE_SYS_EXEC )
+#define	PDE_USR_RW	( PD_Present|PD_User|PDE_SYS_RW )
+#define	PDE_USR_RO	( PD_Present|PD_User|PDE_SYS_RO )
+#define PDE_USR_EXEC	( PD_Present|PD_User|PDE_SYS_EXEC )
 
 /*
  * The number of PTEs in a page table
@@ -259,9 +259,11 @@ typedef union PageTablEntry {
 #define	PTE_SYS_RO	( PT_Present )
 #define PTE_SYS_EXEC	( PT_Present )
 
-#define	PTE_USR_RW	( PT_User|PTE_SYS_RW )
-#define	PTE_USR_RO	( PT_User|PTE_SYS_RO )
-#define PTE_USR_EXEC	( PT_User|PTE_SYS_EXEC )
+#define	PTE_USR_RW	( PT_Present | PT_User|PTE_SYS_RW )
+#define	PTE_USR_RO	( PT_Present | PT_User|PTE_SYS_RO )
+#define PTE_USR_EXEC	( PT_Present | PT_User|PTE_SYS_EXEC )
+
+#define	PAGE_INDEX(laddr)	(((unsigned long)(laddr) >> PAGE_SHIFT) & 0x3FF)	// relative index based on page talbe
 
 /*
  * Cache off
@@ -274,7 +276,7 @@ Inline unsigned long PTE_CacheOff( unsigned long pte )
 
 #define	PDIR_INDEX(laddr)	( (unsigned long)(laddr) >> PDIR_SHIFT )
 #define	PDIR_NUM(laddr)		PDIR_INDEX(laddr)
-#define	PTBL_INDEX(laddr)	( ((unsigned long)(laddr) & PDIR_HI_MASK) >> PAGE_SHIFT )
+#define	PTBL_INDEX(laddr)	( ((unsigned long)(laddr) & PDIR_HI_MASK) >> PAGE_SHIFT )	// absolute index based on pde
 #define	PTBL_NUM(laddr)		((unsigned long)(laddr) >> PAGE_SHIFT)
 
 #define PRAMTBL_INDEX(laddr)	( (((unsigned long)(laddr) - REALMEMORY_TOP) & PDIR_HI_MASK) >> PAGE_SHIFT )
@@ -340,5 +342,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT unsigned long getPtePfaFromLaddr(unsigned long laddr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_system_pde
+ Input		:void
+ Output		:void
+ Return		:unsigned long
+ 		 < address of SysPDEBase >
+ Description	:get SysPDEBase
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT unsigned long get_system_pde(void);
 
 #endif /* _MEMORY_MMU_H_ */

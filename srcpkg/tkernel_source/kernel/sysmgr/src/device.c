@@ -175,8 +175,6 @@ vd_printf("%s ", devcb->devnm);
 			return devcb; /* Found */
 		}
 	}
-	
-	vd_printf("nothing foun\n");
 
 	return NULL;
 }

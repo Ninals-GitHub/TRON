@@ -63,6 +63,15 @@
 */
 #define	NUM_IDT_DESCS		256
 
+/*
+----------------------------------------------------------------------------------
+	i/o bitmap
+----------------------------------------------------------------------------------
+*/
+#define	NR_IO_MAX		0xFFFF
+#define	IO_BITMAP_SIZE		(NR_IO_MAX / 8)
+// last byte are always set to 1
+
 #ifndef _in_asm_source_
 
 
@@ -118,6 +127,18 @@ LOCAL INLINE void update_tss_esp0(uint32_t esp0)
 {
 	*(get_tss_esp0()) = esp0;
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:initKernelTss
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:initialize tss of kernel and load it to the register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int initKernelTss(void);
 
 #endif	// _in_asm_source_
 

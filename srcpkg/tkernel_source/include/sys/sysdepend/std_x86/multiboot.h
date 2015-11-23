@@ -653,6 +653,18 @@ IMPORT void* allocLowMemory(uint32_t size);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:align_low_memory
+ Input		:unsigned long align
+ 		 < alignment unit >
+ Output		:void
+ Return		:void
+ Description	:alignment low memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void align_low_memory(unsigned long align);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:copyInitramfs
  Input		:void
  Output		:void

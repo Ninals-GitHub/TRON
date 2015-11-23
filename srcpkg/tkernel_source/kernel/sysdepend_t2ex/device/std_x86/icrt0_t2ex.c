@@ -14,6 +14,7 @@
 #include <tstdlib/bitop.h>
 #include <sys/sysdepend/std_x86/multiboot.h>
 #include <sys/sysdepend/std_x86/multiboot_def.h>
+#include <bk/memory/page.h>
 
 #include <debug/vdebug.h>
 
@@ -137,6 +138,8 @@ EXPORT int copyInitramfs(void)
 		uint32_t ramfs_size = getInitramfsSize();
 		uint32_t ramfs_addr;
 		
+		align_low_memory(PAGESIZE);
+		
 		/* ------------------------------------------------------------ */
 		/* the memory area of initramfs is not freed forever 		*/
 		/* ------------------------------------------------------------ */
@@ -181,6 +184,25 @@ EXPORT void* allocLowMemory(uint32_t size)
 	boot_info.lowmem_top += size;
 	
 	return((void*)allocated);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:align_low_memory
+ Input		:unsigned long align
+ 		 < alignment unit >
+ Output		:void
+ Return		:void
+ Description	:alignment low memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void align_low_memory(unsigned long align)
+{
+	if (boot_info.lowmem_top & (align - 1)) {
+		unsigned long comp = align - (boot_info.lowmem_top & (align - 1));
+		
+		boot_info.lowmem_top += comp;
+	}
 }
 
 /*
@@ -437,8 +459,6 @@ LOCAL void handle_multiboot2(void *info)
 {
 	vd_printf("multiboot2 has not been yet implemented\n");
 }
-
-
 
 /*
 ==================================================================================

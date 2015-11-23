@@ -57,16 +57,29 @@
 MACHINE = x86
 TETYPE	= std
 
+BKERNEL_TARGET = bkernel.o
+
 BUILD_PATH = build/$(TETYPE)_$(MACHINE)
+
+OBJ = ../../memory/build/$(TETYPE)_$(MACHINE)/memory.o
+OBJ += ../../fs/build/$(TETYPE)_$(MACHINE)/fs.o
+OBJ += ../../kernel.o
 
 # ----------------------------------------------------------------------------
 
 .PHONY: all clean install source clean_source clean_install
 
-all:
+all:$(BKERNEL_TARGET)
+
+$(BKERNEL_TARGET):$(OBJ)
+	$(CC) $(TARGET_ARCH) -r -nostdlib $^ -o $@
+
+$(OBJ):
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) )
+	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../ ; $(MAKE) )
 
 clean:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) clean )
+	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../ ; $(MAKE) clean )

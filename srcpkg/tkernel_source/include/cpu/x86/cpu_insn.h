@@ -347,6 +347,24 @@ IMPORT void setCr3(uint32_t flags);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:flush_all_tlb
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:read from cr3 and set the value to cr3
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE void flush_all_tlb(void)
+{
+	setCr3(getCr3());
+	ASM (
+	"jmp	flush_tlb_after_load_pdbr	\n\t"
+	"flush_tlb_after_load_pdbr:"
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:getCr4
  Input		:void
  Output		:void

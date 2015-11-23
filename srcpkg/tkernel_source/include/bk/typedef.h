@@ -73,6 +73,8 @@ struct ErrCode{
 
 typedef int			pid_t;
 typedef unsigned long long	cputime_t;
+typedef unsigned long		pte_t;
+typedef unsigned long		pde_t;
 
 /*
 ==================================================================================

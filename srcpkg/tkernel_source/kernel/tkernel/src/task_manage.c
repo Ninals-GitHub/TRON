@@ -21,9 +21,13 @@
 #include <tk/task.h>
 #include "wait.h"
 #include "check.h"
-#include "cpu_task.h"
+#include <cpu.h>
 #include <tm/tmonitor.h>
+#include <bk/bprocess.h>
+#include <tstdlib/list.h>
 
+
+IMPORT const T_CTSK c_init_task;
 
 /*
  * Create task
@@ -54,6 +58,9 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	INT	stksz, sstksz, sysmode, resid;
 	void	*stack = NULL, *sstack;
 	ER	ercd;
+#ifdef _BTRON_
+	struct process *current;
+#endif
 
 	CHECK_RSATR(pk_ctsk->tskatr, VALID_TSKATR);
 	CHECK_PRI(pk_ctsk->itskpri);
@@ -164,7 +171,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	
 	if ( stksz > 0 ) {
 #ifdef _STD_X86_
-		tcb->istack = (VB*)stack + stksz - RESERVE_SSTACK(tcb->tskatr);
+		//tcb->istack = (VB*)stack + stksz - RESERVE_SSTACK(tcb->tskatr);
 #else
 		tcb->istack = (VB*)stack + stksz;
 #endif
@@ -173,7 +180,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 		if ((pk_ctsk->tskatr & TA_RNG3) == TA_RNG0) {
 			tcb->istack = tcb->isstack;
 		} else {
-			tcb->istack = pk_ctsk->stkptr;
+			//tcb->istack = pk_ctsk->stkptr;
 		}
 #else
 		tcb->istack = pk_ctsk->stkptr;
@@ -197,6 +204,16 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	make_dormant(tcb);
 
 	ercd = tcb->tskid;
+	
+#ifdef _BTRON_
+	if (pk_ctsk != &c_init_task) {
+		current = get_current();
+		tcb->proc = current;
+		init_list(&tcb->task_node);
+
+		add_list_tail(&tcb->task_node, &current->list_tasks);
+	}
+#endif
 
     error_exit:
 	END_CRITICAL_SECTION;
@@ -227,7 +244,7 @@ LOCAL void _del_tsk( TCB *tcb )
 	if ( tcb->stksz > 0 ) {
 		/* Free user stack */
 #ifdef _STD_X86_
-		stack = (VB*)tcb->istack - tcb->stksz + + RESERVE_SSTACK(tcb->tskatr);
+		//stack = (VB*)tcb->istack - tcb->stksz + RESERVE_SSTACK(tcb->tskatr);
 #else
 		stack = (VB*)tcb->istack - tcb->stksz;
 #endif
@@ -260,6 +277,13 @@ SYSCALL ER _tk_del_tsk( ID tskid )
 	} else {
 		_del_tsk(tcb);
 	}
+	
+#ifdef _BTRON_
+	tcb->proc = NULL;
+	
+	del_list(&tcb->task_node);
+#endif
+	
 	END_CRITICAL_SECTION;
 
 	return ercd;
@@ -321,6 +345,12 @@ LOCAL void _ter_tsk( TCB *tcb )
 #ifdef NUM_MTXID
 	/* signal mutex */
 	signal_all_mutex(tcb);
+#endif
+
+#ifdef _BTRON_
+	tcb->proc = NULL;
+	
+	del_list(&tcb->task_node);
 #endif
 
 	cleanup_context(tcb);
@@ -1074,6 +1104,8 @@ EXPORT struct task* alloc_task(void)
 	tcb->state	= TS_DORMANT;
 	
 	init_list(&tcb->task_node);
+	
+	tcb->tskid = get_task_id(tcb);
 	
 	return(tcb);
 	

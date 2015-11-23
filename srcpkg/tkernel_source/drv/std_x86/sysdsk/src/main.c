@@ -24,6 +24,7 @@
 #include "device/devconf.h"
 
 #include <sys/sysinfo.h>
+#include <tk/task.h>
 
 /* Get "DEVCONF" entry */
 IMPORT W GetDevConf( UB *name, W *val );
@@ -106,8 +107,6 @@ LOCAL	void	ExecTask(SDInfo	*inf)
 		sdAbortFn,	/* abort */
 		sdEventFn,	/* event */
 	};
-	
-	vd_printf("start exectsk\n");
 
 	/* Create the data for drive processing */
 	for (ndrv = NULL; ; inf++, ndrv = drv) {
@@ -116,8 +115,9 @@ LOCAL	void	ExecTask(SDInfo	*inf)
 		if (!(drv = (DrvTab*)Kcalloc(1, sizeof(DrvTab)))) {
 			goto E_EXIT;
 		}
+		
 		drv->Next = ndrv;
-
+		
 		/* Set the configuration data */
 		drv->Spec = inf->spec;
 		strncpy(drv->DevName, inf->devnm, L_DEVNM);

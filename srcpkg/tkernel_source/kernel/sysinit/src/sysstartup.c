@@ -20,7 +20,8 @@
 #include "sysinit.h"
 #include <tk/kernel.h>
 #include <bk/bprocess.h>
-#include <bk/slab.h>
+#include <bk/memory/slab.h>
+#include <bk/memory/vm.h>
 
 /*
  * Subsystem
@@ -82,8 +83,8 @@ EXPORT ER init_system( void )
 		vd_printf("error init_proc_management\n");
 		goto err_ret;
 	}
-#endif
 
+#endif
 	/* Initialize memory manager */
 	DispProgress(0x13);
 	ercd = init_memmgr();
@@ -97,6 +98,14 @@ EXPORT ER init_system( void )
 	ercd = init_slab_allocator();
 	if ( ercd < E_OK ) {
 		vd_printf("init_slab_allocator\n");
+		goto err_ret;
+	}
+	
+	/* Initialize vm */
+	DispProgress(0x15);
+	ercd = init_mm();
+	if ( ercd < E_OK ) {
+		vd_printf("init_mm\n");
 		goto err_ret;
 	}
 #else

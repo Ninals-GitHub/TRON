@@ -20,7 +20,7 @@
 #include <tk/kernel.h>
 #include <tk/task.h>
 #include "check.h"
-#include "cpu_task.h"
+#include <cpu.h>
 
 #include <sys/sysinfo.h>
 #include <tk/sysdef.h>

@@ -685,6 +685,7 @@ EXPORT ER InitLogicalSpace( void )
 	UINT	npg_ram;
 	unsigned long memend;
 	unsigned long paddr;
+	unsigned long io_bitmap;
 	void *laddr;
 	PDE *pde;
 	PTE *pte;
@@ -765,6 +766,20 @@ EXPORT ER InitLogicalSpace( void )
 	"flush_tlb_after_load_pdbr:"
 	);
 	/* after load to cr3, tlb is flushed					*/
+	
+	/* -------------------------------------------------------------------- */
+	/* allocate bitmap							*/
+	/* -------------------------------------------------------------------- */
+	io_bitmap = alloc_io_bitmap();
+	
+	if (!io_bitmap) {
+		vd_printf("error:cannot allocate memory for io_bitmap\n");
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* set up kernel tss							*/
+	/* -------------------------------------------------------------------- */
+	initKernelTss(io_bitmap);
 	
 	/* -------------------------------------------------------------------- */
 	/* copy initrams to the memory which will be managed by the kernel	*/

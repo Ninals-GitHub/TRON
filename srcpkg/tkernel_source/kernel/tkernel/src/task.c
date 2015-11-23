@@ -20,7 +20,7 @@
 #include <tk/task.h>
 #include "wait.h"
 #include "ready_queue.h"
-#include "cpu_task.h"
+#include <cpu.h>
 #include "tkdev_timer.h"
 #include "check.h"
 #include <sys/rominfo.h>
@@ -309,32 +309,21 @@ SYSCALL INT _td_rdy_que( PRI pri, ID list[], INT nent )
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_current_task
- Input		:void
+ Funtion	:get_task_id
+ Input		:struct task *task
+ 		 < task to get its id >
  Output		:void
- Return		:struct task*
-		 < current task >
- Description	:get current task
+ Return		:ID
+ 		 < task id >
+ Description	:get task id calculated from task_table
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct task* get_current_task(void)
+EXPORT ID get_task_id(struct task *task)
 {
-	return((struct task*)ctxtsk);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_scheduled_task
- Input		:void
- Output		:void
- Return		:struct task*
-		 < next task >
- Description	:get next scheduled task
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT struct task* get_scheduled_task(void)
-{
-	return((struct task*)schedtsk);
+	struct task *table = (struct task*)tcb_table;
+	ID index = (ID)(task - tcb_table);
+	
+	return(ID_TSK(index));
 }
 
 #endif /* USE_DBGSPT */

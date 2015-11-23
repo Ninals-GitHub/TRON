@@ -61,6 +61,7 @@
 #include "pminfo.h"
 #include "source.h"
 #include "elf.h"
+#include <bk/memory/page.h>
 
 
 #if CPU_I386
@@ -1063,6 +1064,14 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	pg->loadsz = eli.bss_ladr + eli.bss_size - top_adr; /* program size (including bss) */
 
 	lofs = ladr - top_adr;
+	
+#ifdef _BTRON_
+	/* -------------------------------------------------------------------- */
+	/* free virtual memory and page tables for user space			*/
+	/* -------------------------------------------------------------------- */
+	free_vm(get_current());
+	
+#endif
 
 	/* Read text area */
 	printf("ldr:0x%08X eli.text_fofs:0x%08X eli.text_ladr + lofs:0x%08X eli.text_size:0x%08X\n",ldr, eli.text_fofs, eli.text_ladr + lofs, eli.text_size);
