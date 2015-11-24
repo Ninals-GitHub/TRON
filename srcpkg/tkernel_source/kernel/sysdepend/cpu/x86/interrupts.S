@@ -11,6 +11,7 @@
 #define	_in_asm_source_
 #include <cpu/x86/descriptor.h>
 #include <cpu/x86/interrupt.h>
+#include <cpu/x86/syscall_table.h>
 
 #include <machine.h>
 #include <tk/errno.h>
@@ -23,6 +24,8 @@
 #include <tk/isysconf.h>
 #include <tk/tkdev_conf.h>
 #include "offset.h"
+
+#include <bk/uapi/btron/errno.h>
 #undef	_in_asm_source_
 
 /*
@@ -38,7 +41,7 @@
 .extern no_support
 .extern svc_ientry
 .extern _tdsvctbl
-.extern syscall_test
+.extern syscall_table
 
 
 
@@ -161,6 +164,7 @@ interrupt_\int_num:
 	jmp	exit_interrupt
 .endm
 
+
 /*
 ----------------------------------------------------------------------------------
 	common procedure for system call interrupt
@@ -170,18 +174,22 @@ interrupt_\int_num:
 .globl int_syscall_\int_num
 .globl int_syscall_return_\int_num
 
+#if 1
 int_syscall_\int_num:
+	cmpl	$SYSCALL_NUM, %eax
+	jg	ret_nosys
 #	pushl	%eax
-	pushl	%ecx
-	pushl	%edx
-	pushl	%ebx
-	pushl	%esi
-	pushl	%edi
+#	pushl	%ecx
+#	pushl	%edx
+#	pushl	%ebx
+#	pushl	%esi
+#	pushl	%edi
 	pushl	%ebp
 	pushl	%ds
 	pushl	%es
 	pushl	%gs
 	pushl	%fs
+	pushl	%eax				# argument7 for test
 	pushl	%ebp				# argument6
 	pushl	%edi				# argument5
 	pushl	%esi				# argument4
@@ -194,26 +202,31 @@ int_syscall_\int_num:
 	movw	%cx, %es
 	movw	%cx, %gs
 	movw	%cx, %fs
-	pushl	%eax				# argument 0 for test
 	cld
-	call	syscall_test
-	#call	*syscall_table(,%eax,4)		# systemcall dispatch
+	call	*syscall_table(,%eax,4)		# systemcall dispatch
 int_syscall_return_\int_num:
-	#addl	$24, %esp			# remove 6 arguments
+	#addl	$28, %esp			# remove 7 arguments
+	popl	%ebx
+	popl	%ecx
+	addl	$4, %esp			# remove edx argument
+	popl	%esi
+	popl	%edi
+	addl	$8, %esp			# remove eaxa and ebp argument
 	
 	popl	%fs
 	popl	%gs
 	popl	%es
 	popl	%ds
 	leave					# restore ebp
-	popl	%edi
-	popl	%esi
-	popl	%ebx
-	popl	%edx
-	popl	%ecx
+#	popl	%edi
+#	popl	%esi
+#	popl	%ebx
+#	popl	%edx
+#	popl	%ecx
 #	popl	%eax
 	iret					# bye exception/interrupt
 .endm
+#endif
 
 
 /*
@@ -304,6 +317,8 @@ _tdsvctbl:
 	.long	Csym(no_support)
 #include <sys/svc/tdsvctbl.h>
 #endif /* USE_DBGSPT */
+
+
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -515,6 +530,20 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 setup_interrupt		255		# for invalid interrupt
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:ret_nosys
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:return with invalid system call
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+ret_nosys:
+	movl	(-ENOSYS), %eax
+	iret
+
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
