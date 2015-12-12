@@ -62,6 +62,12 @@
 */
 #define MAP_FAILED	((void*)-1)
 
+#define	MAP_SHARED	MAKE_BIT32(0)	/* share changes			*/
+#define	MAP_PRIVATE	MAKE_BIT32(1)	/* changes are private			*/
+#define	MAP_TYPE	MAKE_MASK32(0,3)/* mask for type of mapping		*/
+#define	MAP_FIXED	MAKE_BIT32(4)	/* interpret addr exactly		*/
+#define	MAP_ANONYMOUS	MAKE_BIT32(5)	/* do not use a file			*/
+
 /*
 ==================================================================================
 
@@ -101,6 +107,30 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void* mmap(void *addr, size_t length, int prot,
 			int flags, int fd, off_t offset);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap2
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file in unit of page size >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping with page size offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void* mmap2(void *addr, size_t length, int prot,
+			int flags, int fd, off_t pgoffset);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

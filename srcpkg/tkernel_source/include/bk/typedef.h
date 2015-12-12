@@ -72,9 +72,31 @@ struct ErrCode{
 };
 
 typedef int			pid_t;
+
 typedef unsigned long long	cputime_t;
+typedef unsigned long long	clock_t;
+
 typedef unsigned long		pte_t;
 typedef unsigned long		pde_t;
+
+typedef	long			time_t;		/* Date/time			*/
+
+typedef	unsigned int		ino_t;		/* File serial number		*/
+
+typedef	long			off_t;		/* File size (offset)		*/
+
+typedef	long long		off64_t;	/* File size (offset)		*/
+
+typedef	unsigned int		mode_t;		/* File attribute		*/
+typedef	unsigned int		nlink_t;	/* Number of links		*/
+typedef	unsigned int		dev_t;		/* Device number		*/
+typedef	unsigned int		uid_t;		/* User ID			*/
+typedef	unsigned int		gid_t;		/* Group ID			*/
+typedef	long			blksize_t;	/* Block size			*/
+typedef	long long		blkcnt_t;	/* Number of blocks		*/
+
+typedef	unsigned long long	fsblkcnt_t;	/* Number of blocks		*/
+typedef	unsigned long long	fsfilcnt_t;	/* Number of files		*/
 
 /*
 ==================================================================================

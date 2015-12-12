@@ -44,17 +44,21 @@
 #define	__BK_BPROCESS_H__
 
 #include <typedef.h>
-#include <bk/typedef.h>
+
 #include <tk/typedef.h>
 #include <tk/syscall.h>
-#include <sys/queue.h>
-#include <sys/str_align.h>
 #include <tk/kernel.h>
 #include <tk/task.h>
 #include <tk/timer.h>
 #include <tk/winfo.h>
-#include <bk/memory/vm.h>
 
+#include <bk/typedef.h>
+#include <bk/memory/vm.h>
+#include <bk/uapi/signal.h>
+#include <bk/uapi/sys/resource.h>
+
+#include <sys/queue.h>
+#include <sys/str_align.h>
 /*
 ==================================================================================
 
@@ -114,6 +118,19 @@ struct p_user {
 
 /*
 ----------------------------------------------------------------------------------
+	signal management
+----------------------------------------------------------------------------------
+*/
+struct signals {
+	int			count;
+	struct sigaction	action[NR_SIG];
+	sigset_t		blocked;
+	sigset_t		real_blocked;
+	sigset_t		saved_sigmask;
+};
+
+/*
+----------------------------------------------------------------------------------
 	process
 ----------------------------------------------------------------------------------
 */
@@ -139,6 +156,13 @@ struct process {
 	cputime_t		utime;
 	cputime_t		stime;
 	
+	uid_t			uid;
+	uid_t			euid;
+	gid_t			gid;
+	gid_t			egid;
+	
+	struct signals		signals;
+	struct rlimit		rlimits[RLIMIT_NLIMITS];
 	struct memory_space	*mspace;
 };
 
@@ -262,14 +286,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER init_proc( CONST T_CTSK *pk_ctsk );
 
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:init_signal
+ Input		:struct process *proc
+ 		 < process to initialize its sinals >
  Output		:void
  Return		:void
- Description	:void
+ Description	:initialize signal management
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+IMPORT void init_signal(struct process *proc);
 
 #endif	// __BK_BPROCESS_H__

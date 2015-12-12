@@ -80,7 +80,7 @@ SRC	+=	fs_attach.c fs_break.c fs_chdir.c fs_close.c \
 		fs_renam.c fs_rmdir.c fs_root.c fs_stat.c \
 		fs_statvfs.c fs_sync.c fs_trunc.c fs_ulink.c \
 		fs_unregist.c fs_utimes.c fs_write.c \
-		fs_chmod.c fs_fchmd.c
+		fs_chmod.c fs_fchmd.c fs_link.c
 
 # object files
 OBJ	= $(addsuffix .o, $(basename $(SRC)))
@@ -93,7 +93,7 @@ T2EX_INSTALLDIR = $(BD)/t2ex/build/$(TETYPE)_$(MACHINE)
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean install clean_install
+.PHONY: all clean install clean_install ready_for_rebuild
 
 ALL = $(TARGET)
 
@@ -106,6 +106,9 @@ $(TARGET): $(OBJ)
 	$(LINK_R.o) $^ $(OUTPUT_OPTION)
 
 install: 
+
+ready_for_rebuild:
+	$(RM) $(TARGET)
 
 clean:
 	$(RM) $(OBJ) $(ALL) $(DEPS)

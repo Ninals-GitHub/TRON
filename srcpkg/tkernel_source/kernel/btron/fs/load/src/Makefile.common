@@ -106,7 +106,7 @@ T2EX_INSTALLDIR = $(BD)/kernel/btron/fs/load/build/$(TETYPE)_$(MACHINE)
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean source clean_source install clean_install
+.PHONY: all clean source clean_source install clean_install ready_for_rebuild
 
 ALL = $(TARGET_OBJ) $(TARGET_LIB)
 
@@ -133,6 +133,10 @@ install: $(addprefix $(T2EX_INSTALLDIR)/, $(TARGET_OBJ)) \
 	$(addprefix $(LIB_INSTALLDIR)/, $(TARGET_LIB))
 
 source: $(SRC_SVC)
+
+ready_for_rebuild:
+	$(RM) $(addprefix $(T2EX_INSTALLDIR)/, $(TARGET_OBJ))
+	$(RM) $(addprefix $(LIB_INSTALLDIR)/, $(TARGET_LIB))
 
 clean_source:
 #	( cd $(IFSRC) ; $(RM) *.h )

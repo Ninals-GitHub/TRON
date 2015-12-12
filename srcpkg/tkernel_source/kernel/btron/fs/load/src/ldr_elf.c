@@ -9,6 +9,7 @@
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by T-Engine Forum at 2013/03/08.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/29
  *
  *----------------------------------------------------------------------
  */
@@ -66,6 +67,7 @@
 #include <bk/memory/vm.h>
 #include <bk/memory/mmap.h>
 #include <bk/memory/slab.h>
+#include <bk/fs/load/auxvec.h>
 #include <t2ex/string.h>
 
 
@@ -103,31 +105,10 @@
 /*
 ==================================================================================
 
-	PROTOTYPE
-
-==================================================================================
-*/
-LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value);
-LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str);
-LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
-			struct LoadSource* ldr, int argc);
-
-/*
-==================================================================================
-
 	DEFINE 
 
 ==================================================================================
 */
-
-/*
-==================================================================================
-
-	Management 
-
-==================================================================================
-*/
-
 /*
  * ELF loading information
  */
@@ -162,7 +143,33 @@ typedef struct {
 	UW	gp_info_fofs;	/* gp info file offset */
 	W	gp;		/* gp register value (_SDA_BASE_) */
 #endif
+	unsigned long entry;
 } ELF_LoadInfo;
+
+/*
+==================================================================================
+
+	PROTOTYPE
+
+==================================================================================
+*/
+LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value);
+LOCAL INLINE unsigned long
+stack_up_auxvec(unsigned long stack, unsigned long id, unsigned long value);
+LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str);
+LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
+			struct LoadSource* ldr, ELF_LoadInfo *eli, int argc);
+LOCAL INLINE unsigned long
+setup_aux_vector(unsigned long stack_top, LoadSource *ldr,
+			ELF_LoadInfo *eli, unsigned long filename, unsigned long machine_name);
+
+/*
+==================================================================================
+
+	Management 
+
+==================================================================================
+*/
 
 
 /*
@@ -431,6 +438,8 @@ LOCAL ER GetELFLoadInfoPhdr( ELF_LoadInfo *eli, Elf32_Ehdr *hdr, LoadSource *ldr
 	er = ldr->read(ldr, hdr->e_phoff, phdr_buf, n);
 	if ( er < E_OK ) goto err_ret2;
 	if ( er < n ) { er = EX_NOEXEC; goto err_ret2; }
+	
+	
 
 	for ( n = hdr->e_phnum, phdr = phdr_buf; --n >= 0;
 			phdr = (Elf32_Phdr*)((B*)phdr + hdr->e_phentsize) ) {
@@ -1060,8 +1069,6 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 {
 	ELF_LoadInfo	eli;
 	B		*ladr, *top_adr;
-	pte_t		*pte;
-	pde_t		*pde;
 #ifndef _BTRON_
 	UW		npage;
 	W		sz;
@@ -1124,7 +1131,8 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 #endif
 	addr = mmap((void*)PAGE_ALIGN(eli.bss_ladr), map_size,
 			PROT_READ | PROT_WRITE,
-			MAP_FIXED, ldr->li.file.fd, 0);
+			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+			-1, 0);
 	
 	if (addr == MAP_FAILED) {
 		printf("error map_vm(bss)\n");
@@ -1143,7 +1151,8 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 #endif
 	addr = mmap((void*)PAGE_ALIGN(eli.text_ladr), map_size,
 			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_FIXED, ldr->li.file.fd, PAGE_ALIGN(lofs));
+			MAP_PRIVATE | MAP_FIXED,
+			ldr->li.file.fd, PAGE_ALIGN(lofs));
 	
 	if (addr == MAP_FAILED) {
 		printf("error map_vm(text)\n");
@@ -1180,7 +1189,7 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	printf("data:map_size 0x%08X\n", map_size);
 #endif
 	addr = mmap((void*)PAGE_ALIGN(eli.data_ladr), map_size,
-			PROT_READ | PROT_WRITE, MAP_FIXED,
+			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED,
 			ldr->li.file.fd, PAGE_ALIGN(lofs));
 	
 	if (addr == MAP_FAILED) {
@@ -1195,8 +1204,8 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	printf("start:0x%08X ", mspace->start_data);
 	printf("end:0x%08X\n", mspace->end_data);
 #endif
-	mspace->start_brk = mspace->end_data;
-	mspace->end_brk = 0;
+	mspace->start_brk = (unsigned long)PageAlignU((void*)mspace->end_data);
+	mspace->end_brk = (unsigned long)PageAlignU((void*)mspace->end_data);
 #if 0
 	printf("ldr:0x%08X eli.data_fofs:0x%08X eli.data_ladr + lofs:0x%08X eli.data_size:0x%08X\n",ldr, eli.data_fofs, eli.data_ladr + lofs, eli.data_size);
 #endif
@@ -1208,18 +1217,24 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	if ( hdr->e_type == ET_REL
 			|| ( hdr->e_type == ET_EXEC && eli.vir_or_off) ) {
 		/* Relocation */
-		printf("Relocations!!!!!!\n");
+		printf("Relocations!!!!!!<stopped>\n");
 		for(;;);
 		er = elf_relocation(pg, ldr, &eli, lofs);
 				if ( er < E_OK ) {printf("elf_load 06\n");goto err_ret2;}
 	}
+	
+	/* Get entry point address */
+	pg->entry = (FP)((B*)hdr->e_entry + lofs);
+	pg->modentry = NULL;
+	eli.entry = (unsigned long)pg->entry;
+	
 	/* -------------------------------------------------------------------- */
 	/* map stack area							*/
 	/* -------------------------------------------------------------------- */
 	addr = mmap((void*)(PAGE_ALIGN(PROC_STACK_START)),
 			PROC_STACK_SIZE,
 			PROT_READ | PROT_WRITE | PROT_GROWSUP,
-			MAP_ANONYMOUS, 0, 0);
+			MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 	
 	if (addr == MAP_FAILED) {
 		printf("error map_vm(data)\n");
@@ -1232,15 +1247,16 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	/* -------------------------------------------------------------------- */
 	/* set up process stack							*/
 	/* -------------------------------------------------------------------- */
-	er = setup_user_stack(current,
-				(unsigned long)addr + PROC_STACK_SIZE, ldr, 1);
+	mspace->start_stack = (unsigned long)addr;
+	
+	er = setup_user_stack(current, (unsigned long)addr + PROC_STACK_SIZE,
+				ldr, &eli, 1);
 	
 	if (er) {
 		printf("error setup_user_stack\n");
 		goto err_ret3;
 	}
 	
-	mspace->start_stack = (unsigned long)addr;
 #if 0
 	printf("stack:0x%08X ", addr);
 	printf("start:0x%08X ", mspace->start_stack);
@@ -1268,10 +1284,6 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 		data area is flushed as well, as it may be executed on some platforms(PowerPC) */
 	FlushMemCache(ladr, sz, TCM_ICACHE|TCM_DCACHE);
 	FlushMemCache(eli.data_ladr + lofs, eli.data_size, TCM_ICACHE|TCM_DCACHE);
-
-	/* Get entry point address */
-	pg->entry = (FP)((B*)hdr->e_entry + lofs);
-	pg->modentry = NULL;
 
 	return E_OK;
 #endif
@@ -1305,7 +1317,7 @@ err_ret1:
  Funtion	:stack_up
  Input		:unsigned long stack
  		 < address of stack >
- 		 unsgined long value
+ 		 unsigned long value
  		 < value to stack up >
  Output		:void
  Return		:unsigned long
@@ -1318,6 +1330,35 @@ LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value)
 	stack -= sizeof(unsigned long);
 	
 	*(unsigned long*)stack = value;
+	
+	return(stack);
+}
+
+/*
+==================================================================================
+ Funtion	:stack_up_auxvec
+ Input		:unsigned long stack
+ 		 < address of stack >
+ 		 unsigned long id
+ 		 < id of aux vector >
+ 		 unsigned long value
+ 		 < value of aux information >
+ Output		:void
+ Return		:unsigned long
+ 		 < updated stack top address >
+ Description	:stack up the aux vector
+==================================================================================
+*/
+LOCAL INLINE unsigned long
+stack_up_auxvec(unsigned long stack, unsigned long id, unsigned long value)
+{
+	stack -= sizeof(unsigned long);
+	
+	*(unsigned long*)stack = value;
+	
+	stack -= sizeof(unsigned long);
+	
+	*(unsigned long*)stack = id;
 	
 	return(stack);
 }
@@ -1348,8 +1389,6 @@ LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str)
 	
 	stack_top += 1;
 	
-	printf("program:%s\n", (char*)stack_top);
-	
 	return((unsigned long)stack_top);
 }
 
@@ -1363,6 +1402,8 @@ LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str)
  		 < top address of stack >
  		 struct LoadSource* ldr
  		 < load source information >
+  		 ELF_LoadInfo *eli
+ 		 < elf file load information >
  		 int argc
  		 < number of arguments >
  Output		:void
@@ -1371,11 +1412,14 @@ LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str)
  Description	:set up argv, envp and auxv
 ==================================================================================
 */
+IMPORT char* get_machine_name(void);
 LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
-			struct LoadSource* ldr, int argc)
+			struct LoadSource* ldr, ELF_LoadInfo *eli, int argc)
 {
 	struct memory_space *mspace = proc->mspace;
 	unsigned long *argvp;
+	unsigned long filename;
+	unsigned long machine_name;
 	int nr_argvp = 0;
 	
 	argvp = (unsigned long*)kmalloc(sizeof(unsigned long) * argc, 0);
@@ -1393,11 +1437,14 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	/* set up env strings							*/
 	/* -------------------------------------------------------------------- */
 	/* as for now do nothing. future work					*/
+	stack_top = stack_up_string(stack_top, get_machine_name());
+	machine_name = stack_top;
 	/* -------------------------------------------------------------------- */
 	/* set up argv strings							*/
 	/* -------------------------------------------------------------------- */
 	//printf("argv string: start = 0x%08X ", stack_top);
 	stack_top = stack_up_string(stack_top, ldr->li.file.name);
+	filename = stack_top;
 	argvp[nr_argvp++] = stack_top;
 	//printf("end = 0x%08X\n", stack_top);
 	/* -------------------------------------------------------------------- */
@@ -1416,22 +1463,26 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	/* -------------------------------------------------------------------- */
 	/* set up auxv vector							*/
 	/* -------------------------------------------------------------------- */
-	/* as for now do nothing. future work					*/
-	stack_top = stack_up(stack_top, 1);	// null terminator
-	stack_top = stack_up(stack_top, 2);	// null terminator
+	stack_top = setup_aux_vector(stack_top, ldr, eli, filename, machine_name);
+	
+	if (!stack_top) {
+		kfree(argvp);
+		return(-ENOMEM);
+	}
+	
 	//printf("aux vec:0x%08X ", stack_top);
 	/* -------------------------------------------------------------------- */
 	/* set up envp vector							*/
 	/* -------------------------------------------------------------------- */
 	mspace->end_env = stack_top;
-	stack_top = stack_up(stack_top, 3);	// null terminator
+	stack_top = stack_up(stack_top, 0);	// null terminator
 	mspace->start_env = stack_top;
 	//printf("envp vec:0x%08X\n", stack_top);
 	/* -------------------------------------------------------------------- */
 	/* set up argv vector							*/
 	/* -------------------------------------------------------------------- */
 	mspace->end_arg = stack_top;
-	stack_top = stack_up(stack_top, 4);	// null terminator
+	stack_top = stack_up(stack_top, 0);	// null terminator
 	for (;nr_argvp;--nr_argvp) {
 		stack_top = stack_up(stack_top, argvp[nr_argvp]);
 	}
@@ -1448,6 +1499,87 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	//printf("argc:0x%08X\n", stack_top);
 	
 	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:setup_aux_vector
+ Input		:unsigned long stack_top
+ 		 < stack top of a task >
+ 		 LoadSource* ldr
+ 		 < elf load source information >
+ 		 ELF_LoadInfo *eli
+ 		 < elf file load information >
+ 		 unsigned long filename
+ 		 < address of a executable file name >
+ Output		:void
+ Return		:unsigned long
+ 		 < new stack top >
+ Description	:set up aux vector
+==================================================================================
+*/
+LOCAL INLINE unsigned long
+setup_aux_vector(unsigned long stack_top, LoadSource *ldr,
+			ELF_LoadInfo *eli, unsigned long filename, unsigned long machine_name)
+{
+	Elf32_Ehdr *hdr = ldr->elf_ehdr;
+	unsigned long ph_addr;
+#if 0 // very simple vdso
+	void *vdso_addr;
+	volatile char *vdso_cpy;
+	volatile unsigned long *test_cpy;
+	
+	vdso_addr = mmap(NULL, PAGESIZE, PROT_READ, MAP_ANONYMOUS, -1, 0);
+	
+	if (vdso_addr == MAP_FAILED) {
+		printf("failed vdso mmap area\n");
+		return(0);
+	}
+	
+	memset(vdso_addr, 0xFF, PAGESIZE);
+	
+	vdso_cpy = (char*)vdso_addr;
+	
+	*vdso_cpy = 0xcd;
+	*(vdso_cpy + 1) = 0x80;
+	*(vdso_cpy + 2) = 0xc3;
+#endif
+	
+	ph_addr = (unsigned long)eli->text_ladr + hdr->e_phoff;
+	
+	/* as for now do nothing. future work					*/
+	stack_top = stack_up_auxvec(stack_top, 0, 0);	// null terminator
+	
+	stack_top = stack_up_auxvec(stack_top, AT_EXECFD, 	ldr->li.file.fd);
+	stack_top = stack_up_auxvec(stack_top, AT_PHDR,		ph_addr);
+	stack_top = stack_up_auxvec(stack_top, AT_PHENT,	hdr->e_phentsize);
+	stack_top = stack_up_auxvec(stack_top, AT_PHNUM,	hdr->e_phnum);
+	stack_top = stack_up_auxvec(stack_top, AT_PAGESZ,	PAGESIZE);
+	//stack_top = stack_up_auxvec(stack_top, AT_BASE,		0x40000000);
+	stack_top = stack_up_auxvec(stack_top, AT_FLAGS,	0);
+	stack_top = stack_up_auxvec(stack_top, AT_ENTRY,	eli->entry);
+	stack_top = stack_up_auxvec(stack_top, AT_UID,		0);
+	stack_top = stack_up_auxvec(stack_top, AT_EUID,		0);
+	stack_top = stack_up_auxvec(stack_top, AT_GID,		0);
+	stack_top = stack_up_auxvec(stack_top, AT_EGID,		0);
+	stack_top = stack_up_auxvec(stack_top, AT_PLATFORM,	machine_name);
+	stack_top = stack_up_auxvec(stack_top, AT_HWCAP,	0);
+	stack_top = stack_up_auxvec(stack_top, AT_CLKTCK,	0);
+	
+	stack_top = stack_up_auxvec(stack_top, AT_BASE_PLATFORM,machine_name);
+	//stack_top = stack_up_auxvec(stack_top, AT_RANDOM,	0);
+	stack_top = stack_up_auxvec(stack_top, AT_HWCAP2,	0);
+	stack_top = stack_up_auxvec(stack_top, AT_EXECFN,	filename);
+	
+#if 0
+	stack_top = stack_up_auxvec(stack_top, AT_SYSINFO,
+						(unsigned long)vdso_addr);
+	//stack_top = stack_up_auxvec(stack_top, AT_SYSINFO_EHDR,
+	//					(unsigned long)vdso_addr);
+#else
+	stack_top = stack_up_auxvec(stack_top, AT_IGNORE,	0);
+#endif
+	return(stack_top);
 }
 
 /*

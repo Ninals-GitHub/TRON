@@ -10,6 +10,8 @@
  */
 
 #include <tk/typedef.h>
+#include <tk/task.h>
+#include <bk/uapi/ldt.h>
 #include <tstdlib/bitop.h>
 #include <cpu.h>
 #include <sys/sysinfo.h>
@@ -120,11 +122,11 @@ IMPORT unsigned long interrupt_255;
 	Default Segment Descriptors
 ----------------------------------------------------------------------------------
 */
-/* [1:NULL segment]								*/
+/* [0:NULL segment]								*/
 #define	SEGDESC_NULL_LOW		0x00000000
 #define	SEGDESC_NULL_HI			0x00000000
 
-/* [2:Code segment]
+/* [1:Code segment]
    base address : 0x00000000
    segment limit: 0xFFFFF
    flags        : G=1, D/B=1, AVL=0, P=1, DPL=0, S=1, type=0xA
@@ -132,7 +134,7 @@ IMPORT unsigned long interrupt_255;
 #define	SEGDESC_CODE_LOW		0x0000FFFF
 #define	SEGDESC_CODE_HI			0x00CF9A00
 
-/* [3:Data segment]
+/* [2:Data segment]
    base address : 0x00000000
    segment limit: 0xFFFFF
    flags        : G=1, D/B=1, AVL=0, P=1, DPL=0, S=1, type=0x2
@@ -140,7 +142,7 @@ IMPORT unsigned long interrupt_255;
 #define	SEGDESC_DATA_LOW		0x0000FFFF
 #define	SEGDESC_DATA_HI			0x00CF9200
 
-/* [4:Kernel TSS]
+/* [3:Kernel TSS]
    base address : address of tss
    segment limit: size of tss
    flags        : G=0, D/B=0, AVL=0, P=1, DPL=0, S=0, type=0x0
@@ -152,19 +154,16 @@ IMPORT unsigned long interrupt_255;
 #define	SEGDESC_TSS_LOW			0x00000000
 #define	SEGDESC_TSS_HI			(SEGDESC_TSS_HI_P | SEGDESC_TSS_HI_DPL	\
 						| SEGDESC_TSS_HI_TYPE)
-//#define	SEGDESC_TSS_HI			(SEGDESC_TSS_HI_P | SEGDESC_TSS_HI_TYPE)
 
-
-/* [5:Task Code segment]
+/* [4:Task Code segment]
    base address : 0x00000000
    segment limit: 0xFFFFF
    flags        : G=1, D/B=1, AVL=0, P=1, DPL=0x3, S=1, type=0x2
    */
 #define	SEGDESC_TASK_CODE_LOW		0x0000FFFF
-//#define	SEGDESC_TASK_CODE_HI		0x00CFFA00
 #define	SEGDESC_TASK_CODE_HI		0x00CFFE00
 
-/* [6:Task Data segment]
+/* [5:Task Data segment]
    base address : 0x00000000
    segment limit: 0xFFFFF
    flags        : G=1, D/B=1, AVL=0, P=1, DPL=0x3, S=1, type=0x2
@@ -172,41 +171,14 @@ IMPORT unsigned long interrupt_255;
 #define	SEGDESC_TASK_DATA_LOW		0x0000FFFF
 #define	SEGDESC_TASK_DATA_HI		0x00CFF200
 
-/*
-----------------------------------------------------------------------------------
-	Segment Descriptor
-----------------------------------------------------------------------------------
-*/
-struct segment_desc {
-	uint32_t	low;
-	uint32_t	hi;
-};
+/* [6-8:Default TLS segment]
+   base address : 0x00000000
+   segment limit: 0xFFFFF
+   flags        : G=1, D/B=1, AVL=0, P=1, DPL=0x3, S=1, type=0x2
+   */
+#define	SEGDESC_TLS_LOW			0x0000FFFF
+#define	SEGDESC_TLS_HI			0x00CFF200
 
-/* hi definitions								*/
-#define	SEGDESC_MASK_BASEADDRESS_HI	MAKE_MASK32(24, 31)
-#define	SEGDESC_MASK_LIMIT_HI		MAKE_MASK32(16, 19)
-#define	SEGDESC_MASK_DPL		MAKE_MASK32(13, 14)
-#define	SEGDESC_MASK_TYPE		MAKE_MASK32(8,11)
-#define	SEGDESC_MASK_BASEADDRESS_MID	MAKE_MASK32(0, 7)
-
-#define	MASK_BASEADDRESS_HI		SEGDESC_MASK_BASEADDRESS_HI
-#define	MASK_BASEADDRESS_MID		MAKE_MASK32(16, 23)
-#define	BASEADDRESS_MID_SHIFT		16
-#define	MASK_LIMIT_HI			SEGDESC_MASK_LIMIT_HI
-
-
-#define	SEGDESC_BIT_G			MAKE_BIT32(23)
-#define	SEGDESC_BIT_DB			MAKE_BIT32(22)
-#define	SEGDESC_BIT_AVL			MAKE_BIT32(20)
-#define	SEGDESC_BIT_P			MAKE_BIT32(47)
-#define	SEGDESC_BIT_S			MAKE_BIT32(12)
-
-/* low definitions								*/
-#define	SEGDESC_MASK_BASEADDRESS_LOW	MAKE_MASK32(16, 31)
-#define	SEGDESC_MASK_LIMIT_LOW		MAKE_MASK32(0, 15)
-
-#define	MASK_BASEADDRESS_LOW		MAKE_MASK32(0, 15)
-#define	BASEADDRESS_LOW_SHIFT		16
 
 /*
 ----------------------------------------------------------------------------------
@@ -370,6 +342,15 @@ EXPORT void initGdt(void)
 	/* -------------------------------------------------------------------- */
 	setGdt(TASK_DATA_DESCRIPTOR, SEGDESC_TASK_DATA_HI, SEGDESC_TASK_DATA_LOW);
 	gdt.size += sizeof(struct segment_desc);
+	/* -------------------------------------------------------------------- */
+	/* tsl descriptors							*/
+	/* -------------------------------------------------------------------- */
+	setGdt(TLS1_DESCRIPTOR, SEGDESC_TLS_HI, SEGDESC_TLS_LOW);
+	gdt.size += sizeof(struct segment_desc);
+	setGdt(TLS2_DESCRIPTOR, SEGDESC_TLS_HI, SEGDESC_TLS_LOW);
+	gdt.size += sizeof(struct segment_desc);
+	setGdt(TLS3_DESCRIPTOR, SEGDESC_TLS_HI, SEGDESC_TLS_LOW);
+	gdt.size += sizeof(struct segment_desc);
 
 	/* -------------------------------------------------------------------- */
 	/* load gdt								*/
@@ -402,6 +383,7 @@ EXPORT void initIdt(void)
 	setSysTrapGate( 1, &interrupt_1);
 	setSysTrapGate( 2, &interrupt_2);
 	setSysTrapGate( 3, &interrupt_3);
+	//setUserTrapGate(3, &interrupt_3);
 	setSysTrapGate( 4, &interrupt_4);
 	setSysTrapGate( 5, &interrupt_5);
 	setSysTrapGate( 6, &interrupt_6);
@@ -562,6 +544,106 @@ EXPORT int initKernelTss(void)
 	
 	return(0);
 }
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:set_user_desc_to_seg_desc
+ Input		:struct task *task
+ 		 < task to set its tls >
+ 		 struct user_desc *udesc
+ 		 < user descriptor to set >
+ Output		:void
+ Return		:void
+ Description	:set user descriptor to task's tls
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void set_user_desc_to_seg_desc(struct task *task, struct user_desc *udesc)
+{
+	unsigned long tls_hi = 0;
+	unsigned long tls_low = 0;
+	int current_index = udesc->entry_number - TLS_BASE_ENTRY;
+	
+	tls_hi |= udesc->base_addr & SEGDESC_MASK_BASEADDRESS_HI;
+	
+	tls_hi |= udesc->seg_32bit << SEGDESC_BIT_DB_SHIFT;
+	tls_hi |= udesc->contents << (SEGDESC_BIT_TYPE_SHIFT + 2);
+	tls_hi |= (udesc->read_exec_only ^ 1) << (SEGDESC_BIT_TYPE_SHIFT + 1);
+	tls_hi |= 1 << SEGDESC_BIT_S_SHIFT;
+	tls_hi |= USER_RPL << SEGDESC_BIT_DPL_SHIFT;
+	tls_hi |= SEGDESC_BIT_P;
+	tls_hi |= udesc->useable << SEGDESC_BIT_AVL_SHIFT;
+	tls_hi |= udesc->limit_in_pages << SEGDESC_BIT_G_SHIFT;
+	
+	tls_hi |= udesc->limit & SEGDESC_MASK_LIMIT_HI;
+	tls_hi |= (udesc->base_addr & MASK_BASEADDRESS_MID)
+						>> BASEADDRESS_MID_SHIFT;
+	
+	tls_low |= (udesc->base_addr & MASK_BASEADDRESS_LOW)
+						<< BASEADDRESS_LOW_SHIFT;
+	tls_low |= udesc->limit & SEGDESC_MASK_LIMIT_LOW;
+	
+	task->tskctxb.tls_desc[current_index].hi = tls_hi;
+	task->tskctxb.tls_desc[current_index].low = tls_low;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:update_tls_descriptor
+ Input		:struct task *task
+ 		 < user task to update its tls descriptor in gdt >
+ 		 int gdt_index
+ 		 < index of tls segment descriptor in ddt to update >
+ Output		:void
+ Return		:void
+ Description	:update user task's tls descriptor in gdt
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void update_tls_descriptor(struct task *task, int gdt_index)
+{
+	struct segment_desc *tls;
+	
+	tls = &task->tskctxb.tls_desc[gdt_index - TLS_BASE_ENTRY];
+	
+	segment_descriptor[gdt_index].hi = tls->hi;
+	segment_descriptor[gdt_index].low = tls->low;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_user_desc_from_seg_desc
+ Input		:struct task *task
+ 		 < task to get its tls >
+ 		 struct user_desc *udesc
+ 		 < user descriptor to get >
+ Output		:void
+ Return		:void
+ Description	:get user descriptor to task's tls
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void get_user_desc_from_seg_desc(struct task *task, struct user_desc *udesc)
+{
+	struct segment_desc *tls;
+	
+	tls = &task->tskctxb.tls_desc[udesc->entry_number - TLS_BASE_ENTRY];
+	
+	udesc->base_addr = tls->hi & SEGDESC_MASK_BASEADDRESS_HI;
+	udesc->base_addr |= (tls->hi & SEGDESC_MASK_BASEADDRESS_MID)
+					<< SEGDESC_BASEADDRESS_MID_SHIFT;
+	udesc->base_addr |= tls->low & MASK_BASEADDRESS_LOW;
+	
+	udesc->limit = tls->hi & MASK_LIMIT_HI;
+	udesc->limit |= tls->low & SEGDESC_MASK_LIMIT_LOW;
+	
+	udesc->seg_32bit = (tls->hi & SEGDESC_BIT_DB)?1:0;
+	udesc->contents = (tls->hi & SEGDESC_MASK_TYPE)
+					>> (SEGDESC_BIT_TYPE_SHIFT + 2);
+	udesc->read_exec_only = (tls->hi & SEGDESC_MASK_TYPE_UPPER2)
+					>> SEGDESC_BIT_TYPE_UPPER2_SHIFT;
+	udesc->limit_in_pages = (tls->hi &  SEGDESC_BIT_G)?1:0;
+	udesc->seg_not_present = (tls->hi & SEGDESC_BIT_P)?1:0;
+	udesc->useable = (tls->hi & SEGDESC_BIT_AVL)?1:0;
+} 
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

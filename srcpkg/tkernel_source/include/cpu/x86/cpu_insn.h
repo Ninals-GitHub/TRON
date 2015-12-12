@@ -240,6 +240,94 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 IMPORT void restoreFlags(uint32_t flags);
 
 /*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:set_gs
+ Input		:uint16_t value
+ 		 < value to set to gs register >
+ Output		:void
+ Return		:void
+ Description	:set a value to gs register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE void set_gs(uint16_t value)
+{
+	ASM (
+	"movw %[gs_value], %%gs			\n\t"
+	:
+	:[gs_value]"m"(value)
+	:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_gs
+ Input		:void
+ Output		:void
+ Return		:uint16_t
+ 		 < value of gs register >
+ Description	:get a value of gs register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE uint16_t get_gs(void)
+{
+	uint16_t value;
+	
+	ASM (
+	"movw %%gs, %[gs_value]			\n\t"
+	:[gs_value]"=m"(value)
+	:
+	:
+	);
+	
+	return(value);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:set_fs
+ Input		:uint16_t value
+ 		 < value to set to fs register >
+ Output		:void
+ Return		:void
+ Description	:set a value to fs register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE void set_fs(uint16_t value)
+{
+	ASM (
+	"movw %[fs_value], %%fs			\n\t"
+	:
+	:[fs_value]"m"(value)
+	:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_fs
+ Input		:void
+ Output		:void
+ Return		:uint16_t
+ 		 < value of fs register >
+ Description	:get a value of fs register
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE uint16_t get_fs(void)
+{
+	uint16_t value;
+	
+	ASM (
+	"movw %%fs, %[fs_value]			\n\t"
+	:[fs_value]"=m"(value)
+	:
+	:
+	);
+	
+	return(value);
+}
+
+/*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:getEsp
  Input		:void

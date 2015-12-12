@@ -133,14 +133,20 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 		if (fs_tk_is_initialized() == 0) {
 			sts = fs_tk_initialize();
 			if (sts != 0) goto exit0;
-
+			
 			sts = stdio_initialize();
 			if (sts == 0) {
 				sts = fatfs_initialize();
 			}
+			
 			if (sts != 0) {
 				(void)fs_tk_finalize();
 			}
+			
+			fs_attach("mda", "ram", FIMP_FAT, 0, NULL);
+			//vd_printf("ramdisk attatch %d\n", fs_attach("mda", "/", FIMP_FAT, 0, NULL));
+			
+
 		}
 	} else {		/* Finish */
 		/* Assume all tasks are never executing fs_xxx() call !! */
@@ -149,8 +155,6 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 			sts = fs_tk_finalize();
 		}
 	}
-	
-	vd_printf("ramdisk attatch %d\n", fs_attach("mda", "ram", FIMP_FAT, 0, NULL));
 
 exit0:
 	return sts;

@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/12/06
  *
  *----------------------------------------------------------------------
  */
@@ -62,6 +63,7 @@
 
 struct LoadSource;
 
+#include "elf.h"
 #include "src_file.h"
 #include "src_mem.h"
 
@@ -71,6 +73,7 @@ struct LoadSource;
 typedef struct LoadSource {
 	/* program module type */
 	ATR	type;
+	
 
 	/* program module operations */
 	ER	(*read)(struct LoadSource* ldr, long ofs, void* adr, size_t sz);
@@ -85,6 +88,8 @@ typedef struct LoadSource {
 		MemLoadStatus	mem;
 #endif
 	} li;
+	
+	Elf32_Ehdr	*elf_ehdr;
 } LoadSource;
 
 #endif /* _T2EX_LOAD_SOURCE_ */

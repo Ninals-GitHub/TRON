@@ -42,6 +42,7 @@
 
 
 #include <bk/bprocess.h>
+#include <bk/memory/mmap.h>
 #include <bk/memory/vm.h>
 #include <bk/memory/page.h>
 #include <bk/uapi/berrno.h>
@@ -303,6 +304,7 @@ EXPORT int insert_vm_list(struct vm *new, struct process *proc)
 	struct list *pos;
 	struct vm *proc_vm;
 	struct vm *proc_vm_next;
+	struct vm *proc_vm_prev;
 	
 	if (is_empty_list(&proc->mspace->list_vm)) {
 		add_list(&new->link_vm, &proc->mspace->list_vm);
@@ -312,12 +314,18 @@ EXPORT int insert_vm_list(struct vm *new, struct process *proc)
 	list_for_each(pos, &proc->mspace->list_vm) {
 		proc_vm = get_entry(pos, struct vm, link_vm);
 		
-		if (pos->next == &proc->mspace->list_vm) {
+		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
 			add_list(&new->link_vm, pos);
 			return(0);
 		}
 		
 		proc_vm_next = get_entry(pos->next, struct vm, link_vm);
+		proc_vm_prev = get_entry(pos->prev, struct vm, link_vm);
+		
+		if ((proc_vm_prev->end <= new->start) &&
+				(new->end <= proc_vm->start)) {
+			add_list(&new->link_vm, pos->prev);
+		}
 		
 		if ((proc_vm->end <= new->start) &&
 			(new->end <= proc_vm_next->start)) {
@@ -484,7 +492,7 @@ EXPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:map_vm
+ Funtion	:xvm_map_vm
  Input		:struct process *proc
  		 < a process to create its vm >
  		 unsigned long mmap_start
@@ -493,6 +501,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < end address of user space >
  		 unsigned int prot
  		 < permission >
+ 		 int anon
+ 		 < boolean : anonymous mappiing or not >
  Output		:void
  Return		:int
  		 < result >
@@ -501,9 +511,9 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 future work;
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int map_vm(struct process *proc,
+EXPORT int xvm_map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
-			unsigned int prot)
+			unsigned int prot, int anon)
 {
 	int err;
 	int i, err_i;
@@ -535,7 +545,11 @@ EXPORT int map_vm(struct process *proc,
 	vm->prot = prot;
 	
 	for (i = 0;i < vm->nr_pages;i++) {
-		vm->pages[i] = alloc_page();
+		if (anon) {
+			vm->pages[i] = alloc_zeroed_page();
+		} else {
+			vm->pages[i] = alloc_page();
+		}
 		
 		if (!vm->pages[i]) {
 			err_i = i;
@@ -703,6 +717,90 @@ failed_alloc_vm_next:
 	return(err);
 }
 
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:search_mmap_candidate
+ Input		:struct process *proc
+ 		 < process to search its vm >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void*
+ 		 < candidate memory address >
+ Description	:seach memory area as a candidate for mmap
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
+					int prot, int flags, int fd, off_t offset)
+{
+	struct list *pos;
+	struct vm *vm;
+	struct vm *vm_next;
+	struct vm *vm_prev;
+	struct vm candidate;
+	
+	if (UNLIKELY(is_empty_list(&proc->mspace->list_vm))) {
+		return((void*)MMAP_START);
+	}
+	
+	candidate.start = MMAP_START + offset;
+	candidate.end = candidate.start + length;
+	
+	if (proc->mspace->start_stack <= candidate.end) {
+		return(MAP_FAILED);
+	}
+	
+	list_for_each(pos, &proc->mspace->list_vm) {
+		vm = get_entry(pos, struct vm, link_vm);
+		if (vm->start < MMAP_START) {
+			continue;
+		}
+		
+		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
+			if (vm->end < candidate.start) {
+				return((void*)candidate.start);
+			}
+		}
+		
+		if (UNLIKELY(pos->prev == &proc->mspace->list_vm)) {
+			if ((candidate.start <= vm->start) &&
+				(candidate.end <= vm->start)) {
+				return((void*)candidate.start);
+			}
+		}
+		vm_next = get_entry(pos->next, struct vm, link_vm);
+		vm_prev = get_entry(pos->prev, struct vm, link_vm);
+		
+		if ((vm_prev->end <= candidate.start) &&
+				(candidate.end <= vm->start))
+		{
+			return((void*)candidate.start);
+		}
+		
+		if ((vm->end <= candidate.start) &&
+			(candidate.end <= vm_next->start)) {
+			return((void*)candidate.start);
+		}
+		
+		candidate.start = (unsigned long)
+				PageAlignU((const void*)(vm->end + 1));
+		candidate.end = candidate.start + length;
+		
+		if (proc->mspace->start_stack <= candidate.end) {
+			return(MAP_FAILED);
+		}
+	}
+	return(MAP_FAILED);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

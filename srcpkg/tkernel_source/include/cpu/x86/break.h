@@ -40,9 +40,11 @@
  * representation of each source header.
  */
 
-#ifndef	__X86_SYSCALL_TABLE_H__
-#define	__X86_SYSCALL_TABLE_H__
+#ifndef	__X86_DEBUG_H__
+#define	__X86_DEBUG_H__
 
+#include <cpu.h>
+#include <tk/typedef.h>
 
 /*
 ==================================================================================
@@ -59,7 +61,6 @@
 
 ==================================================================================
 */
-#define	SYSCALL_NUM	349
 
 /*
 ==================================================================================
@@ -79,12 +80,51 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:handle_breakpoint
+ Input		:struct ctx_reg *reg
+ 		 < context register information >
  Output		:void
  Return		:void
- Description	:void
+ Description	:default handler(3) for breakpoint exception
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+IMPORT void handle_breakpoint(struct ctx_reg *reg);
 
-#endif	// __X86_SYSCALL_TABLE_H__
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:insert_bp
+ Input		:void *addr
+ 		 < address to insert a break point >
+ Output		:void
+ Return		:void
+ Description	:insert a brea point
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void insert_bp(void *addr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:restore_bp
+ Input		:void *addr
+ 		 < address to restore original instruction >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:restore from break debug
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int restore_bp(void *addr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:insert_inf_loop
+ Input		:void *addr
+ 		 < address to insert a infinite loop >
+ Output		:void
+ Return		:void
+ Description	:insert a infinite loop
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void insert_inf_loop(void *addr);
+
+#endif	// __X86_DEBUG_H__

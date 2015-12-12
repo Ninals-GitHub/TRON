@@ -70,12 +70,6 @@
 #define	PROT_GROWSUP	MAKE_BIT32(25)	/* mprotect flag:extend change to end	*/
 					/* of growsup vm			*/
 
-#define	MAP_SHARED	MAKE_BIT32(0)	/* share changes			*/
-#define	MAP_PRIVATE	MAKE_BIT32(1)	/* changes are private			*/
-#define	MAP_TYPE	MAKE_MASK32(0,7)/* mask for type of mapping		*/
-#define	MAP_FIXED	MAKE_BIT32(8)	/* interpret addr exactly		*/
-#define	MAP_ANONYMOUS	MAKE_BIT32(9)	/* do not use a file			*/
-
 
 /*
 ==================================================================================

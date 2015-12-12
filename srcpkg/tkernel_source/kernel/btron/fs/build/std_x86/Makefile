@@ -62,7 +62,7 @@ OBJ += ../../fimp/$(BUILD_PATH)/fimp.o
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean install source clean_source clean_install
+.PHONY: all clean install source clean_source clean_install ready_for_rebuild
 
 all:$(FS_TARGET)
 
@@ -95,6 +95,13 @@ clean_install:
 
 source:
 	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) source )
+
+ready_for_rebuild:
+	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../vfs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../load/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild)
+	$(RM) $(FS_TARGET)
 
 clean_source:
 	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) clean_source )

@@ -122,6 +122,7 @@ LOCAL ID pmLoadProg( const struct pm* prog, UINT attr, FP* entry )
 	     && hdr.elf.e_ident[EI_MAG2] == ELFMAG2
 	     && hdr.elf.e_ident[EI_MAG3] == ELFMAG3 ) {
 		/* ELF format */
+		source.elf_ehdr = &hdr.elf;
 		er = elf_load(pginfo, &source, attr, &(hdr.elf));
 	     	printf("pmLoadProg 04\n");
 	}

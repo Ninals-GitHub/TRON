@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/29
  *
  *----------------------------------------------------------------------
  */
@@ -47,6 +48,12 @@
  *	@(#)fs_write.c
  *
  */
+
+#include <typedef.h>
+#include <bk/kernel.h>
+#include <bk/uapi/errno.h>
+#include <bk/uio.h>
+#include <tk/kernel.h>
 
 #include "fsdefs.h"
 
@@ -127,3 +134,123 @@ exit0:
 	return -1;
 }
 
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:write
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const void *buf
+ 		 < user buffer >
+ 		 size_t count
+ 		 < size of user buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < size of written bytes >
+ Description	:write a buffer to an open file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t write(int fd, const void *buf, size_t count)
+{
+	int err;
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	err = ChkSpace((CONST void*)buf, count, MA_READ, TMF_PPL(USER_RPL));
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+#if 0
+	printf("write[fd=%d", fd);
+	printf(", *buf=%s", buf);
+	printf(", count=%d]\n", count);
+#endif
+	return(fs_write(fd, buf, count));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:writev
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const struct iovec *iov
+ 		 < io vector to write >
+ 		 int iovcnt
+ 		 < number of io buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < size of written bytes > 
+ Description	:write buffers to an open file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	int i;
+	ssize_t len = 0;
+
+	if (UNLIKELY(!iov)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(iovcnt < 0 || UIO_MAXIOV < iovcnt)) {
+		return(-EINVAL);
+	}
+	
+	printf("writev start-------\n");
+	
+	for (i = 0;i < iovcnt;i++) {
+		ssize_t write_len;
+		write_len = fs_write(fd, iov->iov_base, iov->iov_len);
+		if (UNLIKELY(write_len < 0)) {
+			return(write_len);
+		}
+		
+		len += write_len;
+		
+		if (UNLIKELY(len < 0)) {
+			return(-EINVAL);
+		}
+	}
+	
+	printf("writev end---------\n");
+	
+	return(len);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/

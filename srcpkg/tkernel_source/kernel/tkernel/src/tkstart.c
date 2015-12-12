@@ -127,7 +127,6 @@ IMPORT	void DispProgress( W n );	/* sysinit */
 	InitModule(resource_group);
 
 	InitModule(timer);
-
 	/*
 	 * Create/start initial task
 	 */

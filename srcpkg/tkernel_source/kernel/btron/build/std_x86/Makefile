@@ -67,7 +67,7 @@ OBJ += ../../kernel.o
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean install source clean_source clean_install
+.PHONY: all clean install source clean_source clean_install ready_for_rebuild
 
 all:$(BKERNEL_TARGET)
 
@@ -78,6 +78,12 @@ $(OBJ):
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../ ; $(MAKE) )
+
+ready_for_rebuild:
+	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../ ; $(MAKE) ready_for_rebuild )
+	$(RM) $(BKERNEL_TARGET)
 
 clean:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) clean )

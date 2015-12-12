@@ -16,7 +16,7 @@ HEADER += $(BD)/include
 
 
 CFLAGS += $(HEADER:%=-I%) $(_CPUTYPE_FLAGS) $(_CODESET_FLAGS) -static
-LDFLGAS += aaa
+LDFLGAS += 
 
 # ----------------------------------------------------------------------------
 

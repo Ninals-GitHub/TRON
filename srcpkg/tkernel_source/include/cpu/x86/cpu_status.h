@@ -20,11 +20,13 @@
 #ifndef _CPU_STATUS_
 #define _CPU_STATUS_
 
+#include <cpu.h>
 #include <stdint.h>
 
 #include <tk/syslib.h>
 #include <tk/sysdef.h>
-#include <cpu.h>
+
+#include <bk/uapi/ldt.h>
 
 IMPORT TCB	*ctxtsk;
 IMPORT TCB	*schedtsk;
@@ -156,31 +158,31 @@ Inline void dispatch( void )
 IMPORT void request_tex( TCB *tcb );
 
 /* ----------------------------------------------------------------------- */
-
 /*
  * Task context block
  */
 struct task_context_block {
-	unsigned long	sp0;
-	unsigned long	sp;
-	unsigned long	ip;
-	unsigned long	sysenter_cs;
-	uint16_t	ds;
-	uint16_t	es;
-	uint16_t	gs;
-	uint16_t	fs;
-	unsigned long	cr2;
-	unsigned long	trap_nr;
-	unsigned long	error_code;
-	unsigned long	*io_bitmap;
-	unsigned long	iopl;
-	INT		io_bitmap_max;
+	struct segment_desc	tls_desc[NR_TLS_ENTRYIES];
+	unsigned long		sp0;
+	unsigned long		sp;
+	unsigned long		ip;
+	unsigned long		sysenter_cs;
+	uint16_t		ds;
+	uint16_t		es;
+	uint16_t		gs;
+	uint16_t		fs;
+	unsigned long		cr2;
+	unsigned long		trap_nr;
+	unsigned long		error_code;
+	unsigned long		*io_bitmap;
+	unsigned long		iopl;
+	INT			io_bitmap_max;
 
-	void	*ssp;			/* System stack pointer */
-	void	*uatb;			/* Task space page table */
-	INT	lsid;			/* Task space ID */
+	void			*ssp;		/* System stack pointer */
+	void			*uatb;		/* Task space page table */
+	INT			lsid;		/* Task space ID */
 	
-	uint32_t	need_iret:1;	/* need iret for first dispatch	*/
+	uint32_t		need_iret:1;	/* need iret for first dispatch	*/
 };
 
 #define	KERNEL_STACK_SIZE	8192

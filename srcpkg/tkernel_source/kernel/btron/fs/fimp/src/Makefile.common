@@ -89,7 +89,7 @@ T2EX_INSTALLDIR = $(BD)/t2ex/build/$(TETYPE)_$(MACHINE)
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean install clean_install
+.PHONY: all clean install clean_install ready_for_rebuild
 
 ALL = $(TARGET)
 
@@ -99,6 +99,9 @@ $(TARGET): $(OBJ)
 	$(LINK_R.o) $^ $(OUTPUT_OPTION)
 
 install: 
+
+ready_for_rebuild:
+	$(RM) $(TARGET)
 
 clean:
 	$(RM) $(OBJ) $(ALL) $(DEPS)

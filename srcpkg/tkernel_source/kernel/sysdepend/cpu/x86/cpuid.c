@@ -503,7 +503,7 @@ LOCAL void cpuid_01(struct cpu_reg32 *regs, struct cpu_info *info)
 	info->proc_signature = regs->eax;
 
 	/* update cpu type							*/
-	info->cpu_type = (enum cpu_types)bit_value(regs->edx, 8, 11);
+	//info->cpu_type = (enum cpu_types)bit_value(regs->edx, 8, 11);
 
 	/* family code								*/
 	work = bit_value(regs->edx, 20, 27);	// extended

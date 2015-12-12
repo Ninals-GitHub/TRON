@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/11/29
  *
  *----------------------------------------------------------------------
  */
@@ -20,12 +21,30 @@
 #ifndef __SYS_SEGMENT_H__
 #define __SYS_SEGMENT_H__
 
+#include <cpu.h>
+#include <basic.h>
 #include <tk/sysext.h>
+#include <tk/syslib.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+/*
+==================================================================================
+
+	PROTOTYPE
+
+==================================================================================
+*/
+
+/*
+==================================================================================
+
+	DEFINE 
+
+==================================================================================
+*/
 #define INVADR			((void*)-1)	/* Invalid address */
 
 #ifndef __pinfo__
@@ -54,6 +73,21 @@ typedef struct phyblk		PhyBlk;
 #define MA_EXECUTE	0x01U	/* Execute */
 
 
+/*
+==================================================================================
+
+	Management 
+
+==================================================================================
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
 /*
  * Definitions for interface library auto generate (mkiflib)
  */
@@ -95,6 +129,21 @@ IMPORT ER MakeSpace( void *laddr, INT npage, INT lsid, UINT pte );
 IMPORT ER UnmakeSpace( void *laddr, INT npage, INT lsid );
 IMPORT ER ChangeSpace( void *laddr, INT npage, INT lsid, UINT pte );
 /* [END SYSCALLS] */
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:ChkSpaceR
+ Input		:CONST void *addr
+ 		 < address to check >
+ 		 INT len
+ 		 < check length >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:check read permission of address space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER ChkSpaceR( CONST void *addr, INT len );
 
 #ifdef __cplusplus
 }

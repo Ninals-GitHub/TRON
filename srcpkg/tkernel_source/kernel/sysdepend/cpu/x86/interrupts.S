@@ -11,20 +11,19 @@
 #define	_in_asm_source_
 #include <cpu/x86/descriptor.h>
 #include <cpu/x86/interrupt.h>
-#include <cpu/x86/syscall_table.h>
 
 #include <machine.h>
 #include <tk/errno.h>
 #include <tk/sysdef.h>
 #include <tk/asm.h>
-#include <sys/sysinfo.h>
-
 #include <tk/config.h>
 #include <tk/cpu_conf.h>
 #include <tk/isysconf.h>
 #include <tk/tkdev_conf.h>
+#include <sys/sysinfo.h>
 #include "offset.h"
 
+#include <bk/systemcall.h>
 #include <bk/uapi/btron/errno.h>
 #undef	_in_asm_source_
 
@@ -39,9 +38,10 @@
 .extern interrupt_handler
 .extern page_fault_handler
 .extern no_support
+.extern syscall_test
+
 .extern svc_ientry
 .extern _tdsvctbl
-.extern syscall_table
 
 
 
@@ -71,13 +71,9 @@ interrupt_\exp_num:
 	movl	%esp, %ebp
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	pushl	%eax				# argment3:error code
 	pushl	%ebp
 	addl	$4, (%esp)			# argument2:pushed context
@@ -108,13 +104,9 @@ interrupt_\exp_num:
 	movl	%esp, %ebp
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	movl	%cr2, %ecx			# falult address
 	pushl	%ecx				# argment4:fault address
 	pushl	%eax				# argment3:error code
@@ -147,13 +139,9 @@ interrupt_\int_num:
 	movl	%esp, %ebp
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	pushl	%ebp
 	addl	$4, (%esp)			# argument2:pushed context
 	movl	$\int_num, %ebx			# argument1:interrupt number
@@ -174,21 +162,12 @@ interrupt_\int_num:
 .globl int_syscall_\int_num
 .globl int_syscall_return_\int_num
 
-#if 1
 int_syscall_\int_num:
 	cmpl	$SYSCALL_NUM, %eax
 	jg	ret_nosys
-#	pushl	%eax
-#	pushl	%ecx
-#	pushl	%edx
-#	pushl	%ebx
-#	pushl	%esi
-#	pushl	%edi
-	pushl	%ebp
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
+
 	pushl	%eax				# argument7 for test
 	pushl	%ebp				# argument6
 	pushl	%edi				# argument5
@@ -200,33 +179,24 @@ int_syscall_\int_num:
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	cld
-	call	*syscall_table(,%eax,4)		# systemcall dispatch
+	call	*_syscall_table(,%eax,4)	# systemcall dispatch
 int_syscall_return_\int_num:
-	#addl	$28, %esp			# remove 7 arguments
+#if 0
 	popl	%ebx
 	popl	%ecx
 	addl	$4, %esp			# remove edx argument
 	popl	%esi
 	popl	%edi
-	addl	$8, %esp			# remove eaxa and ebp argument
+	popl	%ebp
+	addl	$4, %esp			# remove eax argument
+#endif
+	addl	$28, %esp			# reamove arguments
 	
-	popl	%fs
-	popl	%gs
 	popl	%es
 	popl	%ds
-	leave					# restore ebp
-#	popl	%edi
-#	popl	%esi
-#	popl	%ebx
-#	popl	%edx
-#	popl	%ecx
-#	popl	%eax
 	iret					# bye exception/interrupt
 .endm
-#endif
 
 
 /*
@@ -240,8 +210,6 @@ int_syscall_return_\int_num:
 int_tksyscall_\int_num:
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
 	
 	subl	$8, %esp			# argument7 + argument 8
 	
@@ -254,15 +222,11 @@ int_tksyscall_\int_num:
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	
 .endm
 
 .macro setup_after_int_tksyscall int_num
 after_int_tksyscall_\int_num:
-	popl	%fs
-	popl	%gs
 	popl	%es
 	popl	%ds
 	iret					# bye exception/interrupt
@@ -290,6 +254,17 @@ interrupt_\int_num:
 
 ==================================================================================
 */
+/*
+----------------------------------------------------------------------------------
+	GNU/Linux svc
+----------------------------------------------------------------------------------
+*/
+	.text
+	.balign	4
+	.globl _syscall_table
+_syscall_table:
+#include <bk/syscall_table.h>
+
 /*
 ----------------------------------------------------------------------------------
 	T-Kernel standard svc
@@ -349,13 +324,9 @@ enter_res_interrupt:
 	movl	%esp, %ebp
 	pushl	%ds
 	pushl	%es
-	pushl	%gs
-	pushl	%fs
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
-	movw	%cx, %gs
-	movw	%cx, %fs
 	pushl	%ebp
 	addl	$4, (%esp)			# argument2:pushed context
 	movl	%eax, %ebx			# argument1:interrupt number
@@ -376,8 +347,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 
 exit_interrupt:
-	popl	%fs
-	popl	%gs
 	popl	%es
 	popl	%ds
 	leave					# restore ebp

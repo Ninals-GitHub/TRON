@@ -77,7 +77,8 @@ Csym(\func_name):
 	popl	%edi
 	popl	%esi
 	popl	%ebx
-	popl	%ebp
+	#popl	%ebp
+	leave
 	ret
 .endm
 
@@ -106,7 +107,8 @@ Csym(\func_name):
 	popl	%esi
 	popl	%ebx
 	popl	%ecx
-	popl	%ebp
+	#popl	%ebp
+	leave
 	ret
 .endm
 
@@ -138,7 +140,8 @@ Csym(\func_name):
 	popl	%ebx
 	popl	%ecx
 	addl	$4, %esp		# edx
-	popl	%ebp
+	#popl	%ebp
+	leave
 	ret
 .endm
 
@@ -171,7 +174,8 @@ Csym(\func_name):
 	popl	%ecx
 	addl	$4, %esp		# edx
 	popl	%esi
-	popl	%ebp
+	#popl	%ebp
+	leave
 	ret
 .endm
 

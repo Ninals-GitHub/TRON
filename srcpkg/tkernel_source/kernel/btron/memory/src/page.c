@@ -197,6 +197,27 @@ EXPORT struct page* alloc_pages(int num)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:alloc_zeroed_page
+ Input		:void
+ Output		:void
+ Return		:struct page*
+ 		 < page information >
+ Description	:allocate a zero-cleared page
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct page* alloc_zeroed_page(void)
+{
+	struct page *page = alloc_page();
+	
+	if (page) {
+		memset((void*)page_to_address(page), 0x00, PAGESIZE);
+	}
+	
+	return(page);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:alloc_slab_pages
  Input		:int num
  		 < number of pages to allocate for a slab >
@@ -689,7 +710,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT pde_t* get_la_pde(unsigned long laddr)
 {
 	pde_t *pde;
-	if (UNLIKELY(toLogicalAddress(0) < laddr)) {
+	if (UNLIKELY((unsigned long)toLogicalAddress(0) < laddr)) {
 		return(NULL);
 	}
 	
@@ -713,7 +734,7 @@ EXPORT pte_t* get_la_pagetable(unsigned long laddr)
 {
 	pde_t *pde;
 	pte_t *pte;
-	if (UNLIKELY(toLogicalAddress(0) < laddr)) {
+	if (UNLIKELY((unsigned long)toLogicalAddress(0) < laddr)) {
 		return(NULL);
 	}
 	

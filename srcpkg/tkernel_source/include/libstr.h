@@ -39,21 +39,22 @@ typedef __wchar_t	wchar_t;
 
 #define NULL		0
 
-extern void* memset( void *s, int c, size_t n );
-extern int memcmp( const void *s1, const void *s2, size_t n );
-extern void* memcpy( void *dst, const void *src, size_t n );
-extern void* memmove( void *dst, const void *src, size_t n );
-extern void bzero( void *s, size_t n );
+IMPORT void* memset( void *s, int c, size_t n );
+IMPORT int memcmp( const void *s1, const void *s2, size_t n );
+IMPORT void* memcpy( void *dst, const void *src, size_t n );
+IMPORT void* memmove( void *dst, const void *src, size_t n );
+IMPORT void bzero( void *s, size_t n );
 
-extern size_t strlen( const char *s );
-extern int strcmp( const char *s1, const char *s2 );
-extern int strncmp( const char *s1, const char *s2, size_t n );
-extern char* strcpy( char *dst, const char *src );
-extern char* strncpy( char *dst, const char *src, size_t n );
-extern char* strcat( char *dst, const char *src );
-extern char* strncat( char *dst, const char *src, size_t n );
+IMPORT size_t strlen( const char *s );
+IMPORT size_t strnlen(const char *s, size_t maxlen);
+IMPORT int strcmp( const char *s1, const char *s2 );
+IMPORT int strncmp( const char *s1, const char *s2, size_t n );
+IMPORT char* strcpy( char *dst, const char *src );
+IMPORT char* strncpy( char *dst, const char *src, size_t n );
+IMPORT char* strcat( char *dst, const char *src );
+IMPORT char* strncat( char *dst, const char *src, size_t n );
 
-extern long int strtol( const char *nptr, char **endptr, int base );
+IMPORT long int strtol( const char *nptr, char **endptr, int base );
 
 #ifdef __cplusplus
 }

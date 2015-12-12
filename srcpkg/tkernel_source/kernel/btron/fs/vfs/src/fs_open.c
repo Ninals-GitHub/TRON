@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/11/29
  *
  *----------------------------------------------------------------------
  */
@@ -48,6 +49,8 @@
  *
  */
 
+#include <tk/kernel.h>
+#include <bk/uapi/errno.h>
 #include "fsdefs.h"
 
 /*
@@ -183,3 +186,60 @@ exit0:
 	return -1;
 }
 
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 int flags
+ 		 < open flags >
+ 		 mode_t mode
+ 		 < open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor id >
+ Description	:open a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int open(const char *pathname, int flags, mode_t mode)
+{
+	printf("open\(pathname=%s", pathname);
+	printf(", flags=0x%08X", flags);
+	printf(", mode=0x%04X\)\n", mode);
+	
+	return 1;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/

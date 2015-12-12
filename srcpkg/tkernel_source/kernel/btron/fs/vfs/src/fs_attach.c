@@ -98,6 +98,7 @@ EXPORT	INT	xfs_attach(fs_env_t *env,const B *devnm, const B *connm,
 	if (fs_check_devnm(devnm) != 0 || fs_check_connm(connm) != 0 ||
 					fs_check_fimpnm(fimpnm) != 0) {
 		sts = EX_INVAL;
+		vd_printf("xfs_attach 01\n");
 		goto exit0;
 	}
 
@@ -109,11 +110,17 @@ EXPORT	INT	xfs_attach(fs_env_t *env,const B *devnm, const B *connm,
 
 	/* Find & Get FIMP descriptor */
 	sts = fs_fimp_find(fimpnm, &fimpd);
-	if (sts != 0) goto exit0;
+	if (sts != 0) {
+		vd_printf("xfs_attach 02\n");
+		goto exit0;
+	}
 	
 	/* Regist connection point name */
 	sts = fs_con_regist(connm, &cond);
-	if (sts != 0) goto exit1;
+	if (sts != 0) {
+		vd_printf("xfs_attach 03\n");
+		goto exit1;
+	}
 	
 	/* Initialize connection descriptor */
 	cond->c_fimpsd = fimpd;
@@ -134,6 +141,7 @@ EXPORT	INT	xfs_attach(fs_env_t *env,const B *devnm, const B *connm,
 
 	if (sts == 0) return 0;
 exit1:
+	vd_printf("xfs_attach 04\n");
 	/* Release FIMP descriptor */
 	fs_fimp_release(fimpd);
 exit0:

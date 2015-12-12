@@ -1,157 +1,110 @@
 /*
  *----------------------------------------------------------------------
- *    T-Kernel 2.0 Software Package
+ *    T2EX Software Package
  *
- *    Copyright 2011 by Ken Sakamura.
- *    This software is distributed under the T-License 2.0.
+ *    Copyright 2015 by Nina Petipa.
+ *    This software is distributed under the latest version of T-License 2.x.
  *----------------------------------------------------------------------
  *
- *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
- *    Modified by Nina Petipa at 2015/09/22
- *
  *----------------------------------------------------------------------
+ */
+/*
+ * This software package is available for use, modification, 
+ * and redistribution in accordance with the terms of the attached 
+ * T-License 2.x.
+ * If you want to redistribute the source code, you need to attach 
+ * the T-License 2.x document.
+ * There's no obligation to publish the content, and no obligation 
+ * to disclose it to the TRON Forum if you have modified the 
+ * software package.
+ * You can also distribute the modified source code. In this case, 
+ * please register the modification to T-Kernel traceability service.
+ * People can know the history of modifications by the service, 
+ * and can be sure that the version you have inherited some 
+ * modification of a particular version or not.
+ *
+ *    http://trace.tron.org/tk/?lang=en
+ *    http://trace.tron.org/tk/?lang=ja
+ *
+ * As per the provisions of the T-License 2.x, TRON Forum ensures that 
+ * the portion of the software that is copyrighted by Ken Sakamura or 
+ * the TRON Forum does not infringe the copyrights of a third party.
+ * However, it does not make any warranty other than this.
+ * DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+ * responsible for any consequences or damages caused directly or
+ * indirectly by the use of this software package.
+ *
+ * The source codes in bsd_source.tar.gz in this software package are 
+ * derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+ * They need to be changed or redistributed according to the 
+ * representation of each source header.
  */
 
 /*
  *	T-Kernel system call branch table
  *
  */
+#ifndef	__BK_SYSTEMCALL_H__
+#define	__BK_SYSTEMCALL_H__
 
-#include <machine.h>
+/*
+==================================================================================
 
-#define _SVC_ENTRY(name)	.long	Csym(_##name)
+	PROTOTYPE
 
-#define N_SYSCALL	132
+==================================================================================
+*/
 
-	_SVC_ENTRY(tk_cre_tsk)
-	_SVC_ENTRY(tk_del_tsk)
-	_SVC_ENTRY(tk_sta_tsk)
-	_SVC_ENTRY(tk_ext_tsk)
-	_SVC_ENTRY(tk_exd_tsk)
-	_SVC_ENTRY(tk_ter_tsk)
-	_SVC_ENTRY(tk_dis_dsp)
-	_SVC_ENTRY(tk_ena_dsp)
-	_SVC_ENTRY(tk_chg_pri)
-	_SVC_ENTRY(tk_chg_slt)
-	_SVC_ENTRY(tk_rot_rdq)
-	_SVC_ENTRY(tk_rel_wai)
-	_SVC_ENTRY(tk_get_tid)
-	_SVC_ENTRY(tk_get_tsp)
-	_SVC_ENTRY(tk_set_tsp)
-	_SVC_ENTRY(tk_get_rid)
-	_SVC_ENTRY(tk_set_rid)
-	_SVC_ENTRY(tk_get_reg)
-	_SVC_ENTRY(tk_set_reg)
-	_SVC_ENTRY(tk_get_cpr)
-	_SVC_ENTRY(tk_set_cpr)
-	_SVC_ENTRY(tk_inf_tsk)
-	_SVC_ENTRY(tk_ref_tsk)
-	_SVC_ENTRY(tk_def_tex)
-	_SVC_ENTRY(tk_ena_tex)
-	_SVC_ENTRY(tk_dis_tex)
-	_SVC_ENTRY(tk_ras_tex)
-	_SVC_ENTRY(tk_end_tex)
-	_SVC_ENTRY(tk_ref_tex)
-	_SVC_ENTRY(tk_sus_tsk)
-	_SVC_ENTRY(tk_rsm_tsk)
-	_SVC_ENTRY(tk_frsm_tsk)
-	_SVC_ENTRY(tk_slp_tsk)
-	_SVC_ENTRY(tk_wup_tsk)
-	_SVC_ENTRY(tk_can_wup)
-	_SVC_ENTRY(tk_sig_tev)
-	_SVC_ENTRY(tk_wai_tev)
-	_SVC_ENTRY(tk_dis_wai)
-	_SVC_ENTRY(tk_ena_wai)
-	_SVC_ENTRY(tk_cre_sem)
-	_SVC_ENTRY(tk_del_sem)
-	_SVC_ENTRY(tk_sig_sem)
-	_SVC_ENTRY(tk_wai_sem)
-	_SVC_ENTRY(tk_ref_sem)
-	_SVC_ENTRY(tk_cre_mtx)
-	_SVC_ENTRY(tk_del_mtx)
-	_SVC_ENTRY(tk_loc_mtx)
-	_SVC_ENTRY(tk_unl_mtx)
-	_SVC_ENTRY(tk_ref_mtx)
-	_SVC_ENTRY(tk_cre_flg)
-	_SVC_ENTRY(tk_del_flg)
-	_SVC_ENTRY(tk_set_flg)
-	_SVC_ENTRY(tk_clr_flg)
-	_SVC_ENTRY(tk_wai_flg)
-	_SVC_ENTRY(tk_ref_flg)
-	_SVC_ENTRY(tk_cre_mbx)
-	_SVC_ENTRY(tk_del_mbx)
-	_SVC_ENTRY(tk_snd_mbx)
-	_SVC_ENTRY(tk_rcv_mbx)
-	_SVC_ENTRY(tk_ref_mbx)
-	_SVC_ENTRY(tk_cre_mbf)
-	_SVC_ENTRY(tk_del_mbf)
-	_SVC_ENTRY(tk_snd_mbf)
-	_SVC_ENTRY(tk_rcv_mbf)
-	_SVC_ENTRY(tk_ref_mbf)
-	_SVC_ENTRY(tk_cre_por)
-	_SVC_ENTRY(tk_del_por)
-	_SVC_ENTRY(tk_cal_por)
-	_SVC_ENTRY(tk_acp_por)
-	_SVC_ENTRY(tk_fwd_por)
-	_SVC_ENTRY(tk_rpl_rdv)
-	_SVC_ENTRY(tk_ref_por)
-	_SVC_ENTRY(tk_def_int)
-	_SVC_ENTRY(tk_ret_int)
-	_SVC_ENTRY(tk_cre_mpl)
-	_SVC_ENTRY(tk_del_mpl)
-	_SVC_ENTRY(tk_get_mpl)
-	_SVC_ENTRY(tk_rel_mpl)
-	_SVC_ENTRY(tk_ref_mpl)
-	_SVC_ENTRY(tk_cre_mpf)
-	_SVC_ENTRY(tk_del_mpf)
-	_SVC_ENTRY(tk_get_mpf)
-	_SVC_ENTRY(tk_rel_mpf)
-	_SVC_ENTRY(tk_ref_mpf)
-	_SVC_ENTRY(tk_set_tim)
-	_SVC_ENTRY(tk_get_tim)
-	_SVC_ENTRY(tk_get_otm)
-	_SVC_ENTRY(tk_dly_tsk)
-	_SVC_ENTRY(tk_cre_cyc)
-	_SVC_ENTRY(tk_del_cyc)
-	_SVC_ENTRY(tk_sta_cyc)
-	_SVC_ENTRY(tk_stp_cyc)
-	_SVC_ENTRY(tk_ref_cyc)
-	_SVC_ENTRY(tk_cre_alm)
-	_SVC_ENTRY(tk_del_alm)
-	_SVC_ENTRY(tk_sta_alm)
-	_SVC_ENTRY(tk_stp_alm)
-	_SVC_ENTRY(tk_ref_alm)
-	_SVC_ENTRY(tk_ref_ver)
-	_SVC_ENTRY(tk_ref_sys)
-	_SVC_ENTRY(tk_def_ssy)
-	_SVC_ENTRY(tk_sta_ssy)
-	_SVC_ENTRY(tk_cln_ssy)
-	_SVC_ENTRY(tk_evt_ssy)
-	_SVC_ENTRY(tk_ref_ssy)
-	_SVC_ENTRY(tk_cre_res)
-	_SVC_ENTRY(tk_del_res)
-	_SVC_ENTRY(tk_get_res)
-	_SVC_ENTRY(tk_set_pow)
-	_SVC_ENTRY(tk_chg_slt_u)
-	_SVC_ENTRY(tk_inf_tsk_u)
-	_SVC_ENTRY(tk_ref_tsk_u)
-	_SVC_ENTRY(tk_slp_tsk_u)
-	_SVC_ENTRY(tk_wai_tev_u)
-	_SVC_ENTRY(tk_dly_tsk_u)
-	_SVC_ENTRY(tk_wai_sem_u)
-	_SVC_ENTRY(tk_wai_flg_u)
-	_SVC_ENTRY(tk_rcv_mbx_u)
-	_SVC_ENTRY(tk_loc_mtx_u)
-	_SVC_ENTRY(tk_snd_mbf_u)
-	_SVC_ENTRY(tk_rcv_mbf_u)
-	_SVC_ENTRY(tk_cal_por_u)
-	_SVC_ENTRY(tk_acp_por_u)
-	_SVC_ENTRY(tk_get_mpl_u)
-	_SVC_ENTRY(tk_get_mpf_u)
-	_SVC_ENTRY(tk_set_tim_u)
-	_SVC_ENTRY(tk_get_tim_u)
-	_SVC_ENTRY(tk_get_otm_u)
-	_SVC_ENTRY(tk_cre_cyc_u)
-	_SVC_ENTRY(tk_ref_cyc_u)
-	_SVC_ENTRY(tk_sta_alm_u)
-	_SVC_ENTRY(tk_ref_alm_u)
+/*
+==================================================================================
+
+	DEFINE 
+
+==================================================================================
+*/
+#define	SYSCALL_NUM	349
+
+/*
+==================================================================================
+
+	Management 
+
+==================================================================================
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/
+
+#endif	// __BK_SYSTEMCALL_H__

@@ -7,6 +7,7 @@
  *----------------------------------------------------------------------
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2011/05/17.
+ *    Modified by Nina Petipa at 2015/11/29
  *
  *----------------------------------------------------------------------
  */
@@ -42,6 +43,7 @@ EXPORT ER ChkSpaceRE( CONST void *addr, INT len )
 {
 	return ChkSpace(addr, len, MA_READ|MA_EXECUTE, getsvcenv());
 }
+
 
 #else /* VIRTUAL_ADDRESS */
 

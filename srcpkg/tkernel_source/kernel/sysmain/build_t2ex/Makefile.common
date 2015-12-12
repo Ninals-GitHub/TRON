@@ -377,7 +377,11 @@ tkernel:
 	( cd $(BLD_TKERNEL_PATH) ; $(MAKE) $(DBGOPT) )
 
 bkernel:
+	( cd $(BLD_BTRON_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd $(BLD_BTRON_PATH) ; $(MAKE) $(DBGOPT) )
+
+ready:
+	( cd $(BLD_BTRON_PATH) ; $(MAKE) ready_for_rebuild )
 
 sysmgr:
 	( cd $(BLD_SYSMGR_PATH) ; $(MAKE) $(DBGOPT) )

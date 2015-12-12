@@ -64,7 +64,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 int main(int argc, char *argv[])
 {
 	printf("hello world\n");
-	return;
+	return(0);
 }
 
 

@@ -41,6 +41,7 @@
 #  include <cpu/x86/register.h>
 #  include <cpu/x86/dispatch.h>
 #  include <cpu/x86/cpu_status.h>
+#  include <cpu/x86/break.h>
 #endif
 
 /*

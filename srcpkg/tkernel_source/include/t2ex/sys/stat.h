@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/12/05
  *
  *----------------------------------------------------------------------
  */
@@ -55,11 +56,14 @@
 #include <tk/typedef.h>
 #include <sys/types.h>
 
+#include <bk/uapi/sys/stat.h>
+
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#if 0	// defined in bk/uapi/sys/stat.h
 /*
  * File information
  */
@@ -94,6 +98,7 @@ struct stat64 {
 	blksize_t st_blksize;	/* I/O block size */
 	blkcnt_t  st_blocks;	/* Number of blocks allocated */
 };
+#endif
 
 struct stat_us {
 	dev_t	st_dev;		/* inode's device */
@@ -159,6 +164,7 @@ struct stat64_ms {
 	blkcnt_t  st_blocks;	/* Number of blocks allocated */
 };
 
+#if 0	// defined in bk/uapi/sys/stat.h
 #define	S_BLKSIZE	512	/* Block size (number of bytes)
 				   to be used in st_blocks */
 
@@ -200,7 +206,7 @@ struct stat64_ms {
 #define	S_ISREG(m)	( ((m) & S_IFMT) == S_IFREG )
 #define	S_ISLNK(m)	( ((m) & S_IFMT) == S_IFLNK )
 #define	S_ISSOCK(m)	( ((m) & S_IFMT) == S_IFSOCK )
-
+#endif
 /*
  * User-defined flag (st_flags)
  */

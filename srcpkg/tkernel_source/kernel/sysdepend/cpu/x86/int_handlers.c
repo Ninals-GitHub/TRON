@@ -31,7 +31,7 @@
 LOCAL void handle_division_by_0(struct ctx_reg *reg);
 LOCAL void handle_debug(struct ctx_reg *reg);
 LOCAL void handle_nmi(struct ctx_reg *reg);
-LOCAL void handle_breakpoint(struct ctx_reg *reg);
+//LOCAL void handle_breakpoint(struct ctx_reg *reg);
 LOCAL void handle_int0(struct ctx_reg *reg);
 LOCAL void handle_bound(struct ctx_reg *reg);
 LOCAL void handle_invalid_opcode(struct ctx_reg *reg);
@@ -273,6 +273,44 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:void
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+struct iovec{
+	void *iov_base;
+	size_t iov_len;
+};
+
+EXPORT int
+syscall_test(int ebx, int ecx, int edx, int esi, int edi, int ebp, int eax)
+{
+	printf("\nsyscall!!!!!!!!!!!\n");
+	printf("int number = %d\n", eax);
+	printf("[argument]");
+	if (eax == 5) {
+		printf("1:%s\n", ebx);
+	} else {
+		printf("1:0x%08X ", ebx);
+	}
+	if (eax == 146 ) {
+		struct iovec *io = (struct iovec*)ecx;
+		printf("2:%s\n", io->iov_base);
+	} else {
+		printf("2:0x%08X ", ecx);
+	}
+	printf("3:0x%08X ", edx);
+	printf("4:0x%08X ", esi);
+	printf("5:0x%08X ", edi);
+	printf("6:0x%08X ", ebp);
+	for(;;);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -338,21 +376,6 @@ LOCAL void handle_nmi(struct ctx_reg *reg)
 
 /*
 ==================================================================================
- Funtion	:handle_breakpoint
- Input		:struct ctx_reg *reg
- 		 < context register information >
- Output		:void
- Return		:void
- Description	:default handler(3) for breakpoint exception
-==================================================================================
-*/
-LOCAL void handle_breakpoint(struct ctx_reg *reg)
-{
-	vd_printf("breakpoint\n");
-}
-
-/*
-==================================================================================
  Funtion	:handle_int0
  Input		:struct ctx_reg *reg
  		 < context register information >
@@ -394,6 +417,15 @@ LOCAL void handle_bound(struct ctx_reg *reg)
 LOCAL void handle_invalid_opcode(struct ctx_reg *reg)
 {
 	vd_printf("invalid opcode\n");
+	vd_printf("eax:0x%08X ", reg->eax);
+	vd_printf("ebx:0x%08X ", reg->ebx);
+	vd_printf("ecx:0x%08X\n", reg->ecx);
+	vd_printf("eip:0x%08X ", reg->eip);
+	vd_printf("eflags:0x%08X ", reg->eflags);
+	vd_printf("cs:0x%08X\n", reg->cs);
+	vd_printf("esp:0x%08X ", reg->esp);
+	vd_printf("ss:0x%08X\n", reg->ss);
+	for(;;);
 }
 
 /*

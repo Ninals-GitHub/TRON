@@ -123,7 +123,8 @@ struct memory_space {
 	unsigned long		start_env, end_env;
 };
 
-#define	MMAP_START		(PROCESS_SIZE / 3)
+#define	SHARED_START		(PROCESS_SIZE / 3)
+#define	MMAP_START		SHARED_START
 #define	PROC_STACK_TOP		(PROCESS_SIZE)
 #define	PROC_STACK_SIZE		(8192)
 #define	PROC_STACK_START	(PROCESS_SIZE - PROC_STACK_SIZE)
@@ -337,9 +338,35 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 future work;
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+#if 0
 IMPORT int map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
 			unsigned int prot);
+#endif
+#define	map_vm(proc, mmap_start, mmap_end, prot)				\
+		xvm_map_vm(proc, mmap_start, mmap_end, prot, 0)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:map_vm_annon
+ Input		:struct process *proc
+ 		 < a process to create its vm >
+ 		 unsigned long mmap_start
+ 		 < start address of user space >
+ 		 unsigned long mmap_end
+ 		 < end address of user space >
+ 		 unsigned int prot
+ 		 < permission >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:map a anonymous memory for user space
+ 		 this function is currently used for test only
+ 		 future work;
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define	map_vm_annon(proc, mmap_start, mmap_end, prot)				\
+		xvm_map_vm(proc, mmap_start, mmap_end, prot, 1)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -358,5 +385,29 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int unmap_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:search_mmap_candidate
+ Input		:struct process *proc
+ 		 < process to search its vm >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void*
+ 		 < candidate memory address >
+ Description	:seach memory area as a candidate for mmap
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void* search_mmap_candidate(struct process *proc, size_t length,
+					int prot, int flags, int fd, off_t offset);
 
 #endif	// __BK_VM_H__

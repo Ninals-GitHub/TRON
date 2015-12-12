@@ -423,20 +423,25 @@ LOCAL ER set_stat64_us(struct stat64_us *stat, W fid)
 	INT	size;
 	mode_t	mode;
 
+	memset(stat, 0, sizeof(struct stat64_us));
+	
 	switch(fid) {
 	case ROOT_FID:
+		stat->st_ino = fid;
 		size = 3;
 		mode = S_IFDIR | S_IRUSR | S_IXUSR;
 		break;
 	case STDIN_FID:
+		stat->st_ino = STDIN_FID - 1;
 		size = 0;
 		mode = S_IFCHR | S_IRUSR;
 		break;
 	default:
 		return EX_BADF;
 	}
-	memset(stat, 0, sizeof(struct stat64_us));
-	stat->st_ino = fid;
+	
+	stat->st_nlink = 1;
+	stat->st_blksize = S_BLKSIZE;
 	stat->st_size = size * sizeof(struct dirent);
 	stat->st_mode = mode;
 	return E_OK;

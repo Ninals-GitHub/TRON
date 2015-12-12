@@ -37,6 +37,12 @@ void next_to(void);
 
 ==================================================================================
 */
+#define	ON_EXE_EAX	0
+#define	ON_EXE_EBX	0
+#define	ON_EXE_ECX	0
+#define	ON_EXE_EDX	0
+#define	ON_EXE_EDI	0
+#define	ON_EXE_ESI	0
 
 /*
 ==================================================================================
@@ -76,10 +82,6 @@ EXPORT int start_task(unsigned long start_text)
 	struct task *current_task = get_current_task();
 	struct task_context_block *current_ctxb = get_current_ctxb();
 	
-	pte_t *pte;
-	pde_t *pde;
-	char *com;
-	
 	if (KERNEL_BASE_ADDR <= start_text) {
 		return(-EINVAL);
 	}
@@ -100,6 +102,7 @@ EXPORT int start_task(unsigned long start_text)
 	current_ctxb->gs = SEG_USER_DS;
 	current_ctxb->fs = SEG_USER_DS;
 	current_ctxb->sysenter_cs = SEG_USER_CS;
+
 	current_ctxb->sp = current->mspace->end_stack;
 	
 	dispatch_disabled = DDS_ENABLE;
@@ -120,6 +123,12 @@ EXPORT int start_task(unsigned long start_text)
 		"pushl %[cs]			\n\t"
 		"pushl %[start_func]		\n\t"
 		"movw %[ds], %%ds		\n\t"
+		"movl %[init_eax], %%eax	\n\t"
+		"movl %[init_ebx], %%ebx	\n\t"
+		"movl %[init_ecx], %%ecx	\n\t"
+		"movl %[init_edx], %%edx	\n\t"
+		"movl %[init_edi], %%edi	\n\t"
+		"movl %[init_esi], %%esi	\n\t"
 		"cld				\n\t"
 		"iret				\n\t"
 		:
@@ -127,7 +136,10 @@ EXPORT int start_task(unsigned long start_text)
 		 [es]"m"(current_ctxb->es), [ds]"m"(current_ctxb->ds),
 		 [cs]"m"(current_ctxb->sysenter_cs), [esp]"m"(current_ctxb->sp),
 		 [start_func]"m"(current_ctxb->ip),
-		 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL)
+		 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL),
+		 [init_eax]"i"(ON_EXE_EAX), [init_ebx]"i"(ON_EXE_EBX),
+		 [init_ecx]"i"(ON_EXE_ECX), [init_edx]"i"(ON_EXE_EDX),
+		 [init_edi]"i"(ON_EXE_EDI), [init_esi]"i"(ON_EXE_ESI)
 		 :"memory"
 	);
 }

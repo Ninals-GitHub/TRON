@@ -63,6 +63,7 @@
 
 ==================================================================================
 */
+#define	MMPA_PAGESIZE		PAGESIZE
 
 /*
 ==================================================================================
@@ -71,6 +72,8 @@
 
 ==================================================================================
 */
+SYSCALL void* mmap(void *addr, size_t length, int prot,
+			int flags, int fd, off_t offset);
 
 
 /*
@@ -101,28 +104,59 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:make a new memory mapping
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void* mmap(void *addr, size_t length, int prot,
+SYSCALL void* mmap(void *addr, size_t length, int prot,
 			int flags, int fd, off_t offset)
 {
-	int err;
+	int err = 0;
 	struct process *current = get_current();
-	unsigned long start = (unsigned long)addr + offset;
-	unsigned long end = start + length;
+	unsigned long start;
+	unsigned long end;
+	void *candidate = NULL;
 	
-	if (addr && ((unsigned long)addr & ~PAGE_MASK)) {
-		printf("mmap failed:address alignment 0x%08X\n", ((unsigned long)addr & ~PAGE_MASK));
+#if 0
+	printf("mmap[addr=0x%08X", addr);
+
+	printf(", length=%d", length);
+	printf(", prot=0x%08X", prot);
+	printf(", flags=0x%08X", flags);
+	printf(", fd=%d", fd);
+	printf(", offset=%d]\n", offset);
+#endif
+	if (UNLIKELY(addr && ((unsigned long)addr & ~PAGE_MASK))) {
+		//printf("mmap failed:address alignment 0x%08X\n", ((unsigned long)addr & ~PAGE_MASK));
 		return(MAP_FAILED);
 	}
 	
-	if (offset & ~PAGE_MASK) {
-		printf("mmap failed:offset alignment\n");
+	if (UNLIKELY(offset & ~PAGE_MASK)) {
+		//printf("mmap failed:offset alignment\n");
 		return(MAP_FAILED);
 	}
 	
-	err = unmap_vm(current, start, end);
+	if (UNLIKELY(!addr && !(flags & MAP_FIXED))) {
+		/* ------------------------------------------------------------ */
+		/* search candidate mmap area					*/
+		/* ------------------------------------------------------------ */
+		candidate = search_mmap_candidate(current, length,
+							prot, flags, fd, offset);
+		
+		if (candidate == MAP_FAILED) {
+			//printf("cannot search mmap candidate\n");
+			return(MAP_FAILED);
+		}
+		start = (unsigned long)candidate;
+		//printf("mmap:new addr:0x%08X\n", start);
+	} else {
+		start = (unsigned long)addr;
+	}
 	
-	if (err) {
-		printf("mmpa failed:unmap existing memory\n");
+	end  = start + length;
+	
+	if (!candidate) {
+		err = unmap_vm(current, start, end);
+	}
+	
+	if (UNLIKELY(err)) {
+		//printf("mmpa failed:unmap existing memory\n");
 		return(MAP_FAILED);
 	}
 	
@@ -133,15 +167,46 @@ EXPORT void* mmap(void *addr, size_t length, int prot,
 		/* ------------------------------------------------------------ */
 		err = map_vm(current, start, end, prot);
 	} else {
-		err = map_vm(current, start, end, prot);
+		err = map_vm_annon(current, start, end, prot);
 	}
 	
-	if (err) {
-		printf("mmap failed:map_vm failed\n");
+	
+	if (UNLIKELY(err)) {
+		//printf("mmap failed:map_vm failed\n");
 		return(MAP_FAILED);
 	}
 	
-	return(addr);
+	return((void*)start);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap2
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file in unit of page size >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping with page size offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL void* mmap2(void *addr, size_t length, int prot,
+			int flags, int fd, off_t pgoffset)
+{
+#if 0
+	printf("mmap2:");
+#endif
+	return(mmap(addr, length, prot, flags, fd, pgoffset * MMPA_PAGESIZE));
 }
 
 /*
@@ -157,11 +222,101 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:unmap mapped memory
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int munmap(void *addr, size_t length)
+SYSCALL int munmap(void *addr, size_t length)
 {
+	printf("munmap[addr=0x%08X", addr);
+	printf(", length=%d\n", length);
 	return(unmap_vm(get_current(), (unsigned long)addr, length));
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:brk
+ Input		:unsigned long addr
+ 		 < new break address >
+ Output		:void
+ Return		:unsigned long
+ 		 < new break address >
+ Description	:change data segment size
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL unsigned long brk(unsigned long addr)
+{
+	unsigned long new_brk;
+	unsigned long new_size;
+	struct process *proc = get_current();
+	struct memory_space *mspace = proc->mspace;
+	
+	//printf("brk[addr=0x%08X]", addr);
+	
+	if (UNLIKELY(addr < mspace->start_brk)) {
+		//printf("<1:new addr=0x%08X>\n", mspace->end_brk);
+		return(mspace->end_brk);
+	}
+	
+	if (addr < mspace->end_brk) {
+		int err;
+		/* ------------------------------------------------------------ */
+		/* shrink data segment						*/
+		/* ------------------------------------------------------------ */
+		err = munmap((void*)addr, mspace->end_brk - addr);
+		
+		if (UNLIKELY(err)) {
+			return(mspace->end_brk);
+		}
+		
+		mspace->end_brk = addr;
+		//printf("<2:new addr=0x%08X>\n", mspace->end_brk);
+		return(mspace->end_brk);
+	}
+	
+	new_size =
+		(unsigned long)PageAlignU((const void*)(addr - mspace->end_brk));
+	
+	if (proc->rlimits[RLIMIT_DATA].rlim_cur <
+			(new_size + (mspace->end_data - mspace->start_data))) {
+		//printf("<5:new addr=0x%08X>\n", mspace->end_brk);
+		return(mspace->end_brk);
+	}
+	
+	new_brk = (unsigned long)mmap((void*)mspace->end_brk, new_size,
+					PROT_READ | PROT_WRITE,
+					MAP_PRIVATE | MAP_ANONYMOUS,
+					-1, 0);
+	
+	if (UNLIKELY((void*)new_brk == MAP_FAILED)) {
+		return(mspace->end_brk);
+	}
+	
+	mspace->end_brk = new_brk + new_size;
+	
+	//printf("<4:new addr=0x%08X>\n", mspace->end_brk);
+	
+	return(mspace->end_brk);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:sbrk
+ Input		:long addr
+ 		 < increment of new break address >
+ Output		:void
+ Return		:unsigned long
+ 		 < new break address >
+ Description	:change data segment size
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL unsigned long sbrk(long addr)
+{
+	struct process *proc = get_current();
+	struct memory_space *mspace = proc->mspace;
+	
+	if (UNLIKELY(!addr)) {
+		return(mspace->end_brk);
+	}
+	
+	return(brk(mspace->end_brk + addr));
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

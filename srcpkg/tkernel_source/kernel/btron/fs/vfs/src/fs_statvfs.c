@@ -8,6 +8,7 @@
  *
  *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
  *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/12/05
  *
  *----------------------------------------------------------------------
  */
@@ -48,8 +49,43 @@
  *
  */
 
+#include <bk/kernel.h>
+#include <bk/uapi/sys/stat.h>
+
 #include "fsdefs.h"
 
+/*
+==================================================================================
+
+	PROTOTYPE
+
+==================================================================================
+*/
+
+/*
+==================================================================================
+
+	DEFINE 
+
+==================================================================================
+*/
+
+/*
+==================================================================================
+
+	Management 
+
+==================================================================================
+*/
+
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
 /*
  *  fs_statvfs() - Get FIMP status by file name
  */
@@ -74,3 +110,78 @@ EXPORT	INT	xfs_statvfs(fs_env_t *env, const B *name, struct statvfs *ptr)
 	return -1;
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:fstat64
+ Input		:int fd
+ 		 < open file descriptor to get status >
+ 		 struct stat64 *buf
+ 		 < file status information buffer >
+ Output		:struct stat64 *buf
+ 		 < file status information buffer >
+ Return		:void
+ Description	:get file status
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int fstat64(int fd, struct stat64 *buf)
+{
+	int err;
+	
+	//printf("fstat64[fd=%d]:\n", fd);
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	err = ChkSpaceRW(buf, sizeof(struct stat64));
+	
+	if (err) {
+		return(-EFAULT);
+	}
+	
+	err = fs_fstat64(fd, buf);
+#if 0
+	if (err) printf("err:fstat64\n");
+	printf("st_dev=%d, ", buf->st_dev);
+	printf("st_ino=%d, ", buf->st_ino);
+	printf("st_mode=0x%04X, ", buf->st_mode);
+	printf("st_nlink=%d, ", buf->st_nlink);
+	printf("st_uid=%d, ", buf->st_uid);
+	printf("st_gid=%d, ", buf->st_gid);
+	printf("st_rdev=%d, ", buf->st_rdev);
+	printf("st_size=%ld, ", buf->st_size);
+	printf("st_atime=%d, ", buf->st_atime);
+	printf("st_mtime=%d, ", buf->st_mtime);
+	printf("st_ctime=%d, ", buf->st_ctime);
+	printf("st_blksize=%d, ", buf->st_blksize);
+	printf("st_blocks=%d\n", buf->st_blocks);
+#endif
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/

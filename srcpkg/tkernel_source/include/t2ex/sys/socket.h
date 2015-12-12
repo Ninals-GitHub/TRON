@@ -190,10 +190,12 @@ struct cmsghdr {
 /* followed by	u_char  cmsg_data[]; */
 };
 
+#if 0
 struct iovec {				/* address and length */
 	void		*iov_base;	/* base */
 	size_t		iov_len;	/* size */
 };
+#endif
 
 /*
  * Types of socket shutdown(2).

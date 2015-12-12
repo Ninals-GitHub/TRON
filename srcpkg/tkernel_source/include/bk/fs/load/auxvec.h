@@ -72,6 +72,46 @@
 #define	AT_NOTELF	10	/* program is not ELF				*/
 #define	AT_UID		11	/* real uid					*/
 #define	AT_EUID		12	/* effective uid				*/
+#define	AT_GID		13	/* real gid					*/
+#define	AT_EGID		14	/* effective gid				*/
+#define	AT_PLATFORM	15	/* string identifying CPU for optimizations	*/
+#define	AT_HWCAP	16	/* arch dependent hints at CPU capabilities	*/
+#define	AT_CLKTCK	17	/* frequency at which times() increments	*/
+/* 18 - 22 are reserved								*/
+
+/* this entry gives some information about the FPU initialization performed by
+   the kernel									*/
+#define	AT__FPUCW	18	/* used FPU control word			*/
+
+/* cache block sizes								*/
+#define	AT_DCACHEBSIZE	19	/* data cache block size			*/
+#define	AT_ICACHEBSIZE	20	/* instruction cache block size			*/
+#define	AT_UCACHEBSIZE	21	/* unified cache block size			*/
+
+/* a special ignored value fo PPC, used by the kernel to control the
+   interpretation of the aux vector. must be > 16				*/
+#define	AT_IGNOREPPC	22	/* entry should be ignored			*/
+#define	AT_SECURE	23	/* secure mode boolean				*/
+
+#define	AT_BASE_PLATFORM 24	/* string identifying real platform, may differ	*/
+				/* from AT_PLATFORM				*/
+
+#define	AT_RANDOM	25	/* address of 16 random bytes			*/
+#define	AT_HWCAP2	26	/* extension of AT_HWCAP			*/
+
+#define	AT_EXECFN	31	/* filename of program				*/
+/* pointer to the global system page used for system calls and other things	*/
+#define	AT_SYSINFO	32
+#define	AT_SYSINFO_EHDR	33
+
+/* shapes of the caches.
+   bits 0-3 contains associativity
+   bits 4-7 contains log2 of line size
+   mask those to get cache size							*/
+#define	AT_L1I_CACHESHAPE	34
+#define	AT_L1D_CACHESHAPE	35
+#define	AT_L2_CACHESHAPE	36
+#define	AT_L3_CACHESHAPE	37
 
 /*
 ==================================================================================

@@ -695,7 +695,36 @@ typedef struct {
 #define	SF1_SUNW_FPUSED	0x002	/* and fram pointer is in use */
 #define	SF1_SUNW_MASK	0x003
 
+/* Aux vector entry */
+typedef struct {
+	unsigned int	a_type;
+	unsigned int	a_val;
+} Elf32_auxv_t;
 
+/* Note section entry. each entry in the note section begins with a header
+   of a fixed form								*/
+typedef struct {
+	Elf32_Word	n_namesz;	/* length of the note's name		*/
+	Elf32_Word	n_descsz;	/* length of the note's descriptor	*/
+	Elf32_Word	n_type;		/* type of the note			*/
+} Elf32_Nhdr;
+
+/* known names									*/
+#define	ELF_NOTE_SOLARIS	"SUNW Solaris"
+#define	ELF_NOTE_GNU		"GNU"
+
+/* defined types of notes							*/
+#define	ELF_NOTE_PAGESIZE_HINT	1	/* page size of the binary (Solaris)	*/
+#define	ELF_NOTE_ABI		1	/* ABI information note types for GNU	*/
+					/* word 0: OS descriptor		*/
+					/* word 1: major ver. of the ABI	*/
+					/* word 2: minor ver. of the ABI	*/
+					/* word 3: subminor ver. of the ABI	*/
+
+#define	ELF_NOTE_OS_LINUX	0
+#define	ELF_NOTE_OS_GNU		1
+#define	ELF_NOTE_OS_SOLARIS2	2
+#define	ELF_NOTE_OS_FREEBSD	3
 
 
 #endif /* _T2EX_LOAD_ELF_ */

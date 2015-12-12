@@ -72,7 +72,7 @@ TARGET	= kernel.o
 S	= .
 
 # common source files
-SRC	+=	bprocess.c fork.c exec.c
+SRC	+=	bprocess.c fork.c exec.c sys.c signal.c tls.c
 
 VPATH	+= $(S)
 HEADER	+= $(S)
@@ -97,12 +97,15 @@ CPPFLAGS += -DTKERNEL_CHECK_CONST
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean
+.PHONY: all clean ready_for_rebuild
 
 all: $(TARGET)
 
 $(TARGET): $(OBJ)
 	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+ready_for_rebuild:
+	$(RM) $(TARGET)
 
 clean:
 	$(RM) $(OBJ) $(TARGET) $(DEPS)

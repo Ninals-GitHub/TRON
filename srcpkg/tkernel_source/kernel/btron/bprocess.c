@@ -68,6 +68,16 @@
 
 ==================================================================================
 */
+/*
+----------------------------------------------------------------------------------
+	default rlimits
+----------------------------------------------------------------------------------
+*/
+#define	RLIM_DEF_SOFT_STACK	(8 * 1024 * 1024)
+#define	RLIM_DEF_SOFT_NOFILE	1024
+#define	RLIM_DEF_HARD_NOFILE	4096
+#define	RLIM_DEF_SOFT_MLOCK	(64 * 1024)
+#define	RLIM_DEF_MSGQUEUE	819200
 
 /*
 ==================================================================================
@@ -81,7 +91,29 @@ LOCAL unsigned long *pid_bitmap;
 LOCAL struct process *proc_table;
 LOCAL struct process *init;
 
-
+/*
+----------------------------------------------------------------------------------
+	default rlimits
+----------------------------------------------------------------------------------
+*/
+LOCAL struct rlimit def_rlim[RLIMIT_NLIMITS] = {
+	[RLIMIT_CPU]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_FSIZE]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_DATA]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_STACK]		= { RLIM_DEF_SOFT_STACK,  RLIM_INFINITY		},
+	[RLIMIT_CORE]		= { 0,			  RLIM_INFINITY		},
+	[RLIMIT_RSS]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_NPROC]		= { 0,			  0			},
+	[RLIMIT_NOFILE]		= { RLIM_DEF_SOFT_NOFILE, RLIM_DEF_HARD_NOFILE	},
+	[RLIMIT_MEMLOCK]	= { RLIM_DEF_SOFT_MLOCK,  RLIM_DEF_SOFT_MLOCK	},
+	[RLIMIT_AS]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_LOCKS]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+	[RLIMIT_SIGPENDING]	= { 0,			  0			},
+	[RLIMIT_MSGQUEUE]	= { RLIM_DEF_MSGQUEUE,    RLIM_DEF_MSGQUEUE	},
+	[RLIMIT_NICE]		= { 0,			  0			},
+	[RLIMIT_RTPRIO]		= { 0,			  0			},
+	[RLIMIT_RTTIME]		= { RLIM_INFINITY,	  RLIM_INFINITY		},
+};
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -232,13 +264,23 @@ EXPORT struct process* alloc_process(pid_t pid)
 		new_proc->stime = 0;
 		
 		/* ------------------------------------------------------------ */
-		/* initialize memory space for init				*/
+		/* initialize memory space					*/
 		/* ------------------------------------------------------------ */
 		new_proc->mspace = alloc_memory_space();
 		
 		if (!new_proc) {
 			return(NULL);
 		}
+		/* ------------------------------------------------------------ */
+		/* initialize new procwss's signals				*/
+		/* ------------------------------------------------------------ */
+		init_signal(new_proc);
+		
+		/* ------------------------------------------------------------ */
+		/* set up default rlimit					*/
+		/* ------------------------------------------------------------ */
+		memcpy((void*)&new_proc->rlimits, (void*)&def_rlim,
+								sizeof(def_rlim));
 		
 		/* ------------------------------------------------------------ */
 		/* link to parent process					*/
@@ -330,13 +372,13 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 	/* -------------------------------------------------------------------- */
 	ercd = _tk_cre_tsk(pk_ctsk);
 	
-	if ( ercd < E_OK ) {
+	if (UNLIKELY(ercd < E_OK)) {
 		return(EC_INNER);
 	}
 
 	ercd = _tk_sta_tsk((ID)ercd, 0);
 
-	if ( ercd < E_OK ) {
+	if (UNLIKELY(ercd < E_OK)) {
 		return(EC_INNER);
 	}
 	
@@ -372,6 +414,18 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 		return(EC_NOEXS);
 	}
 	
+	init->tgid = init_pid;
+	
+	/* -------------------------------------------------------------------- */
+	/* initialize signal management						*/
+	/* -------------------------------------------------------------------- */
+	init_signal(init);
+	
+	/* -------------------------------------------------------------------- */
+	/* set up default rlimit						*/
+	/* -------------------------------------------------------------------- */
+	memcpy((void*)&init->rlimits, (void*)&def_rlim, sizeof(def_rlim));
+	
 	/* -------------------------------------------------------------------- */
 	/* attribute init task to init process					*/
 	/* -------------------------------------------------------------------- */
@@ -387,6 +441,31 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 	init->mspace->pde = (pde_t*)get_system_pde();
 	
 	return(EC_OK);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_signal
+ Input		:struct process *proc
+ 		 < process to initialize its sinals >
+ Output		:void
+ Return		:void
+ Description	:initialize signal management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void init_signal(struct process *proc)
+{
+	int i;
+	struct signals *sig = &proc->signals;
+	
+	sig->count = 0;
+	sig->blocked = 0;
+	sig->real_blocked = 0;
+	sig->saved_sigmask = 0;	
+	
+	for (i = 0;i < NR_SIG;i++ ) {
+		sig->action[i].sa_handler = NULL;
+	}
 }
 
 

@@ -53,7 +53,9 @@
 #define __SYS_TYPES_H__
 
 #include <stdint.h>
+#include <bk/typedef.h>
 
+#if 0
 typedef	long		time_t;		/* Date/time */
 
 typedef	unsigned int	ino_t;		/* File serial number */
@@ -72,5 +74,6 @@ typedef	long long	blkcnt_t;	/* Number of blocks */
 
 typedef	unsigned long long	fsblkcnt_t;	/* Number of blocks */
 typedef	unsigned long long	fsfilcnt_t;	/* Number of files */
+#endif
 
 #endif /* __SYS_TYPES_H__ */

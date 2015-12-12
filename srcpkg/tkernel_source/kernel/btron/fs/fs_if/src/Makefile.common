@@ -90,7 +90,7 @@ CFLAGS	+= -fomit-frame-pointer
 
 # ----------------------------------------------------------------------------
 
-.PHONY: all clean source clean_source install clean_install
+.PHONY: all clean source clean_source install clean_install ready_for_rebuild
 
 ALL = $(TARGET)
 
@@ -116,6 +116,9 @@ clean:
 install: $(addprefix $(LIB_INSTALLDIR)/, $(TARGET))
 
 source: $(SRC_SVC)
+
+ready_for_rebuild:
+	$(RM) $(addprefix $(LIB_INSTALLDIR)/, $(TARGET))
 
 clean_source:
 #	( cd $(IFSRC) ; $(RM) *.h )

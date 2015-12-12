@@ -67,7 +67,7 @@ include ../../../../etc/makerules
 
 # source files (system-dependent)
 SRC = chkplv.c power.c cache.c cpu_insn.c cpuid.c descriptor.c	\
-	int_handlers.c dispatch.c syscall_table.c
+	int_handlers.c dispatch.c break.c
 
 # Extension source files
 ifndef BTRON
