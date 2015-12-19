@@ -1130,7 +1130,7 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	printf("bss:map_size 0x%08X\n", map_size);
 #endif
 	addr = mmap((void*)PAGE_ALIGN(eli.bss_ladr), map_size,
-			PROT_READ | PROT_WRITE,
+			PROT_READ | PROT_WRITE | PROT_EXEC,
 			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
 			-1, 0);
 	
@@ -1161,7 +1161,8 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	}
 	
 	mspace->start_code = (unsigned long)addr;
-	mspace->end_code = mspace->start_code + eli.text_size;
+	//mspace->end_code = mspace->start_code + eli.text_size
+	mspace->end_code = mspace->start_code + map_size;;
 #if 0
 	printf("text:0x%08X ", addr);
 	printf("start:0x%08X ", mspace->start_code);
@@ -1381,13 +1382,15 @@ LOCAL INLINE unsigned long stack_up_string(unsigned long stack, const char *str)
 	char *stack_top = (char*)(stack);
 	size_t len = strnlen(str, PAGESIZE);
 	
+	stack_top--;
+	
 	*(stack_top--) = '\0';
 	
 	while (len--) {
 		*(stack_top--) = *(str + len);
 	}
 	
-	stack_top += 1;
+	stack_top++;
 	
 	return((unsigned long)stack_top);
 }
@@ -1442,17 +1445,20 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	/* -------------------------------------------------------------------- */
 	/* set up argv strings							*/
 	/* -------------------------------------------------------------------- */
-	//printf("argv string: start = 0x%08X ", stack_top);
+	//printf("argv string: end = 0x%08X ", stack_top);
 	stack_top = stack_up_string(stack_top, ldr->li.file.name);
 	filename = stack_top;
 	argvp[nr_argvp++] = stack_top;
-	//printf("end = 0x%08X\n", stack_top);
+	//printf("start = 0x%08X\n", stack_top);
 	/* -------------------------------------------------------------------- */
 	/* set up padding							*/
 	/* -------------------------------------------------------------------- */
 	if (stack_top & 0xF) {
 		char *top = (char*)stack_top;
-		size_t padding_len = 0xF - (stack_top & 0xF) + 1;
+		size_t padding_len = stack_top & 0xF;
+		
+		top--;
+		padding_len--;
 		
 		for (;padding_len;padding_len--) {
 			*(top--) = 0x00;
@@ -1476,6 +1482,7 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	/* -------------------------------------------------------------------- */
 	mspace->end_env = stack_top;
 	stack_top = stack_up(stack_top, 0);	// null terminator
+	stack_top = stack_up(stack_top, machine_name);
 	mspace->start_env = stack_top;
 	//printf("envp vec:0x%08X\n", stack_top);
 	/* -------------------------------------------------------------------- */
@@ -1483,7 +1490,10 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	/* -------------------------------------------------------------------- */
 	mspace->end_arg = stack_top;
 	stack_top = stack_up(stack_top, 0);	// null terminator
-	for (;nr_argvp;--nr_argvp) {
+	for (nr_argvp--;0 <= nr_argvp;nr_argvp--) {
+		//printf("%d:", nr_argvp);
+		//printf("0x%08X ", argvp[nr_argvp]);
+		//printf("%s\n", argvp[nr_argvp]);
 		stack_top = stack_up(stack_top, argvp[nr_argvp]);
 	}
 	kfree(argvp);
@@ -1496,7 +1506,8 @@ LOCAL int setup_user_stack(struct process *proc, unsigned long stack_top,
 	stack_top = stack_up(stack_top, argc);
 	
 	mspace->end_stack = stack_top;
-	//printf("argc:0x%08X\n", stack_top);
+	//printf("argc:%d @", *(int*)stack_top);
+	//printf(" 0x%08X\n", stack_top);
 	
 	return(0);
 }

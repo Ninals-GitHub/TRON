@@ -121,6 +121,30 @@ struct ctx_reg {
 	uint32_t	ss;
 };
 
+/*
+----------------------------------------------------------------------------------
+	saved register before entering system call
+----------------------------------------------------------------------------------
+*/
+struct pt_regs {
+	uint32_t	bx;			// 0
+	uint32_t	cx;			// 4
+	uint32_t	dx;			// 8
+	uint32_t	si;			// 12
+	uint32_t	di;			// 16
+	uint32_t	bp;			// 20
+	uint32_t	ax;			// 24
+	uint32_t	ds;			// 28
+	uint32_t	es;			// 32
+	uint32_t	fs;			// 36
+	uint32_t	gs;			// 40
+	uint32_t	orig_ax;		// 44
+	uint32_t	ip;			// 48
+	uint32_t	cs;			// 52
+	uint32_t	flags;			// 56
+	uint32_t	sp;			// 60
+	uint32_t	ss;			// 64
+};
 
 /*
 ==================================================================================

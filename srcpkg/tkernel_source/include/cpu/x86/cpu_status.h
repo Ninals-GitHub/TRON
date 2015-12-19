@@ -163,10 +163,12 @@ IMPORT void request_tex( TCB *tcb );
  */
 struct task_context_block {
 	struct segment_desc	tls_desc[NR_TLS_ENTRYIES];
+	struct pt_regs		*pt_regs;
 	unsigned long		sp0;
 	unsigned long		sp;
 	unsigned long		ip;
 	unsigned long		sysenter_cs;
+	unsigned long		flags;
 	uint16_t		ds;
 	uint16_t		es;
 	uint16_t		gs;

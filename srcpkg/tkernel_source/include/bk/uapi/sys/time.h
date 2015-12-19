@@ -2,9 +2,13 @@
  *----------------------------------------------------------------------
  *    T2EX Software Package
  *
- *    Copyright 2015 by Nina Petipa.
+ *    Copyright 2012 by Ken Sakamura.
  *    This software is distributed under the latest version of T-License 2.x.
  *----------------------------------------------------------------------
+ *
+ *    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+ *    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+ *    Modified by Nina Petipa at 2015/12/15
  *
  *----------------------------------------------------------------------
  */
@@ -40,11 +44,15 @@
  * representation of each source header.
  */
 
-#ifndef	__T2EX_SYS_TIME_H__
-#define	__T2EX_SYS_TIME_H__
+/*
+ *	@(#)time.h
+ *
+ */
 
-#include <basic.h>
-#include <bk/uapi/sys/time.h>
+#ifndef	__BK_SYS_TIME_H__
+#define	__BK_SYS_TIME_H__
+
+#include <bk/typedef.h>
 
 /*
 ==================================================================================
@@ -61,7 +69,15 @@
 
 ==================================================================================
 */
+struct timeval {
+	long	tv_sec;		/* Second */
+	long	tv_usec;	/* Microsecond */
+};
 
+struct timespec {
+	time_t	tv_sec;		/* Second */
+	long	tv_nsec;	/* Nanosecond */
+};
 
 /*
 ==================================================================================
@@ -89,4 +105,5 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 
-#endif	// __T2EX_SYS_TIME_H__
+#endif	/* __SYS_TIME_H__ */
+

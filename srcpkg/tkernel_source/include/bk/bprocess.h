@@ -141,9 +141,17 @@ struct signals {
 #define P_RUN		0x8000		/* running				*/
 
 struct process {
+	/* -------------------------------------------------------------------- */
+	/* process states			 				*/
+	/* -------------------------------------------------------------------- */
 	long			state;
 	unsigned int		flags;
+	int			exit_state;
+	int			exit_code;
 	long			priority;
+	/* -------------------------------------------------------------------- */
+	/* process relationship			 				*/
+	/* -------------------------------------------------------------------- */
 	struct list		list_tasks;
 	
 	pid_t			pid;
@@ -153,16 +161,30 @@ struct process {
 	struct list		list_children;	/* list of the children of 	*/
 	struct list		sibling;	/* list entry of list_children	*/
 	struct task		*group_leader;	/* task group leader		*/
+	/* -------------------------------------------------------------------- */
+	/* cpu time of which process consumed					*/
+	/* -------------------------------------------------------------------- */
 	cputime_t		utime;
 	cputime_t		stime;
-	
+	/* -------------------------------------------------------------------- */
+	/* file system				 				*/
+	/* -------------------------------------------------------------------- */
 	uid_t			uid;
 	uid_t			euid;
 	gid_t			gid;
 	gid_t			egid;
-	
+	/* -------------------------------------------------------------------- */
+	/* signals				 				*/
+	/* -------------------------------------------------------------------- */
 	struct signals		signals;
+	int			exit_signal;
+	/* -------------------------------------------------------------------- */
+	/* rlimit				 				*/
+	/* -------------------------------------------------------------------- */
 	struct rlimit		rlimits[RLIMIT_NLIMITS];
+	/* -------------------------------------------------------------------- */
+	/* process's memory space						*/
+	/* -------------------------------------------------------------------- */
 	struct memory_space	*mspace;
 };
 
@@ -212,6 +234,35 @@ LOCAL INLINE struct memory_space* get_current_mspace(void)
 	return(get_current()->mspace);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_scheduled
+ Input		:void
+ Output		:void
+ Return		:struct process*
+		 < next scheduled process >
+ Description	:get next scheduled process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE struct process* get_scheduled(void)
+{
+	return(get_scheduled_task()->proc);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_scheduled_mspace
+ Input		:void
+ Output		:void
+ Return		:struct memory_space*
+		 < memory_space of next scheduled process >
+ Description	:get memory space of next scheduled process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE struct memory_space* get_scheduled_mspace(void)
+{
+	return(get_scheduled()->mspace);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

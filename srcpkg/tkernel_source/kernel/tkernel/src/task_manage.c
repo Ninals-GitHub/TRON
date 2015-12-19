@@ -1015,6 +1015,26 @@ SYSCALL ER _td_inf_tsk_u( ID tskid, TD_ITSK_U *pk_itsk, BOOL clr )
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_task_sstack_base
+ Input		:struct task *task
+ 		 < task to get its kernel stack base pointer >
+ Output		:void
+ Return		:unsigned long
+ 		 < base pointer of kernel stack >
+ Description	:get base pointer of kernel stack
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT unsigned long get_task_sstack_base(struct task *task)
+{
+	unsigned long stackp = (unsigned long)task->isstack;
+	
+	stackp = stackp - task->sstksz + RESERVE_SSTACK(task->tskatr);
+	
+	return(stackp);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:alloc_task
  Input		:void
  Output		:void
@@ -1043,12 +1063,12 @@ EXPORT struct task* alloc_task(void)
 	
 	sstksz = KERNEL_STACK_SIZE;
 	
-#if 0
+	current_task = get_current_task();
+	
+#if 0 // user stack is allocated on exec
 	/* -------------------------------------------------------------------- */
 	/* allocate user stack							*/
 	/* -------------------------------------------------------------------- */
-	current_task = get_current_task();
-	
 	stksz = current_task->stksz;
 	
 	if (0 < stksz) {
@@ -1071,15 +1091,15 @@ EXPORT struct task* alloc_task(void)
 		goto fail_tcb;
 	}
 	
-	memset((void*)tcb, 0x00, sizeof(struct task));
-	
+	//memset((void*)tcb, 0x00, sizeof(struct task));
+
 	tcb->tskatr	= current_task->tskatr;
-	
 	tcb->sstksz 	= sstksz;
+
 	tcb->isstack	= (VB*)sstack + sstksz - RESERVE_SSTACK(tcb->tskatr);
 	tcb->stksz	= current_task->stksz;
 	tcb->istack	= current_task->istack;
-	
+
 	tcb->exinf	= current_task->exinf;
 	tcb->task	= NULL;
 	tcb->resid	= current_task->resid;

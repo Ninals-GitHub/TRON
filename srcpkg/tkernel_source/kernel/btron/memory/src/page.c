@@ -56,6 +56,7 @@
 ==================================================================================
 */
 LOCAL void init_page_allocator(void);
+LOCAL void __free_page(struct page *page);
 LOCAL INLINE void _free_pagetables(pde_t *pde, unsigned long end);
 
 
@@ -243,29 +244,6 @@ EXPORT struct page* alloc_slab_pages(int num)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:free_page
- Input		:struct page *page
- 		 < page to free >
- Output		:void
- Return		:void
- Description	:free a pages
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT void free_page(struct page *page)
-{
-	long index;
-	
-	index = page - &pages[0];
-	
-	BEGIN_CRITICAL_SECTION {
-		tstdlib_bitclr((void*)page_bitmap, index);
-		page->flags = PAGE_RESERVED;
-		nr_free_pages++;
-	} END_CRITICAL_SECTION;
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_pages
  Input		:struct page *page
  		 < first consecutive page >
@@ -291,7 +269,7 @@ EXPORT void free_pages(struct page *page, int num)
 			}
 			
 			if (!page->count) {
-				free_page(page++);
+				__free_page(page++);
 			}
 		}
 	} END_CRITICAL_SECTION;
@@ -513,6 +491,47 @@ EXPORT pte_t* get_page_pte(struct page *page, pde_t *pde)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_kernel_pagetables
+ Input		:struct process *from
+ 		 < copy from >
+ 		 struct process *to
+ 		 < copy to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy pagetables of kernel space.
+ 		 before calling this process, must be set page directory
+ 		 *to->mspace->pde
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int copy_kernel_pagetables(struct process *from, struct process *to)
+{
+	int nr;
+	pde_t *old_pde = from->mspace->pde;
+	pde_t *new_pde;
+	
+	if (UNLIKELY(!to->mspace->pde)) {
+		return(-ENOMEM);
+	}
+	
+	new_pde = to->mspace->pde;
+	
+	/* -------------------------------------------------------------------- */
+	/* copy old pde to new pde for kernel space				*/
+	/* -------------------------------------------------------------------- */
+	for (nr = PDIR_INDEX(KERNEL_BASE_ADDR);nr < PDIR_ENTRIES;nr++) {
+		*(new_pde + nr) = *(old_pde + nr);
+		/* ------------------------------------------------------------ */
+		/* there is no need to copy kernel page talbes			*/
+		/* ------------------------------------------------------------ */
+		/* do nothing							*/
+	}
+	
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:copy_pagetable
  Input		:struct process *from
  		 < copy from >
@@ -537,7 +556,7 @@ EXPORT int copy_pagetable(struct process *from, struct process *to)
 	/* -------------------------------------------------------------------- */
 	new_pde = alloc_pagedir();
 	
-	if (!new_pde) {
+	if (UNLIKELY(!new_pde)) {
 		err = -ENOMEM;
 		goto err_alloc_pagedir;
 	}
@@ -559,7 +578,7 @@ EXPORT int copy_pagetable(struct process *from, struct process *to)
 		
 		new_pte = alloc_pagetable();
 		
-		if (!new_pte) {
+		if (UNLIKELY(!new_pte)) {
 			err = -ENOMEM;
 			goto err_alloc_pagetable;
 		}
@@ -575,18 +594,17 @@ EXPORT int copy_pagetable(struct process *from, struct process *to)
 	/* -------------------------------------------------------------------- */
 	/* copy old pde to new pde for kernel space				*/
 	/* -------------------------------------------------------------------- */
-	for (nr = PDIR_INDEX(KERNEL_BASE_ADDR);nr < PDIR_ENTRIES;nr++) {
-		*(new_pde + nr) = *(old_pde + nr);
-		/* ------------------------------------------------------------ */
-		/* there is no need to copy kernel page talbes			*/
-		/* ------------------------------------------------------------ */
-		/* do nothing							*/
+	err = copy_kernel_pagetables(from, to);
+	
+	if (UNLIKELY(err)) {
+		goto err_copy_kernel_pagetable;
 	}
 	
 	to->mspace->pde = new_pde;
 	
 	return(0);
-	
+
+err_copy_kernel_pagetable:
 err_alloc_pagetable:
 	free_pagedir_tables(new_pde);
 err_alloc_pagedir:
@@ -758,7 +776,7 @@ EXPORT pte_t* get_la_pte(unsigned long laddr)
 {
 	pte_t *pte;
 	
-	if (UNLIKELY(toLogicalAddress(0) < laddr)) {
+	if (UNLIKELY((unsigned long)toLogicalAddress(0) < laddr)) {
 		return(NULL);
 	}
 	
@@ -941,6 +959,29 @@ LOCAL void init_page_allocator(void)
 	}
 	
 	nr_free_pages = nr_pages - nr_end_page;
+}
+
+/*
+==================================================================================
+ Funtion	:__free_page
+ Input		:struct page *page
+ 		 < page to free >
+ Output		:void
+ Return		:void
+ Description	:free a pages
+==================================================================================
+*/
+LOCAL void __free_page(struct page *page)
+{
+	long index;
+	
+	index = page - &pages[0];
+	
+	BEGIN_CRITICAL_SECTION {
+		tstdlib_bitclr((void*)page_bitmap, index);
+		page->flags = PAGE_RESERVED;
+		nr_free_pages++;
+	} END_CRITICAL_SECTION;
 }
 
 /*

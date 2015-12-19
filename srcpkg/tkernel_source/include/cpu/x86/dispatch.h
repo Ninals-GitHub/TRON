@@ -86,7 +86,9 @@ IMPORT void force_dispatch(void);
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:setup_context
  Input		:TCB *tcb
- 		 < task control block to be setup >
+ 		 < task control block to be set up >
+ 		 unsigned long fork
+ 		 < boolean fork flag >
  Output		:void
  Return		:void
  Description	:Create stack frame for task startup Call from 'make_dormant()'
@@ -104,5 +106,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void dispatch(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_task_context
+ Input		:struct task *from
+ 		 < copy from >
+ 		 struct task *new
+ 		 < copy to >
+ 		 struct pt_regs *child_regs
+ 		 < child context >
+ Output		:void
+ Return		:int
+ 		 < resutl >
+ Description	:copy current task context to the new one
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int copy_task_context(struct task *from, struct task *new,
+				struct pt_regs *child_regs);
 
 #endif	// __DISPATCH_H__

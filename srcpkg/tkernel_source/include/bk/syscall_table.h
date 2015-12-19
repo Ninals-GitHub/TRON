@@ -189,7 +189,7 @@
 	_SVC_ENTRY syscall_test			/* 0117 *//* ipc		*/
 	_SVC_ENTRY syscall_test			/* 0118 *//* fsync		*/
 	_SVC_ENTRY syscall_test			/* 0119 *//* sigreturn		*/
-	_SVC_ENTRY syscall_test			/* 0120 *//* clone		*/
+	_SVC_ENTRY clone			/* 0120 *//* clone		*/
 	_SVC_ENTRY syscall_test			/* 0121 *//* setdomainname	*/
 	_SVC_ENTRY uname			/* 0122 *//* uname		*/
 	_SVC_ENTRY syscall_test			/* 0123 *//* modify_ldt		*/

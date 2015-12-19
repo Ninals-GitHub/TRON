@@ -28,6 +28,7 @@
 */
 IMPORT void low_pow( void );	// symgr.h
 void next_to(void);
+LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value);
 
 
 /*
@@ -37,12 +38,30 @@ void next_to(void);
 
 ==================================================================================
 */
-#define	ON_EXE_EAX	0
-#define	ON_EXE_EBX	0
-#define	ON_EXE_ECX	0
-#define	ON_EXE_EDX	0
-#define	ON_EXE_EDI	0
-#define	ON_EXE_ESI	0
+#define	ON_EXE_EAX		0
+#define	ON_EXE_EBX		0
+#define	ON_EXE_ECX		0
+#define	ON_EXE_EDX		0
+#define	ON_EXE_EDI		0
+#define	ON_EXE_ESI		0
+
+#define	INIT_TASK_EBX		0
+#define	INIT_TASK_ECX		0
+#define	INIT_TASK_EDX		0
+#define	INIT_TASK_ESI		0
+#define	INIT_TASK_EDI		0
+#define	INIT_TASK_EBP		0
+#define	INIT_TASK_EAX		0	// unused
+#define	INIT_TASK_DS		0	// unused
+#define	INIT_TASK_ES		0	// unused
+#define	INIT_TASK_FS		0
+#define	INIT_TASK_GS		0
+#define	INIT_TASK_ORIG_EAX	0
+#define	INIT_TASK_IP		0	// unused
+#define	INIT_TASK_CS		0	// unused
+#define	INIT_TASK_FLAGS		0	// unused
+#define	INIT_TASK_SP		0	// unused
+#define	INIT_TASK_SS		0	// unused
 
 /*
 ==================================================================================
@@ -81,6 +100,7 @@ EXPORT int start_task(unsigned long start_text)
 	struct process *current = get_current();
 	struct task *current_task = get_current_task();
 	struct task_context_block *current_ctxb = get_current_ctxb();
+	unsigned long *inf;
 	
 	if (KERNEL_BASE_ADDR <= start_text) {
 		return(-EINVAL);
@@ -126,7 +146,7 @@ EXPORT int start_task(unsigned long start_text)
 		"movl %[init_eax], %%eax	\n\t"
 		"movl %[init_ebx], %%ebx	\n\t"
 		"movl %[init_ecx], %%ecx	\n\t"
-		"movl %[init_edx], %%edx	\n\t"
+		"movl %[init_edx], %%edx	\n\t"	// rtdl_fini
 		"movl %[init_edi], %%edi	\n\t"
 		"movl %[init_esi], %%esi	\n\t"
 		"cld				\n\t"
@@ -142,6 +162,8 @@ EXPORT int start_task(unsigned long start_text)
 		 [init_edi]"i"(ON_EXE_EDI), [init_esi]"i"(ON_EXE_ESI)
 		 :"memory"
 	);
+	
+	return(0);
 }
 
 /*
@@ -161,6 +183,7 @@ EXPORT void force_dispatch(void)
 	W rng;
 	CTXB *next_ctxb = &schedtsk->tskctxb;
 	CTXB *current_ctxb = NULL;
+	struct pt_regs *regs;
 	
 	rng = (schedtsk->tskatr & TA_RNG3) >> 8;
 	
@@ -192,54 +215,79 @@ EXPORT void force_dispatch(void)
 	/* -------------------------------------------------------------------- */
 	ctxtsk = schedtsk;
 	dispatch_disabled = DDS_ENABLE;
+	regs = next_ctxb->pt_regs;
 	
 	/* -------------------------------------------------------------------- */
 	/* forcibly dispatch							*/
 	/* -------------------------------------------------------------------- */
 	if (rng) {
 		update_tss_esp0(getEsp());
-
-		ASM (
-			"movw %[fs], %%fs		\n\t"
-			"movw %[gs], %%gs		\n\t"
-			"movw %[es], %%es		\n\t"
-			"movl %[esp], %%eax		\n\t"
-			"pushl %[ds]			\n\t"
-			"pushl %%eax			\n\t"
-			"pushl %[eflags]		\n\t"
-			"pushl %[cs]			\n\t"
-			"pushl %[start_func]		\n\t"
+#if 1
+		ASM(
+			"pushl	%[reg_ss]		\n\t"
+			"pushl	%[reg_sp]		\n\t"
+			"pushl	%[reg_fl]		\n\t"
+			"pushl	%[reg_cs]		\n\t"
+			"pushl	%[reg_ip]		\n\t"
+			"movl	%[regs_ptr], %%eax	\n\t"
+			"movl	(%%eax), %%ebx		\n\t"	// bx
+			"movl	4(%%eax), %%ecx		\n\t"	// cx
+			"movl	8(%%eax), %%edx		\n\t"	// dx
+			"movl	12(%%eax), %%esi	\n\t"	// si
+			"movl	16(%%eax), %%edi	\n\t"	// di
+			"movl	20(%%eax), %%ebp	\n\t"	// bp
+			"movw	32(%%eax), %%es		\n\t"	// es
+			"movw	36(%%eax), %%fs		\n\t"	// fs
+			"movw	40(%%eax), %%gs		\n\t"	// gs
+			"movw	28(%%eax), %%ds		\n\t"	// ds
+			"movl	24(%%eax), %%eax	\n\t"	// ax
 			"cld				\n\t"
 			"iret				\n\t"
 			:
-			:[fs]"m"(next_ctxb->fs), [gs]"m"(next_ctxb->gs),
-			 [es]"m"(next_ctxb->es), [ds]"m"(next_ctxb->ds),
-			 [cs]"m"(next_ctxb->sysenter_cs), [esp]"m"(next_ctxb->sp),
-			 [start_func]"m"(next_ctxb->ip),
-			 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL)
-			:"eax","memory"
+			:[reg_ss]"m"(regs->ss), [reg_sp]"m"(regs->sp),
+			 [reg_fl]"m"(regs->flags),
+			 [reg_cs]"m"(regs->cs), [reg_ip]"m"(regs->ip),
+			 [regs_ptr]"a"(regs)
+			:"memory"
 		);
+#endif
 	} else {
+#if 1
 		ASM (
-			"movl %[esp], %%esp		\n\t"
-			"pushl %[eflags]		\n\t"
-			"pushl %[cs]			\n\t"
-			"pushl %[start_func]		\n\t"
+			"movl	%[reg_sp], %%esp	\n\t"
+			"pushl	%[reg_fl]		\n\t"
+			"pushl	%[reg_cs]		\n\t"
+			"pushl	%[reg_ip]		\n\t"
+			"movl	%[regs_ptr], %%eax	\n\t"
+			"movl	(%%eax), %%ebx		\n\t"	// bx
+			"movl	4(%%eax), %%ecx		\n\t"	// cx
+			"movl	8(%%eax), %%edx		\n\t"	// dx
+			"movl	12(%%eax), %%esi	\n\t"	// si
+			"movl	16(%%eax), %%edi	\n\t"	// di
+			"movl	20(%%eax), %%ebp	\n\t"	// bp
+			"movw	32(%%eax), %%es		\n\t"	// es
+			"movw	36(%%eax), %%fs		\n\t"	// fs
+			"movw	40(%%eax), %%gs		\n\t"	// gs
+			"movw	28(%%eax), %%ds		\n\t"	// ds
+			"movl	24(%%eax), %%eax	\n\t"	// ax
 			"cld				\n\t"
-			"iret				\n\t"
+			"iretl				\n\t"
 			:
-			:[cs]"m"(next_ctxb->sysenter_cs), [esp]"m"(next_ctxb->ssp),
-			 [start_func]"m"(next_ctxb->ip),
-			 [eflags]"i"(EFLAGS_ID | EFLAGS_IF)
-			:"eax","memory"
+			:[reg_sp]"m"(next_ctxb->ssp),
+			 [reg_fl]"m"(regs->flags),
+			 [reg_cs]"m"(regs->cs), [reg_ip]"m"(regs->ip),
+			 [regs_ptr]"a"(regs)
+			:"memory"
 		);
+#endif
 	}
 }
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:setup_context
- Input		:void
+ Input		:TCB *tcb
+ 		 < task control block to be set up >
  Output		:void
  Return		:void
  Description	:Create stack frame for task startup Call from 'make_dormant()'
@@ -279,6 +327,14 @@ EXPORT void setup_context( TCB *tcb )
 	ctxb->io_bitmap_max = 0;
 	
 	ctxb->need_iret = TRUE;
+	/* -------------------------------------------------------------------- */
+	/* eflags								*/
+	/* -------------------------------------------------------------------- */
+	if (!rng) {
+		ctxb->flags = EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL;
+	} else {
+		ctxb->flags = EFLAGS_ID | EFLAGS_IF;
+	}
 }
 
 /*
@@ -292,8 +348,11 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void dispatch(void)
 {
+	struct memory_space *ms_current;
+	struct memory_space *ms_next;
 	CTXB	*current_ctxb;
 	CTXB	*next_ctxb;
+	
 	
 	//vd_printf("dispatch current %s ->", ctxtsk->name);
 #if 0
@@ -328,8 +387,16 @@ wake_up_from_low_power:
 		current_ctxb = &ctxtsk->tskctxb;
 		next_ctxb = &schedtsk->tskctxb;
 		BARRIER();
+		ms_current = get_current_mspace();
+		ms_next = get_scheduled_mspace();
+		
+		if (ms_current != ms_next) {
+			switch_ms(ms_next);
+		}
+		
+		
 		if (UNLIKELY(next_ctxb->need_iret)) {
-			unsigned long *esp0 = get_tss_esp0();
+			unsigned long *esp0 = (unsigned long*)get_tss_esp0();
 			//vd_printf("iret next : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
 			ASM (
 			"pushfl					\n\t"
@@ -423,55 +490,148 @@ EXPORT void setup_stacd( struct task *tcb, INT stacd )
 {
 	W rng;
 	unsigned long *sp;
+	struct pt_regs initial_regs = {
+		.bx = INIT_TASK_EBX,
+		.cx = INIT_TASK_ECX,
+		.dx = INIT_TASK_EDX,
+		.si = INIT_TASK_ESI,
+		.di = INIT_TASK_EDI,
+		.bp = INIT_TASK_EBP,
+		.ax = INIT_TASK_EAX,
+		.ds = INIT_TASK_DS,
+		.es = INIT_TASK_ES,
+		.fs = INIT_TASK_FS,
+		.gs = INIT_TASK_GS,
+		.orig_ax = INIT_TASK_ORIG_EAX,
+		.ip = INIT_TASK_IP,
+		.cs = INIT_TASK_CS,
+		.flags = INIT_TASK_FLAGS,
+		.sp = INIT_TASK_SP,
+		.ss = INIT_TASK_SS
+	};
 	
 	rng = (tcb->tskatr & TA_RNG3) >> 8;
 	
-	if (rng) {
-		sp = (unsigned long*)tcb->tskctxb.sp;
-	} else {
+	//if (rng) {
+	//	sp = (unsigned long*)tcb->tskctxb.sp;
+	//} else {
 		sp = (unsigned long*)tcb->tskctxb.ssp;
-	}
+	//}
 	
-	//ssp->r[0] = stacd;
-	//ssp->r[1] = (VW)tcb->exinf;
+	/* -------------------------------------------------------------------- */
+	/* setup initial context on iret					*/
+	/* this contex is overriden by fork()					*/
+	/* -------------------------------------------------------------------- */
+	*(sp--) = tcb->tskctxb.ds;			/* pt_regs.ss		*/
+	*(sp--) = tcb->tskctxb.sp;			/* pt_regs.sp		*/
+	*(sp--) = tcb->tskctxb.flags;			/* pt_regs.flags	*/
+	*(sp--) = tcb->tskctxb.sysenter_cs;		/* pt_regs.cs		*/
+	*(sp--) = tcb->tskctxb.ip;			/* pt_regs.ip		*/
+	*(sp--) = initial_regs.orig_ax;			/* pt_regs.orig_ax	*/
+	*(sp--) = initial_regs.gs;			/* pt_regs.gs		*/
+	*(sp--) = initial_regs.fs;			/* pt_regs.fs		*/
+	*(sp--) = tcb->tskctxb.ds;			/* pt_regs.es		*/
+	*(sp--) = tcb->tskctxb.ds;			/* pt_regs.ds		*/
+	*(sp--) = initial_regs.ax;			/* pt_regs.ax		*/
+	*(sp--) = initial_regs.bp;			/* pt_regs.bp		*/
+	*(sp--) = initial_regs.di;			/* pt_regs.di		*/
+	*(sp--) = initial_regs.si;			/* pt_regs.si		*/
+	*(sp--) = initial_regs.dx;			/* pt_regs.dx		*/
+	*(sp--) = initial_regs.cx;			/* pt_regs.cx		*/
+	*(sp--) = initial_regs.bx;			/* pt_regs.bx		*/
+	
+	tcb->tskctxb.pt_regs = (struct pt_regs*)(sp + 1);
+	
+	tcb->tskctxb.ssp = (void*)((unsigned long)tcb->tskctxb.ssp
+				- sizeof(struct pt_regs));
+
+	/* -------------------------------------------------------------------- */
+	/* setup arguments for T-Kernel						*/
+	/* -------------------------------------------------------------------- */
 	*sp = (VW)tcb->exinf;
 	sp--;
 	*sp = stacd;
 	sp--;
 	
-	if (rng) {
-		tcb->tskctxb.sp  -= sizeof(unsigned long) * 2;
-	} else {
+	//if (rng) {
+	//	tcb->tskctxb.sp  -= sizeof(unsigned long) * 2;
+	//} else {
 		tcb->tskctxb.ssp -= sizeof(unsigned long) * 2;
-	}
+	//}
 }
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:setup_user_stack
- Input		:struct process *proc
- 		 < current >
+ Funtion	:copy_task_context
+ Input		:struct task *from
+ 		 < copy from >
+ 		 struct task *new
+ 		 < copy to >
+ 		 struct pt_regs *child_regs
+ 		 < child context >
  Output		:void
- Return		:void
- Description	:set up cpu dependent user stack
+ Return		:int
+ 		 < resutl >
+ Description	:copy current task context to the new one
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void setup_user_stack(struct process *proc)
+EXPORT int copy_task_context(struct task *from, struct task *new,
+				struct pt_regs *child_regs)
 {
-	struct task_context_block *ctxb;
+	int rng = (new->tskatr & TA_RNG3) >> 8;
+	struct task_context_block *new_ctx = &new->tskctxb;
+	struct task_context_block *from_ctx = &from->tskctxb;
 	
-	ctxb = get_current_ctxb();
+	if (!rng) {
+		return(-ENOSYS);
+	}
 	
-	ctxb->sp = proc->mspace->end_stack;
-	ctxb->need_iret = TRUE;
-	ctxb->sysenter_cs = SEG_USER_CS;
-	ctxb->ds = SEG_USER_DS;
-	ctxb->es = SEG_USER_DS;
-	ctxb->gs = SEG_USER_DS;
-	ctxb->fs = SEG_USER_DS;
+	new_ctx->sp0 = (unsigned long)new->isstack;
+	new_ctx->ssp = (void*)new->isstack;
 	
-	ctxb->ip = proc->mspace->start_code;
+	new_ctx->ds = from_ctx->ds;
+	new_ctx->es = from_ctx->es;
+	new_ctx->fs = from_ctx->fs;
+	new_ctx->sysenter_cs = from_ctx->sysenter_cs;
+
+	//new_ctx->sp = from_ctx->sp;
+	
+	new_ctx->cr2 = 0;
+	new_ctx->trap_nr = 0;
+	new_ctx->error_code = 0;
+	new_ctx->io_bitmap = NULL;
+	new_ctx->iopl = 0;
+	new_ctx->io_bitmap_max = 0;
+	
+	new_ctx->need_iret = TRUE;
+	
+	/* -------------------------------------------------------------------- */
+	/* setup stack								*/
+	/* -------------------------------------------------------------------- */
+	new_ctx->sp0 = new_ctx->sp0 - sizeof(struct pt_regs);
+	new_ctx->pt_regs = (struct pt_regs*)new_ctx->sp0;
+	memcpy((void*)new_ctx->sp0, (void*)child_regs, sizeof(struct pt_regs));
+	new_ctx->ssp = (void*)new_ctx->sp0;
+	
+	//printf("new_regs->ip=0x%08X\n", new_ctx->pt_regs->ip);
+	
+	/* -------------------------------------------------------------------- */
+	/* setup the result of child fork()					*/
+	/* -------------------------------------------------------------------- */
+	new_ctx->pt_regs->ax = 0;
+	
+	return(0);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -514,6 +674,28 @@ EXPORT void next_to(void)
 		:[next_fs]"m"(schedtsk->tskctxb.fs), [next_gs]"m"(schedtsk->tskctxb.gs)
 		:"memory"
 	);
+}
+
+/*
+==================================================================================
+ Funtion	:stack_up
+ Input		:unsigned long stack
+ 		 < address of stack >
+ 		 unsigned long value
+ 		 < value to stack up >
+ Output		:void
+ Return		:unsigned long
+ 		 < updated stack top address >
+ Description	:stack up the value
+==================================================================================
+*/
+LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value)
+{
+	stack -= sizeof(unsigned long);
+	
+	*(unsigned long*)stack = value;
+	
+	return(stack);
 }
 
 /*

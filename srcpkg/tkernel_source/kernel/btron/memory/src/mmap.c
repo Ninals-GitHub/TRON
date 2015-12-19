@@ -107,8 +107,72 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL void* mmap(void *addr, size_t length, int prot,
 			int flags, int fd, off_t offset)
 {
-	int err = 0;
 	struct process *current = get_current();
+	
+	return(xmmap(current, addr, length, prot, flags, fd, offset));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap2
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file in unit of page size >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping with page size offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL void* mmap2(void *addr, size_t length, int prot,
+			int flags, int fd, off_t pgoffset)
+{
+	struct process *current = get_current();
+	void *allocated;
+#if 0
+	printf("mmap2:");
+#endif
+	allocated = xmmap(current, addr, length, prot,
+				flags, fd, pgoffset * MMPA_PAGESIZE);
+	
+	return(allocated);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:xmmap
+ Input		:struct process *proc
+ 		 < process to map memory from its memory space >
+ 		 void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void
+ Description	:actual mmap process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void* xmmap(struct process *proc, void *addr, size_t length,
+			int prot, int flags, int fd, off_t offset)
+{
+	int err = 0;
 	unsigned long start;
 	unsigned long end;
 	void *candidate = NULL;
@@ -136,8 +200,8 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 		/* ------------------------------------------------------------ */
 		/* search candidate mmap area					*/
 		/* ------------------------------------------------------------ */
-		candidate = search_mmap_candidate(current, length,
-							prot, flags, fd, offset);
+		candidate = search_mmap_candidate(proc, length, prot,
+							flags, fd, offset);
 		
 		if (candidate == MAP_FAILED) {
 			//printf("cannot search mmap candidate\n");
@@ -152,7 +216,7 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 	end  = start + length;
 	
 	if (!candidate) {
-		err = unmap_vm(current, start, end);
+		err = unmap_vm(proc, start, end);
 	}
 	
 	if (UNLIKELY(err)) {
@@ -165,9 +229,9 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 		/* as for now, map file to memory is not suppoerted 		*/
 		/* future work:							*/
 		/* ------------------------------------------------------------ */
-		err = map_vm(current, start, end, prot);
+		err = map_vm(proc, start, end, prot);
 	} else {
-		err = map_vm_annon(current, start, end, prot);
+		err = map_vm_annon(proc, start, end, prot);
 	}
 	
 	
@@ -177,56 +241,6 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 	}
 	
 	return((void*)start);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:mmap2
- Input		:void *addr
- 		 < base address of virtual memory to request a mapping >
- 		 size_t length
- 		 < size of memory to request a mapping >
- 		 int prot
- 		 < page protection >
- 		 int flags
- 		 < mmap flags >
- 		 int fd
- 		 < file descriptor >
- 		 off_t offset
- 		 < offset in a file in unit of page size >
- Output		:void
- Return		:void *addr
- 		 < base address of mapped memory >
- Description	:make a new memory mapping with page size offset
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL void* mmap2(void *addr, size_t length, int prot,
-			int flags, int fd, off_t pgoffset)
-{
-#if 0
-	printf("mmap2:");
-#endif
-	return(mmap(addr, length, prot, flags, fd, pgoffset * MMPA_PAGESIZE));
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:munmap
- Input		:void *addr
- 		 < start address of mapped memory >
- 		 size_t length
- 		 < length of mapped memory >
- Output		:void
- Return		:int
- 		 < result >
- Description	:unmap mapped memory
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int munmap(void *addr, size_t length)
-{
-	printf("munmap[addr=0x%08X", addr);
-	printf(", length=%d\n", length);
-	return(unmap_vm(get_current(), (unsigned long)addr, length));
 }
 
 /*
@@ -293,6 +307,27 @@ SYSCALL unsigned long brk(unsigned long addr)
 	//printf("<4:new addr=0x%08X>\n", mspace->end_brk);
 	
 	return(mspace->end_brk);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:munmap
+ Input		:void *addr
+ 		 < start address of mapped memory >
+ 		 size_t length
+ 		 < length of mapped memory >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:unmap mapped memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int munmap(void *addr, size_t length)
+{
+	printf("munmap[addr=0x%08X", addr);
+	printf(", length=%d\n", length);
+	return(unmap_vm(get_current(),
+			(unsigned long)addr, (unsigned long)addr + length));
 }
 
 /*

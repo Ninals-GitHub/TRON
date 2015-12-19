@@ -134,6 +134,31 @@ IMPORT void* mmap2(void *addr, size_t length, int prot,
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:xmmap
+ Input		:struct process *proc
+ 		 < process to map memory from its memory space >
+ 		 void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void
+ Description	:actual mmap process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void* xmmap(struct process *proc, void *addr, size_t length,
+			int prot, int flags, int fd, off_t offset);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:munmap
  Input		:void *addr
  		 < start address of mapped memory >

@@ -95,33 +95,46 @@ SYSCALL int rt_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 	struct signals *sig;
 	int err;
 	
-	printf("rt_sigprocmask[how=%d", how);
-	printf(", *set=0x%08X", *set);
-	printf(", *oldset=0x%08X\n", *oldset);
-	
-	if (UNLIKELY(!set)) {
-		return(-EFAULT);
-	}
-	
-	if (UNLIKELY(!oldset)) {
-		return(-EFAULT);
-	}
-
-	err = ChkUsrSpaceR((const void*)set, sizeof(sigset_t));
-	
-	if (UNLIKELY(err)) {
-		return(-EFAULT);
-	}
-	
-	err = ChkUsrSpaceRW((const void*)oldset, sizeof(sigset_t));
-	
-	if (UNLIKELY(err)) {
-		return(-EFAULT);
-	}
-	
 	sig = &(get_current())->signals;
 	
-	*oldset = sig->blocked;
+	if (UNLIKELY(!set)) {
+		if (!oldset) {
+			printf("rt_sigprocmask:error:oldset is NULL\n");
+			return(-EFAULT);
+		}
+		
+		err = ChkUsrSpaceRW((const void*)oldset, sizeof(sigset_t));
+		
+		if (err) {
+			printf("rt_sigprocmask:error:invalid access to oldset\n");
+			return(-EFAULT);
+		}
+		
+		*oldset = sig->blocked;
+		
+		return(0);
+	}
+	
+	err = ChkUsrSpaceR((const void*)set, sizeof(sigset_t));
+
+	if (UNLIKELY(err)) {
+		printf("rt_sigprocmask:error:invalid access to set\n");
+		return(-EFAULT);
+	}
+	
+	printf("rt_sigprocmask[how=%d", how);
+	printf(", *set=0x%08X\n", *set);
+	if (oldset) {
+		err = ChkUsrSpaceRW((const void*)oldset, sizeof(sigset_t));
+	
+		if (UNLIKELY(err)) {
+			printf("rt_sigprocmask:error:invalid access to oldset\n");
+			return(-EFAULT);
+		}
+		
+		*oldset = sig->blocked;
+		printf(", *oldset=0x%08X]\n", *oldset);
+	}
 	
 	switch (how) {
 	case	SIG_BLOCK:
@@ -145,6 +158,27 @@ SYSCALL int rt_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:rt_sigaction
+ Input		:int signum
+ 		 < signal number >
+ 		 const struct sigaction *act
+ 		 < new signal action >
+ 		 struct sigaction *oldact
+ 		 < old signal action >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:examine and change a signal action
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int rt_sigaction(int signum,
+		const struct sigaction *act, struct sigaction *oldact)
+{
+	
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:tgkill
  Input		:int tgid
  		 < thread group id >
@@ -164,7 +198,7 @@ SYSCALL int tgkill(int tgid, int tid, int sig)
 	printf(", tid=%d", tid);
 	printf(", sig=%d]\n", sig);
 	
-	for(;;);
+	//for(;;);
 }
 
 /*

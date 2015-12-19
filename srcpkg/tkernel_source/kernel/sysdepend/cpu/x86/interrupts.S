@@ -165,8 +165,11 @@ interrupt_\int_num:
 int_syscall_\int_num:
 	cmpl	$SYSCALL_NUM, %eax
 	jg	ret_nosys
-	pushl	%ds
+	pushl	%eax				# original eax
+	pushl	%gs
+	pushl	%fs
 	pushl	%es
+	pushl	%ds
 
 	pushl	%eax				# argument7 for test
 	pushl	%ebp				# argument6
@@ -182,7 +185,7 @@ int_syscall_\int_num:
 	cld
 	call	*_syscall_table(,%eax,4)	# systemcall dispatch
 int_syscall_return_\int_num:
-#if 0
+#if 1
 	popl	%ebx
 	popl	%ecx
 	addl	$4, %esp			# remove edx argument
@@ -191,10 +194,11 @@ int_syscall_return_\int_num:
 	popl	%ebp
 	addl	$4, %esp			# remove eax argument
 #endif
-	addl	$28, %esp			# reamove arguments
+#	addl	$28, %esp			# reamove arguments
 	
-	popl	%es
 	popl	%ds
+	popl	%es
+	addl	$12, %esp			# remove fs, gs, eax
 	iret					# bye exception/interrupt
 .endm
 

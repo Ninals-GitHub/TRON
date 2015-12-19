@@ -121,6 +121,7 @@ struct memory_space {
 	unsigned long		start_stack, end_stack;
 	unsigned long		start_arg, end_arg;
 	unsigned long		start_env, end_env;
+	int			exe_fd;		/* executable file of the proc	*/
 };
 
 #define	SHARED_START		(PROCESS_SIZE / 3)
@@ -409,5 +410,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void* search_mmap_candidate(struct process *proc, size_t length,
 					int prot, int flags, int fd, off_t offset);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:switch_ms
+ Input		:struct memory_space *ms_to
+ 		 < switch to >
+ Output		:void
+ Return		:void
+ Description	:switch memory space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void switch_ms(struct memory_space *ms_to);
 
 #endif	// __BK_VM_H__

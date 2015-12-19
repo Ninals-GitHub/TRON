@@ -56,6 +56,7 @@
 */
 LOCAL INLINE void _free_vm(struct process *proc);
 LOCAL INLINE void __free_vm(struct vm *vm);
+LOCAL void copy_vm_contents(struct vm *from, struct vm *to);
 
 /*
 ==================================================================================
@@ -378,30 +379,64 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT int copy_mm(struct process *from, struct process *to)
 {
 	int err;
+	pde_t *new_pde;
 	
-	if (!to->mspace) {
+	if (UNLIKELY(!to->mspace)) {
 		return(-ENOMEM);
 	}
 	
+	/* -------------------------------------------------------------------- */
+	/* allocate page directory						*/
+	/* -------------------------------------------------------------------- */
+	new_pde = alloc_pagedir();
+	
+	if (UNLIKELY(!new_pde)) {
+		err = -ENOMEM;
+		printf("copy_mm:err_alloc_pagedir\n");
+		goto err_alloc_pagedir;
+	}
+	
+	to->mspace->pde = new_pde;
+	
+	/* -------------------------------------------------------------------- */
+	/* copy kernel page tables						*/
+	/* -------------------------------------------------------------------- */
+	err = copy_kernel_pagetables(from, to);
+	
+	if (UNLIKELY(err)) {
+		printf("copy_mm:err_copy_kernel_pagetalbes\n");
+		goto err_copy_kernel_pagetalbes;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* copy user space							*/
+	/* -------------------------------------------------------------------- */
+#if 0
 	err = copy_pagetable(from, to);
 	
 	if (err) {
 		goto copy_pagetable_failed;
 	}
-	
+#endif
 	err = copy_vm(from, to);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
+		printf("copy_mm:copy_vm_failed\n");
 		goto copy_vm_failed;
 	}
 	
+	return(0);
+	
 copy_vm_failed:
 	free_pagedir_tables(to->mspace->pde);
-
 copy_pagetable_failed:
 	free_memory_space(to->mspace);
-	
-	return(-ENOMEM);
+	return(err);
+
+err_copy_kernel_pagetalbes:
+	free_pagedir(new_pde);
+err_alloc_pagedir:
+	return(err);
 }
 
 /*
@@ -419,9 +454,16 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT int copy_vm(struct process *from, struct process *to)
 {
+	struct memory_space *ms_from;
+	struct memory_space *ms_to;
 	struct vm *vm_from;
+	struct vm *vm_to;
+	void *addr;
 	int err;
-	
+#if 1
+	/* -------------------------------------------------------------------- */
+	/* first of all, copy all vms						*/
+	/* -------------------------------------------------------------------- */
 	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
 		struct vm *vm_to = alloc_vm();
 		
@@ -446,15 +488,176 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 		err = copy_vm_pages(vm_from, vm_to);
 		
 		if (err) {
-			return(err);
+			__free_vm(vm_to);
+			goto failed_copy_vm_pages;
 		}
 		/* ------------------------------------------------------------ */
 		/* add it to process						*/
 		/* ------------------------------------------------------------ */
 		add_list_tail(&vm_to->link_vm, &to->mspace->list_vm);
 	}
+#endif
+	ms_from = from->mspace;
+	ms_to = to->mspace;
+
+#if 0
+	/* -------------------------------------------------------------------- */
+	/* share text area between *from and *to				*/
+	/* -------------------------------------------------------------------- */
+	vm_to = alloc_vm();
+	
+	if (UNLIKELY(!vm_to)) {
+		err = -ENOMEM;
+		goto failed_alloc_vm_to;
+	}
+	
+	vm_from = get_address_vm(from, ms_from->start_code);
+	
+	if (UNLIKELY(!vm_from)) {
+		goto failed_get_address_vm_from;
+	}
+	
+	err = copy_vm_pages(vm_from, vm_to);
+	
+	if (UNLIKELY(err)) {
+		goto failed_copy_vm_pages_text;
+	}
+	
+	insert_vm_list(vm_to, to);
+	
+	/* -------------------------------------------------------------------- */
+	/* share data area between *from and *to				*/
+	/* -------------------------------------------------------------------- */
+	vm_to = alloc_vm();
+	
+	if (UNLIKELY(!vm_to)) {
+		err = -ENOMEM;
+		goto failed_alloc_vm_to;
+	}
+	
+	vm_from = get_address_vm(from, ms_from->start_data);
+	
+	if (UNLIKELY(!vm_from)) {
+		goto failed_get_address_vm_from_data;
+	}
+	
+	err = copy_vm_pages(vm_from, vm_to);
+	
+	if (UNLIKELY(err)) {
+		goto failed_copy_vm_pages_data;
+	}
+	
+	insert_vm_list(vm_to, to);
+#endif
+	/* -------------------------------------------------------------------- */
+	/* copy bss								*/
+	/* -------------------------------------------------------------------- */
+	unmap_vm(to, ms_from->start_brk, ms_from->end_brk);
+	
+	addr = xmmap(to, (void*)ms_from->start_brk,
+			ms_from->end_brk - ms_from->start_brk,
+			PROT_READ | PROT_WRITE | PROT_EXEC,
+			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+			-1, 0);
+	
+	if (addr == MAP_FAILED) {
+		err = -ENOMEM;
+		goto failed_mmap_bss;
+	}
+	
+	vm_from = get_address_vm(from, ms_from->start_brk);
+	
+	if (UNLIKELY(!vm_from)) {
+		err = -ENOMEM;
+		goto failed_get_address_vm_from;
+	}
+	
+	vm_to = get_address_vm(to, ms_from->start_brk);
+	
+	if (UNLIKELY(!vm_to)) {
+		err = -ENOMEM;
+		goto failed_get_address_vm_to;
+	}
+	
+	copy_vm_contents(vm_to, vm_from);
+	
+	/* -------------------------------------------------------------------- */
+	/* copy stack								*/
+	/* -------------------------------------------------------------------- */
+	unmap_vm(to, ms_from->start_stack,
+				ms_from->end_stack - ms_from->start_stack);
+	
+	addr = xmmap(to, (void*)ms_from->start_stack,
+			ms_from->end_stack - ms_from->start_stack,
+			PROT_READ | PROT_WRITE | PROT_GROWSUP,
+			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+			-1, 0);
+	
+	if (addr == MAP_FAILED) {
+		err = -ENOMEM;
+		goto failed_mmap_bss;
+	}
+	
+	vm_from = get_address_vm(from, ms_from->start_brk);
+	
+	if (UNLIKELY(!vm_from)) {
+		err = -ENOMEM;
+		goto failed_get_address_vm_from;
+	}
+	
+	vm_to = get_address_vm(to, ms_from->start_brk);
+	
+	if (UNLIKELY(!vm_to)) {
+		err = -ENOMEM;
+		goto failed_get_address_vm_to;
+	}
+	
+	copy_vm_contents(vm_to, vm_from);
+	
+	/* -------------------------------------------------------------------- */
+	/* update memory space information					*/
+	/* -------------------------------------------------------------------- */
+	ms_to->process_size = ms_from->process_size;
+	ms_to->count = 1;
+	ms_to->shared_vm = ms_from->shared_vm;
+	ms_to->exec_vm = ms_from->exec_vm;
+	ms_to->stack_vm = ms_from->stack_vm;
+	ms_to->start_code = ms_from->start_code;
+	ms_to->end_code = ms_from->end_code;
+	ms_to->start_data = ms_from->start_data;
+	ms_to->end_data = ms_from->end_data;
+	ms_to->start_brk = ms_from->start_brk;
+	ms_to->end_brk = ms_from->end_brk;
+	ms_to->start_stack = ms_from->start_stack;
+	ms_to->end_stack = ms_from->end_stack;
+	ms_to->start_arg = ms_from->end_arg;
+	ms_to->end_arg = ms_from->end_arg;
+	ms_to->start_env = ms_from->end_env;
+	ms_to->exe_fd = ms_from->exe_fd;
 	
 	return(0);
+
+failed_get_address_vm_to:
+failed_get_address_vm_from:
+failed_copy_vm_pages:
+failed_mmap_bss:
+	free_vm(to);
+	return(err);
+
+#if 0
+failed_copy_vm_pages_data:
+	__free_vm(vm_to);
+failed_mmap_bss:
+failed_get_address_vm_from_data:
+	free_vm(to);
+	return(err);
+
+failed_copy_vm_pages_text:
+failed_get_address_vm_from:
+	__free_vm(vm_to);
+failed_alloc_vm_to:
+	return(err);
+#endif
 }
 
 /*
@@ -483,6 +686,7 @@ EXPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to)
 	
 	for (i = 0;i < vm_from->nr_pages;i++) {
 		pages[i] = vm_from->pages[i];
+		pages[i]->count++;
 	}
 	
 	vm_to->pages = pages;
@@ -545,11 +749,11 @@ EXPORT int xvm_map_vm(struct process *proc,
 	vm->prot = prot;
 	
 	for (i = 0;i < vm->nr_pages;i++) {
-		if (anon) {
+		//if (anon) {
 			vm->pages[i] = alloc_zeroed_page();
-		} else {
-			vm->pages[i] = alloc_page();
-		}
+		//} else {
+		//	vm->pages[i] = alloc_page();
+		//}
 		
 		if (!vm->pages[i]) {
 			err_i = i;
@@ -616,11 +820,21 @@ EXPORT int unmap_vm(struct process *proc,
 	struct vm *next;
 	int err = 0;
 	
-	if (is_empty_list(&mspace->list_vm)) {
+	if (UNLIKELY(is_empty_list(&mspace->list_vm))) {
 		return(err);
 	}
 	
+	if (UNLIKELY(mmap_end <= mmap_start)) {
+		
+		return(-ENOMEM);
+	}
+	
+	//printf("mmap_start:0x%08X ", mmap_start);
+	//printf("mmap_end:0x%08X\n", mmap_end);
+	
 	list_for_each_entry_safe(vm, temp, &proc->mspace->list_vm, link_vm) {
+		//printf("vm->start:0x%08X ", vm->start);
+		//printf("vm->end:0x%08X\n", vm->end);
 		if (vm->start == mmap_start && mmap_end == vm->end) {
 			if (vm->nr_pages && vm->pages) {
 				free_vm_pages(vm);
@@ -639,13 +853,13 @@ EXPORT int unmap_vm(struct process *proc,
 			
 			prev = alloc_vm();
 			
-			if (!prev) {
+			if (UNLIKELY(!prev)) {
 				return(-ENOMEM);
 			}
 			
 			next = alloc_vm();
 			
-			if (!next) {
+			if (UNLIKELY(!next)) {
 				err = -ENOMEM;
 				goto failed_alloc_vm_next;
 			}
@@ -661,14 +875,14 @@ EXPORT int unmap_vm(struct process *proc,
 			
 			prev->pages = alloc_vm_pages(nr_prev);
 			
-			if (!prev) {
+			if (UNLIKELY(!prev)) {
 				err = -ENOMEM;
 				goto failed_prev;
 			}
 			
 			next->pages = alloc_vm_pages(nr_next);
 			
-			if (!next) {
+			if (UNLIKELY(!next)) {
 				err = -ENOMEM;
 				goto failed_next;
 			}
@@ -804,6 +1018,21 @@ EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:switch_ms
+ Input		:struct memory_space *ms_to
+ 		 < switch to >
+ Output		:void
+ Return		:void
+ Description	:switch memory space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void switch_ms(struct memory_space *ms_to)
+{
+	loadPdbr((unsigned long)ms_to->pde - KERNEL_BASE_ADDR);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -862,6 +1091,34 @@ LOCAL INLINE void __free_vm(struct vm *vm)
 {
 	del_list(&vm->link_vm);
 	kmem_cache_free(vm_cache, (void*)vm);
+}
+
+
+/*
+==================================================================================
+ Funtion	:copy_vm_contents
+ Input		:struct vm *from
+ 		 < copy from >
+ 		 struct vm *to
+ 		 < copy to >
+ Output		:void
+ Return		:void
+ Description	:copy contents of vm
+==================================================================================
+*/
+LOCAL void copy_vm_contents(struct vm *from, struct vm *to)
+{
+	int i;
+	
+	for (i = 0;i < from->nr_pages;i++) {
+		struct page *page_from = from->pages[i];
+		struct page *page_to = to->pages[i];
+		
+		unsigned long addr_from = page_to_address(page_from);
+		unsigned long addr_to = page_to_address(page_to);
+		
+		memcpy((void*)addr_to, (void*)addr_from, PAGESIZE);
+	}
 }
 
 /*

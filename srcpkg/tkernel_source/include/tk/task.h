@@ -352,6 +352,19 @@ IMPORT ID get_task_id(struct task *task);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_task_sstack_base
+ Input		:struct task *task
+ 		 < task to get its kernel stack base pointer >
+ Output		:void
+ Return		:unsigned long
+ 		 < base pointer of kernel stack >
+ Description	:get base pointer of kernel stack
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT unsigned long get_task_sstack_base(struct task *task);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:alloc_task
  Input		:void
  Output		:void

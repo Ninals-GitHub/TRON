@@ -40,10 +40,7 @@
  * representation of each source header.
  */
 
-#ifndef	__T2EX_SYS_TIME_H__
-#define	__T2EX_SYS_TIME_H__
-
-#include <basic.h>
+#include <bk/kernel.h>
 #include <bk/uapi/sys/time.h>
 
 /*
@@ -61,7 +58,6 @@
 
 ==================================================================================
 */
-
 
 /*
 ==================================================================================
@@ -81,12 +77,62 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:futex
+ Input		:int *uaddr
+ 		 < addess of user space to store the counter >
+ 		 int op
+ 		 < lock operation >
+ 		 int val
+ 		 < lock operation value depends on the operation >
+ 		 const struct timespec *timeout
+ 		 < timemout value depends on the operation >
+ 		 int *uaddr2
+ 		 < lock operation address2 depends on the operation >
+ 		 int val3
+ 		 < lo
+ Output		:void
+ Return		:int
+ 		 < result depends on the operation >
+ Description	:fast user-space locking
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
+			int *uaddr2, int val3)
+{
+	printf("futex[*uaddr=");
+#if 0
+	printf("op=%d, ", op);
+	printf("val=%d, ", val);
+	if (timeout) {
+		printf("timeout->tv_sec=%ld, ", timeout->tv_sec);
+		printf("timeout->tv_nsec=%ld, ", timeout->tv_nsec);
+	} else {
+		printf("*timeout=NULL, ");
+	}
+	if (uaddr2) {
+		printf("*uaddr2=0x%08X, ", uaddr2);
+	} else {
+		printf("*uaddr2=NULL, ");
+	}
+	printf("val3=%d]\n", val3);
+#endif
+	for(;;);
+}
+
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
  Funtion	:void
  Input		:void
  Output		:void
  Return		:void
  Description	:void
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+==================================================================================
 */
-
-#endif	// __T2EX_SYS_TIME_H__

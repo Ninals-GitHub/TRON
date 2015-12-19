@@ -46,6 +46,7 @@
 #include <bk/memory/page.h>
 #include <bk/memory/vm.h>
 #include <bk/uapi/berrno.h>
+#include <bk/uapi/sched.h>
 #include <tk/sysmgr.h>
 #include <tstdlib/round.h>
 #include <cpu.h>
@@ -58,8 +59,11 @@
 ==================================================================================
 */
 LOCAL INLINE int copy_process(struct process *new);
-LOCAL void copy_task(struct task *new);
-LOCAL int copy_task_context(struct task *new);
+LOCAL int
+copy_task(struct task *from, struct task *new, struct pt_regs *child_regs);
+LOCAL long xfork(unsigned long flags, void *child_stack,
+			void *parent_tidptr, void *child_tidptr,
+			struct pt_regs *child_regs);
 
 IMPORT unsigned long int_syscall_return;
 
@@ -92,8 +96,8 @@ IMPORT unsigned long int_syscall_return;
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:fork
- Input		:struct ctx_reg *reg
- 		 < register context >
+ Input		:void *child_regs
+ 		 < child regs >
  Output		:void
  Return		:pid_t
 		 < child process id
@@ -103,7 +107,164 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:create a child process
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-SYSCALL pid_t fork(struct ctx_reg *reg)
+SYSCALL pid_t fork(void *syscall_args)
+{
+	struct pt_regs *child_regs = (struct pt_regs*)&syscall_args;
+	pid_t child_pid;
+	
+	child_pid = xfork((unsigned long)child_regs->bx,// unsigned long flags
+				(void*)child_regs->cx,	// void *child_stack
+				(void*)child_regs->dx,	// void *parent_tidptr
+				(void*)child_regs->si,	// void *child_tidptr
+				child_regs);		// pt_regs *child_regs
+	
+	return(child_pid);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:clone
+ Input		:void *syscall_args
+ 		 < for child regs information >
+ Output		:void
+ Return		:long
+ 		 < process id >
+ Description	:create a child process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL long clone(void *syscall_args)
+{
+	struct pt_regs *child_regs;
+	unsigned long clone_flags;
+	pid_t child_pid;
+	
+	//memcpy((void*)&child_regs, (void*)&syscall_args, sizeof(struct pt_regs));
+	
+	child_regs = (struct pt_regs*)&syscall_args;
+	
+	clone_flags = (unsigned long)child_regs->bx;
+	
+#if 1
+	printf("clone[flags=0x%08X, ", child_regs->bx);
+	printf("child_stack=0x%08X, ", child_regs->cx);
+	printf("parent_tidptr=0x%08X, ", child_regs->dx);
+	printf("child_tidptr=0x%08X, ", child_regs->si);
+	printf("child_regs=0x%08X\n", child_regs);
+	printf("ip=0x%08X\n", child_regs->ip);
+#endif
+	
+#if 1
+	child_pid = xfork(clone_flags,
+				(void*)child_regs->cx,	// void *child_stack
+				(void*)child_regs->dx,	// void *parent_tidptr
+				(void*)child_regs->si,	// void *child_tidptr
+				child_regs);		// pt_regs *child_regs
+#endif
+	printf("child pid=%d\n", child_pid);
+	
+	return(child_pid);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:copy_process
+ Input		:struct process *new
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy current process to new one
+==================================================================================
+*/
+LOCAL INLINE int copy_process(struct process *new)
+{
+	struct process *current = get_current();
+	
+	return(copy_mm(current, new));
+}
+
+/*
+==================================================================================
+ Funtion	:copy_task
+ Input		:struct task *from
+ 		 < copy from >
+ 		 struct task *new
+		 < copy to >
+		 struct pt_regs *child_regs
+		 < child context >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy current task to new one
+==================================================================================
+*/
+LOCAL int
+copy_task(struct task *from, struct task *new, struct pt_regs *child_regs)
+{
+	int name_len;
+
+	/* -------------------------------------------------------------------- */
+	/* copy current task							*/
+	/* -------------------------------------------------------------------- */
+	new->exinf	= from->exinf;
+	new->tskatr	= from->tskatr;
+	new->task	= from->task;
+	new->resid	= from->resid;
+	new->stksz	= from->stksz;
+	
+	new->istack	= from->istack;
+	
+#if USE_OBJECT_NAME
+	name_len = strnlen(from->name, OBJECT_NAME_LENGTH);
+	strncpy(new->name, (const char*)from->name, name_len);
+#endif
+	new->isysmode	= from->isysmode;
+	new->sysmode	= from->sysmode;
+	
+	/* -------------------------------------------------------------------- */
+	/* set up new task context						*/
+	/* -------------------------------------------------------------------- */
+	return(copy_task_context(from, new, child_regs));
+}
+
+/*
+==================================================================================
+ Funtion	:xfork
+ Input		:unsigned long flags
+ 		 < flags of clone >
+ 		 void *child_stack
+ 		 < stack address for a new child process >
+ 		 void *parent_tidptr
+ 		 < a pointer to parent thread id >
+ 		 void *child_tidptr
+ 		 < a pointer to child thread id >
+ 		 struct pt_regs *child_regs
+ 		 < child regs >
+ Output		:void
+ Return		:long
+ 		 < process id >
+ Description	:fork a process
+==================================================================================
+*/
+LOCAL long xfork(unsigned long flags, void *child_stack,
+			void *parent_tidptr, void *child_tidptr,
+			struct pt_regs *child_regs)
 {
 	int rng = (get_current_task()->tskatr & TA_RNG3) >> 8;
 	struct process *new_proc;
@@ -148,7 +309,11 @@ SYSCALL pid_t fork(struct ctx_reg *reg)
 	/* -------------------------------------------------------------------- */
 	/* copy current task to new one						*/
 	/* -------------------------------------------------------------------- */
-	copy_task(new_task);
+	err = copy_task(get_current_task(), new_task, child_regs);
+	
+	if (err) {
+		goto failed_copy_task;
+	}
 	
 	/* -------------------------------------------------------------------- */
 	/* link new task to new process						*/
@@ -163,19 +328,28 @@ SYSCALL pid_t fork(struct ctx_reg *reg)
 	err = copy_process(new_proc);
 	
 	if (err) {
+		printf("fork:failed copy_process\n");
 		goto failed_copy_process;
 	}
+	//new_proc->exit_signal = flags & CSIGNAL;
 	
 	/* -------------------------------------------------------------------- */
-	/* set up new task context						*/
+	/* start new process							*/
 	/* -------------------------------------------------------------------- */
-	copy_task_context(new_task);
+	//printf("fork:start _tk_sta_tsk\n");
+	err = _tk_sta_tsk(new_task->tskid, 0);
 	
-	new_task->tskctxb.ip = (unsigned long)int_syscall_return;
-		
+	if (err) {
+		goto failed_start_task;
+	}
+	
+	//printf("fork:finished\n");
+	
 	return(pid);
 
+failed_start_task:
 failed_copy_process:
+failed_copy_task:
 failed_alloc_task:
 	free_process(pid);
 failed_alloc_process:
@@ -185,129 +359,13 @@ failed_alloc_process:
 	return(pid);
 }
 
-
 /*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+==================================================================================
  Funtion	:void
  Input		:void
  Output		:void
  Return		:void
  Description	:void
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-
-
-/*
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-	
-	< Local Functions >
-
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-*/
-/*
-==================================================================================
- Funtion	:copy_process
- Input		:struct process *new
- Output		:void
- Return		:int
- 		 < result >
- Description	:copy current process to new one
 ==================================================================================
 */
-LOCAL INLINE int copy_process(struct process *new)
-{
-	struct process *current = get_current();
-	
-	return(copy_mm(current, new));
-}
 
-/*
-==================================================================================
- Funtion	:copy_task
- Input		:struct task *new
-		 < copy to >
- Output		:void
- Return		:void
- Description	:copy current task to new one
-==================================================================================
-*/
-LOCAL void copy_task(struct task *new)
-{
-	struct task *current;
-	int name_len;
-	/* -------------------------------------------------------------------- */
-	/* copy current task							*/
-	/* -------------------------------------------------------------------- */
-	current = get_current_task();
-	new->exinf	= current->exinf;
-	new->tskatr	= current->tskatr;
-	new->task	= current->task;
-	new->resid	= current->resid;
-	new->stksz	= current->stksz;
-	
-	new->istack	= current->istack;
-	
-#if USE_OBJECT_NAME
-	name_len = strnlen(current->name, OBJECT_NAME_LENGTH);
-	strncpy(new->name, (const char*)current->name, name_len);
-#endif
-	new->isysmode	= current->isysmode;
-	new->sysmode	= current->sysmode;
-	
-}
-
-/*
-==================================================================================
- Funtion	:copy_task_context
- Input		:struct task *new
- 		 < copy to >
- Output		:void
- Return		:int
- 		 < resutl >
- Description	:copy current task context to the new one
-==================================================================================
-*/
-LOCAL int copy_task_context(struct task *new)
-{
-	int rng = (new->tskatr & TA_RNG3) >> 8;
-	struct task *current = get_current_task();
-	struct task_context_block *new_ctx = &new->tskctxb;
-	struct task_context_block *current_ctx = &current->tskctxb;
-	unsigned long new_sstak_top;
-	unsigned long org_sstak_top;
-	
-	if (!rng) {
-		return(-ENOSYS);
-	}
-	
-	new_ctx->sp0 = (unsigned long)new->isstack;
-	new_ctx->ssp = (void*)new->isstack;
-	
-	new_ctx->ds = current_ctx->ds;
-	new_ctx->es = current_ctx->es;
-	new_ctx->fs = current_ctx->fs;
-	new_ctx->sysenter_cs = current_ctx->sysenter_cs;
-
-	new_ctx->sp = current_ctx->sp;
-	
-	new_ctx->cr2 = 0;
-	new_ctx->trap_nr = 0;
-	new_ctx->error_code = 0;
-	new_ctx->io_bitmap = NULL;
-	new_ctx->iopl = 0;
-	new_ctx->io_bitmap_max = 0;
-	
-	new_ctx->need_iret = FALSE;
-	
-	/* -------------------------------------------------------------------- */
-	/* copy kernel stack							*/
-	/* -------------------------------------------------------------------- */
-	org_sstak_top = (unsigned long)current->isstack;
-	org_sstak_top += -current->sstksz + RESERVE_SSTACK(current->tskatr);
-	
-	new_sstak_top = (unsigned long)new->isstack;
-	new_sstak_top += -new->sstksz + RESERVE_SSTACK(new->tskatr);
-	memcpy((void*)org_sstak_top, (void*)new_sstak_top, current->sstksz);
-	
-	return(0);
-}
