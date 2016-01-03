@@ -72,7 +72,7 @@ HEADER += $(S) $(S)/sysdepend/$(MACHINE)
 #HEADER += $(S_TK2) $(S_TK2)/sysdepend/$(TETYPE)_$(MACHINE)
 
 # common source files
-SRC	+=	page.c segmgr.c space.c slab.c vm.c mmap.c access.c
+SRC	+=	page.c segmgr.c space.c slab.c vm.c mmap.c access.c page_fault.c
 
 #VPATH	+= $(S)
 #HEADER	+= $(S)

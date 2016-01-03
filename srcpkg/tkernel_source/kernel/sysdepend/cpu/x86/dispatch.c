@@ -13,9 +13,7 @@
 #include <tk/kernel.h>
 #include <tk/task.h>
 #include <cpu.h>
-#include <bk/uapi/errno.h>
-#include <bk/memory/vm.h>
-#include <bk/memory/page.h>
+#include <bk/kernel.h>
 
 #include <debug/vdebug.h>
 
@@ -100,7 +98,7 @@ EXPORT int start_task(unsigned long start_text)
 	struct process *current = get_current();
 	struct task *current_task = get_current_task();
 	struct task_context_block *current_ctxb = get_current_ctxb();
-	unsigned long *inf;
+
 	
 	if (KERNEL_BASE_ADDR <= start_text) {
 		return(-EINVAL);
@@ -184,6 +182,7 @@ EXPORT void force_dispatch(void)
 	CTXB *next_ctxb = &schedtsk->tskctxb;
 	CTXB *current_ctxb = NULL;
 	struct pt_regs *regs;
+	unsigned long *img;
 	
 	rng = (schedtsk->tskatr & TA_RNG3) >> 8;
 	
@@ -221,8 +220,16 @@ EXPORT void force_dispatch(void)
 	/* forcibly dispatch							*/
 	/* -------------------------------------------------------------------- */
 	if (rng) {
+		if (next_ctxb->forked) {
+			next_ctxb->forked = FALSE;
+			//printf("forked[pid=%d, ", schedtsk->proc->pid);
+			if (schedtsk->set_child_tid) {
+				copy_to_user((void*)schedtsk->set_child_tid,
+						(const void*)&schedtsk->tskid,
+						sizeof(int));
+			}
+		}
 		update_tss_esp0(getEsp());
-#if 1
 		ASM(
 			"pushl	%[reg_ss]		\n\t"
 			"pushl	%[reg_sp]		\n\t"
@@ -250,9 +257,7 @@ EXPORT void force_dispatch(void)
 			 [regs_ptr]"a"(regs)
 			:"memory"
 		);
-#endif
 	} else {
-#if 1
 		ASM (
 			"movl	%[reg_sp], %%esp	\n\t"
 			"pushl	%[reg_fl]		\n\t"
@@ -279,7 +284,6 @@ EXPORT void force_dispatch(void)
 			 [regs_ptr]"a"(regs)
 			:"memory"
 		);
-#endif
 	}
 }
 
@@ -327,6 +331,7 @@ EXPORT void setup_context( TCB *tcb )
 	ctxb->io_bitmap_max = 0;
 	
 	ctxb->need_iret = TRUE;
+	ctxb->forked = FALSE;
 	/* -------------------------------------------------------------------- */
 	/* eflags								*/
 	/* -------------------------------------------------------------------- */
@@ -348,8 +353,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void dispatch(void)
 {
-	struct memory_space *ms_current;
-	struct memory_space *ms_next;
+	struct process *current_proc;
+	struct process *next_proc;
 	CTXB	*current_ctxb;
 	CTXB	*next_ctxb;
 	
@@ -387,13 +392,13 @@ wake_up_from_low_power:
 		current_ctxb = &ctxtsk->tskctxb;
 		next_ctxb = &schedtsk->tskctxb;
 		BARRIER();
-		ms_current = get_current_mspace();
-		ms_next = get_scheduled_mspace();
+		current_proc = get_current();
+		next_proc = get_scheduled();
 		
-		if (ms_current != ms_next) {
-			switch_ms(ms_next);
+		if (current_proc->mspace != next_proc->mspace) {
+			//printf("switched ms. pid=%d -> pid=%d\n", current_proc->pid, next_proc->pid);
+			switch_ms(current_proc, next_proc);
 		}
-		
 		
 		if (UNLIKELY(next_ctxb->need_iret)) {
 			unsigned long *esp0 = (unsigned long*)get_tss_esp0();
@@ -488,7 +493,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void setup_stacd( struct task *tcb, INT stacd )
 {
-	W rng;
+	//W rng;
 	unsigned long *sp;
 	struct pt_regs initial_regs = {
 		.bx = INIT_TASK_EBX,
@@ -510,7 +515,7 @@ EXPORT void setup_stacd( struct task *tcb, INT stacd )
 		.ss = INIT_TASK_SS
 	};
 	
-	rng = (tcb->tskatr & TA_RNG3) >> 8;
+	//rng = (tcb->tskatr & TA_RNG3) >> 8;
 	
 	//if (rng) {
 	//	sp = (unsigned long*)tcb->tskctxb.sp;
@@ -567,20 +572,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < copy from >
  		 struct task *new
  		 < copy to >
- 		 struct pt_regs *child_regs
- 		 < child context >
  Output		:void
  Return		:int
  		 < resutl >
  Description	:copy current task context to the new one
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int copy_task_context(struct task *from, struct task *new,
-				struct pt_regs *child_regs)
+EXPORT int copy_task_context(struct task *from, struct task *new)
 {
 	int rng = (new->tskatr & TA_RNG3) >> 8;
 	struct task_context_block *new_ctx = &new->tskctxb;
 	struct task_context_block *from_ctx = &from->tskctxb;
+	int i;
 	
 	if (!rng) {
 		return(-ENOSYS);
@@ -605,22 +608,46 @@ EXPORT int copy_task_context(struct task *from, struct task *new,
 	
 	new_ctx->need_iret = TRUE;
 	
+	new_ctx->ssp = (void*)new_ctx->sp0;
+	
+	memcpy((void*)new_ctx->tls_desc, (void*)from_ctx->tls_desc,
+			sizeof(struct segment_desc) * NR_TLS_ENTRYIES);
+#if 0
+	for (i = 0;i < NR_TLS_ENTRYIES;i++) {
+		printf("tls[%d]:0x%08X 0x%08X", i, new_ctx->tls_desc[i].hi, new_ctx->tls_desc[i].low);
+	}
+#endif
+	new_ctx->forked = TRUE;
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setup_fork_user_context
+ Input		:struct task *new
+ 		 < forked task >
+ 		 struct pt_regs *regs
+ 		 < context for new task >
+ Output		:void
+ Return		:void
+ Description	:setup forked task context
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void setup_fork_user_context(struct task *new, struct pt_regs *regs)
+{
+	struct pt_regs *stacked_regs;
+	
+	stacked_regs = new->tskctxb.pt_regs;
+	
 	/* -------------------------------------------------------------------- */
 	/* setup stack								*/
 	/* -------------------------------------------------------------------- */
-	new_ctx->sp0 = new_ctx->sp0 - sizeof(struct pt_regs);
-	new_ctx->pt_regs = (struct pt_regs*)new_ctx->sp0;
-	memcpy((void*)new_ctx->sp0, (void*)child_regs, sizeof(struct pt_regs));
-	new_ctx->ssp = (void*)new_ctx->sp0;
-	
-	//printf("new_regs->ip=0x%08X\n", new_ctx->pt_regs->ip);
+	memcpy((void*)stacked_regs, (void*)regs, sizeof(struct pt_regs));
 	
 	/* -------------------------------------------------------------------- */
 	/* setup the result of child fork()					*/
 	/* -------------------------------------------------------------------- */
-	new_ctx->pt_regs->ax = 0;
-	
-	return(0);
+	stacked_regs->ax = 0;
 }
 
 /*

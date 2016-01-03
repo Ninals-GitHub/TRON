@@ -114,15 +114,26 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < copy from >
  		 struct task *new
  		 < copy to >
- 		 struct pt_regs *child_regs
- 		 < child context >
  Output		:void
  Return		:int
  		 < resutl >
  Description	:copy current task context to the new one
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT int copy_task_context(struct task *from, struct task *new,
-				struct pt_regs *child_regs);
+IMPORT int copy_task_context(struct task *from, struct task *new);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setup_fork_user_context
+ Input		:struct task *new
+ 		 < forked task >
+ 		 struct pt_regs *regs
+ 		 < context for new task >
+ Output		:void
+ Return		:void
+ Description	:setup forked task context
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void setup_fork_user_context(struct task *new, struct pt_regs *regs);
 
 #endif	// __DISPATCH_H__

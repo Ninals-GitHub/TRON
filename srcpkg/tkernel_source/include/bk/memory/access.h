@@ -53,6 +53,7 @@
 
 ==================================================================================
 */
+IMPORT ER _ChkSpace( CONST void *laddr, INT len, UINT mode, UINT env );
 
 /*
 ==================================================================================
@@ -143,7 +144,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 //LOCAL ER ChkUsrSpaceR( const void *addr, size_t len )
-#define	ChkUsrSpaceR(addr, len)	ChkSpace(addr, len, MA_READ, TMF_PPL(USER_RPL))
+#define	ChkUsrSpaceR(addr, len)	_ChkSpace(addr, len, MA_READ, TMF_PPL(USER_RPL))
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -175,7 +176,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 //LOCAL ER ChkUsrSpaceRW( const void *addr, size_t len )
 #define	ChkUsrSpaceRW(addr, len)						\
-		ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(USER_RPL))
+		_ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(USER_RPL))
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -207,6 +208,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 //LOCAL ER ChkUsrSpaceRE( const void *addr, size_t len )
 #define	ChkUsrSpaceRE(addr, len)						\
-		ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(USER_RPL))
+		_ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(USER_RPL))
 
 #endif	// __BK_ACCESS_H__

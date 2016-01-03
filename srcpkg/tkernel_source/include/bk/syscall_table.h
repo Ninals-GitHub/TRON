@@ -69,8 +69,8 @@
 
 ==================================================================================
 */
-	_SVC_ENTRY syscall_test 		/* 0000 *//* restart_syscall	*/
-	_SVC_ENTRY syscall_test 		/* 0001 *//* exit		*/
+	_SVC_ENTRY restart_syscall 		/* 0000 *//* restart_syscall	*/
+	_SVC_ENTRY exit		 		/* 0001 *//* exit		*/
 	_SVC_ENTRY syscall_test 		/* 0002 *//* fork		*/
 	_SVC_ENTRY syscall_test 		/* 0003 *//* read		*/
 	_SVC_ENTRY write	 		/* 0004 *//* write		*/
@@ -89,7 +89,7 @@
 	_SVC_ENTRY syscall_test 		/* 0017 *//* break		*/
 	_SVC_ENTRY syscall_test 		/* 0018 *//* oldstat		*/
 	_SVC_ENTRY syscall_test 		/* 0019 *//* lseek		*/
-	_SVC_ENTRY syscall_test 		/* 0020 *//* getpid		*/
+	_SVC_ENTRY getpid	 		/* 0020 *//* getpid		*/
 	_SVC_ENTRY syscall_test 		/* 0021 *//* mount		*/
 	_SVC_ENTRY syscall_test 		/* 0022 *//* umount		*/
 	_SVC_ENTRY syscall_test 		/* 0023 *//* setuid		*/
@@ -133,7 +133,7 @@
 	_SVC_ENTRY syscall_test 		/* 0061 *//* chroot		*/
 	_SVC_ENTRY syscall_test 		/* 0062 *//* ustat		*/
 	_SVC_ENTRY syscall_test 		/* 0063 *//* dup2		*/
-	_SVC_ENTRY syscall_test 		/* 0064 *//* getppid		*/
+	_SVC_ENTRY getppid	 		/* 0064 *//* getppid		*/
 	_SVC_ENTRY syscall_test 		/* 0065 *//* getpgrp		*/
 	_SVC_ENTRY syscall_test 		/* 0066 *//* setsid		*/
 	_SVC_ENTRY syscall_test 		/* 0067 *//* sigaction		*/
@@ -183,7 +183,7 @@
 	_SVC_ENTRY syscall_test			/* 0111 *//* vhangup		*/
 	_SVC_ENTRY syscall_test			/* 0112 *//* idle		*/
 	_SVC_ENTRY syscall_test			/* 0113 *//* vm86old		*/
-	_SVC_ENTRY syscall_test			/* 0114 *//* wait4		*/
+	_SVC_ENTRY wait4			/* 0114 *//* wait4		*/
 	_SVC_ENTRY syscall_test			/* 0115 *//* swapoff		*/
 	_SVC_ENTRY syscall_test			/* 0116 *//* sysinfo		*/
 	_SVC_ENTRY syscall_test			/* 0117 *//* ipc		*/
@@ -243,7 +243,7 @@
 	_SVC_ENTRY syscall_test			/* 0171 *//* getresgid		*/
 	_SVC_ENTRY syscall_test			/* 0172 *//* prctl		*/
 	_SVC_ENTRY syscall_test			/* 0173 *//* rt_sigreturn	*/
-	_SVC_ENTRY syscall_test			/* 0174 *//* rt_sigaction	*/
+	_SVC_ENTRY rt_sigaction			/* 0174 *//* rt_sigaction	*/
 	_SVC_ENTRY rt_sigprocmask		/* 0175 *//* rt_sigprocmask	*/
 	_SVC_ENTRY syscall_test			/* 0176 *//* rt_sigpending	*/
 	_SVC_ENTRY syscall_test			/* 0177 *//* rt_sigtimedwait	*/
@@ -309,7 +309,7 @@
 	_SVC_ENTRY syscall_test			/* 0237 *//* fremovexattr	*/
 	_SVC_ENTRY syscall_test			/* 0238 *//* tkill		*/
 	_SVC_ENTRY syscall_test			/* 0239 *//* sendfile64		*/
-	_SVC_ENTRY syscall_test			/* 0240 *//* futex		*/
+	_SVC_ENTRY futex			/* 0240 *//* futex		*/
 	_SVC_ENTRY syscall_test			/* 0241 *//* sched_setaffinity	*/
 	_SVC_ENTRY syscall_test			/* 0242 *//* sched_getaffinity	*/
 	_SVC_ENTRY set_thread_area		/* 0243 *//* set_thread_area	*/
@@ -321,7 +321,7 @@
 	_SVC_ENTRY syscall_test			/* 0249 *//* io_cancel		*/
 	_SVC_ENTRY syscall_test			/* 0250 *//* fadvise64		*/
 	_SVC_ENTRY syscall_test			/* 0251 *//* reserved		*/
-	_SVC_ENTRY syscall_test			/* 0252 *//* exit_group		*/
+	_SVC_ENTRY exit_group			/* 0252 *//* exit_group		*/
 	_SVC_ENTRY syscall_test			/* 0253 *//* lookup_dcookie	*/
 	_SVC_ENTRY syscall_test			/* 0254 *//* epoll_create	*/
 	_SVC_ENTRY syscall_test			/* 0255 *//* epoll_ctl		*/

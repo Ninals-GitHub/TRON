@@ -42,9 +42,9 @@
 
 #include <typedef.h>
 #include <t2ex/string.h>
+#include <bk/kernel.h>
 #include <bk/bprocess.h>
-#include <bk/memory/page.h>
-#include <bk/memory/vm.h>
+#include <bk/tls.h>
 #include <bk/uapi/berrno.h>
 #include <bk/uapi/sched.h>
 #include <tk/sysmgr.h>
@@ -59,10 +59,11 @@
 ==================================================================================
 */
 LOCAL INLINE int copy_process(struct process *new);
-LOCAL int
-copy_task(struct task *from, struct task *new, struct pt_regs *child_regs);
-LOCAL long xfork(unsigned long flags, void *child_stack,
-			void *parent_tidptr, void *child_tidptr,
+LOCAL void copy_task(struct task *from, struct task *new);
+LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
+			int *parent_tidptr, int *child_tidptr,
+			unsigned long child_stack_size,
+			unsigned long tls,
 			struct pt_regs *child_regs);
 
 IMPORT unsigned long int_syscall_return;
@@ -75,6 +76,7 @@ IMPORT unsigned long int_syscall_return;
 
 ==================================================================================
 */
+
 
 /*
 ==================================================================================
@@ -112,11 +114,13 @@ SYSCALL pid_t fork(void *syscall_args)
 	struct pt_regs *child_regs = (struct pt_regs*)&syscall_args;
 	pid_t child_pid;
 	
-	child_pid = xfork((unsigned long)child_regs->bx,// unsigned long flags
-				(void*)child_regs->cx,	// void *child_stack
-				(void*)child_regs->dx,	// void *parent_tidptr
-				(void*)child_regs->si,	// void *child_tidptr
-				child_regs);		// pt_regs *child_regs
+	child_pid = xfork(SIGCHLD,		// flags
+				0,		// newsp
+				NULL,		// parent_tidptr
+				NULL,		// child_tidptr
+				0,		// stack_size
+				0,		// tls
+				child_regs);	// child_regs
 	
 	return(child_pid);
 }
@@ -135,35 +139,85 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL long clone(void *syscall_args)
 {
 	struct pt_regs *child_regs;
-	unsigned long clone_flags;
 	pid_t child_pid;
-	
-	//memcpy((void*)&child_regs, (void*)&syscall_args, sizeof(struct pt_regs));
+	unsigned long clone_flags;
+	int stack_size;
+	unsigned long newsp;
+	int *parent_tidptr;
+	int *child_tidptr;
+	unsigned long tls;
 	
 	child_regs = (struct pt_regs*)&syscall_args;
 	
+#ifdef	CONFIG_CLONE_BACKWARDS
 	clone_flags = (unsigned long)child_regs->bx;
-	
-#if 1
-	printf("clone[flags=0x%08X, ", child_regs->bx);
-	printf("child_stack=0x%08X, ", child_regs->cx);
-	printf("parent_tidptr=0x%08X, ", child_regs->dx);
-	printf("child_tidptr=0x%08X, ", child_regs->si);
-	printf("child_regs=0x%08X\n", child_regs);
-	printf("ip=0x%08X\n", child_regs->ip);
+	newsp = (unsigned long)child_regs->cx;
+	parent_tidptr = (int*)child_regs->dx;
+	tls = (unsigned long)child_regs->si;
+	child_tidptr = (int*)child_regs->di;
+	stack_size = 0;
+#elif defined(CONFIG_CLONE_BACKWARDS2)
+	newsp = (unsigned long)child_regs->bx;
+	clone_flags = (unsigned long)child_regs->cx;
+	parent_tidptr = (int*)child_regs->dx;
+	child_tidptr = (int*)child_regs->si;
+	tls = (unsigned long)child_regs->di;
+	stack_size = 0;
+#elif defined(CONFIG_CLONE_BACKWARDS3)
+	clone_flags = (unsigned long)child_regs->bx;
+	newsp = (unsigned long)child_regs->cx;
+	stack_size = (int)child_regs->dx;
+	parent_tidptr = (int*)child_regs->si;
+	child_tidptr = (int*)child_regs->di;
+	tls = (unsigned long)child_regs->bp;
+#else
+	clone_flags = (unsigned long)child_regs->bx;
+	newsp = (unsigned long)child_regs->cx;
+	parent_tidptr = (int*)child_regs->dx;
+	child_tidptr = (int*)child_regs->si;
+	tls = (unsigned long)child_regs->di;
+	stack_size = 0;
 #endif
 	
-#if 1
-	child_pid = xfork(clone_flags,
-				(void*)child_regs->cx,	// void *child_stack
-				(void*)child_regs->dx,	// void *parent_tidptr
-				(void*)child_regs->si,	// void *child_tidptr
-				child_regs);		// pt_regs *child_regs
+#if 0
+	printf("clone[flags=0x%08X, ", clone_flags);
+	printf("newsp=0x%08X, ", newsp);
+	printf("parent_tidptr=0x%08X, ", parent_tidptr);
+	printf("child_tidptr=0x%08X, ", child_tidptr);
+	printf("tls=0x%08X, ", tls);
+	printf("stack_size=0x%08X\n", stack_size);
 #endif
-	printf("child pid=%d\n", child_pid);
-	
+	child_pid = xfork(clone_flags, newsp, parent_tidptr, child_tidptr,
+				stack_size, tls, child_regs);
+
 	return(child_pid);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:fork_set_clear_child_tid
+ Input		:struct task *task
+ 		 < task to set or clear child tid >
+ Output		:void
+ Return		:void
+ Description	:set or clear child tid on execute forked process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void fork_set_clear_child_tid(struct task *task)
+{
+	if (task->set_child_tid) {
+		copy_to_user((void*)task->set_child_tid,
+				(const void*)&task->tskid, sizeof(int));
+	}
+	
+	if (task->clear_child_tid) {
+		int clear = 0;
+		
+		copy_to_user((void*)task->clear_child_tid,
+				(const void*)&clear, sizeof(int));
+	}
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -206,16 +260,13 @@ LOCAL INLINE int copy_process(struct process *new)
  		 < copy from >
  		 struct task *new
 		 < copy to >
-		 struct pt_regs *child_regs
-		 < child context >
  Output		:void
  Return		:int
  		 < result >
  Description	:copy current task to new one
 ==================================================================================
 */
-LOCAL int
-copy_task(struct task *from, struct task *new, struct pt_regs *child_regs)
+LOCAL void copy_task(struct task *from, struct task *new)
 {
 	int name_len;
 
@@ -237,10 +288,7 @@ copy_task(struct task *from, struct task *new, struct pt_regs *child_regs)
 	new->isysmode	= from->isysmode;
 	new->sysmode	= from->sysmode;
 	
-	/* -------------------------------------------------------------------- */
-	/* set up new task context						*/
-	/* -------------------------------------------------------------------- */
-	return(copy_task_context(from, new, child_regs));
+	copy_task_context(from, new);
 }
 
 /*
@@ -248,12 +296,16 @@ copy_task(struct task *from, struct task *new, struct pt_regs *child_regs)
  Funtion	:xfork
  Input		:unsigned long flags
  		 < flags of clone >
- 		 void *child_stack
+ 		 unsigned long child_newsp
  		 < stack address for a new child process >
- 		 void *parent_tidptr
+ 		 int *parent_tidptr
  		 < a pointer to parent thread id >
- 		 void *child_tidptr
+ 		 int *child_tidptr
  		 < a pointer to child thread id >
+ 		 unsigned long child_stack_size
+ 		 < new child stack size >
+ 		 unsigned long tls
+ 		 < new tls >
  		 struct pt_regs *child_regs
  		 < child regs >
  Output		:void
@@ -262,13 +314,16 @@ copy_task(struct task *from, struct task *new, struct pt_regs *child_regs)
  Description	:fork a process
 ==================================================================================
 */
-LOCAL long xfork(unsigned long flags, void *child_stack,
-			void *parent_tidptr, void *child_tidptr,
+LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
+			int *parent_tidptr, int *child_tidptr,
+			unsigned long child_stack_size,
+			unsigned long tls,
 			struct pt_regs *child_regs)
 {
-	int rng = (get_current_task()->tskatr & TA_RNG3) >> 8;
 	struct process *new_proc;
 	struct task *new_task;
+	struct task *current_task = get_current_task();
+	int rng = (current_task->tskatr & TA_RNG3) >> 8;
 	pid_t pid;
 	int err;
 	
@@ -309,11 +364,7 @@ LOCAL long xfork(unsigned long flags, void *child_stack,
 	/* -------------------------------------------------------------------- */
 	/* copy current task to new one						*/
 	/* -------------------------------------------------------------------- */
-	err = copy_task(get_current_task(), new_task, child_regs);
-	
-	if (err) {
-		goto failed_copy_task;
-	}
+	copy_task(get_current_task(), new_task);
 	
 	/* -------------------------------------------------------------------- */
 	/* link new task to new process						*/
@@ -343,13 +394,42 @@ LOCAL long xfork(unsigned long flags, void *child_stack,
 		goto failed_start_task;
 	}
 	
-	//printf("fork:finished\n");
+	/* -------------------------------------------------------------------- */
+	/* set up new task context and override pt_regs				*/
+	/* -------------------------------------------------------------------- */
+	setup_fork_user_context(new_task, child_regs);
+	
+	/* -------------------------------------------------------------------- */
+	/* set tid								*/
+	/* -------------------------------------------------------------------- */
+	if (flags & CLONE_CHILD_SETTID) {
+		new_task->set_child_tid = child_tidptr;
+	} else {
+		new_task->set_child_tid = NULL;
+	}
+	
+	if (flags & CLONE_CHILD_CLEARTID) {
+		new_task->clear_child_tid = child_tidptr;
+	} else {
+		new_task->clear_child_tid = NULL;
+	}
+	
+	fork_set_clear_child_tid(new_task);
+	
+	if (flags & CLONE_PARENT_SETTID) {
+		copy_to_user((void*)parent_tidptr,
+				(const void*)&current_task->tskid,
+				sizeof(int));
+	}
+	
+	if (flags & CLONE_SETTLS) {
+		set_thread_area((struct user_desc *)tls);
+	}
 	
 	return(pid);
-
+	
 failed_start_task:
 failed_copy_process:
-failed_copy_task:
 failed_alloc_task:
 	free_process(pid);
 failed_alloc_process:

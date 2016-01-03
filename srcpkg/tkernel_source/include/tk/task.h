@@ -30,6 +30,9 @@
 #include <tk/winfo.h>
 #include <tstdlib/list.h>
 
+#include <bk/uapi/signal.h>
+#include <bk/uapi/sys/resource.h>
+
 
 struct process;
 
@@ -158,8 +161,15 @@ CONST	WSPEC	*wspec;		/* Wait specification */
 #if USE_OBJECT_NAME
 	UB	name[OBJECT_NAME_LENGTH];	/* name */
 #endif
-	struct process	*proc;		/* main process			*/
-	struct list	task_node;	/* node of task group list	*/
+#ifdef _BTRON_
+	/* -------------------------------------------------------------------- */
+	/* process management			 				*/
+	/* -------------------------------------------------------------------- */
+	struct process	*proc;		/* main process				*/
+	struct list	task_node;	/* node of task group list		*/
+	int	*set_child_tid;		/* for clone() system call		*/
+	int	*clear_child_tid;	/* for clone() system call		*/
+#endif
 };
 
 /*
@@ -386,18 +396,5 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER free_task(struct task *task);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_task_id
- Input		:struct task *task
- 		 < task to get its id >
- Output		:void
- Return		:ID
- 		 < task id >
- Description	:get task id calculated from task_table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT ID get_task_id(struct task *task);
 
 #endif /* _TASK_ */

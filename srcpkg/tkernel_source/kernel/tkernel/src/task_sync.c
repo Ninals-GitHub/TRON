@@ -207,6 +207,7 @@ SYSCALL ER _tk_slp_tsk_u( TMO_U tmout )
 	return ercd;
 }
 
+
 /*
  * Wakeup task
  */
@@ -355,3 +356,75 @@ SYSCALL ER _tk_sig_tev( ID tskid, INT tskevt )
 
 	return ercd;
 }
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+#ifdef	_BTRON_
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_slp_tsk
+ Input		:struct task *task
+ 		 < task to sleep >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:move a task state to wait state for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER _bk_slp_tsk(struct task *task)
+{
+	ER	ercd;
+	
+	ercd = E_OK;
+	
+	if (0 < task->wupcnt) {
+		task->wupcnt--;
+	} else {
+		task->wspec = &wspec_slp;
+		task->wid = 0;
+		task->wercd = &ercd;
+		make_wait_task(task, TMO_FEVR, TA_NULL);
+		QueInit(&task->tskque);
+	}
+	
+	return(ercd);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_wup_tsk
+ Input		:struct task *task
+ 		 < task to wake up >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:wake up a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER _bk_wup_tsk(struct task *task)
+{
+	ER	ercd = E_OK;
+	TSTAT	state;
+	
+	state = (TSTAT)task->state;
+	if ( !task_alive(state) ) {
+		ercd = ( state == TS_NONEXIST )? E_NOEXS: E_OBJ;
+
+	} else if ( (state & TS_WAIT) != 0 && task->wspec == &wspec_slp ) {
+		wait_release_ok(task);
+
+	} else if ( task->wupcnt == INT_MAX ) {
+		ercd = E_QOVR;
+	} else {
+		++task->wupcnt;
+	}
+	
+	return(ercd);
+}
+
+#endif	// _BTRON_

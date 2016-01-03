@@ -72,7 +72,8 @@ TARGET	= kernel.o
 S	= .
 
 # common source files
-SRC	+=	bprocess.c fork.c exec.c sys.c signal.c tls.c futex.c
+SRC	+=	bprocess.c fork.c exec.c sys.c signal.c tls.c futex.c exit.c	\
+		wait.c bk.c
 
 VPATH	+= $(S)
 HEADER	+= $(S)

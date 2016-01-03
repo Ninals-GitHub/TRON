@@ -119,6 +119,21 @@ EXPORT void make_wait_reltim( RELTIM_U tmout, ATR atr )
 	timer_insert_reltim(&ctxtsk->wtmeb, tmout, (CBACK)wait_release_tmout, ctxtsk);
 }
 
+EXPORT void make_wait_task(struct task *task, TMO_U tmout, ATR atr)
+{
+	switch ( task->state ) {
+	  case TS_READY:
+		make_non_ready(task);
+		ctxtsk->state = TS_WAIT;
+		break;
+	  case TS_SUSPEND:
+		task->state = TS_WAITSUS;
+		break;
+	}
+	task->nodiswai = ( (atr & TA_NODISWAI) != 0 )? TRUE: FALSE;
+	timer_insert(&task->wtmeb, tmout, (CBACK)wait_release_tmout, task);
+}
+
 /*
  * Release all tasks connected to the wait queue, and define it
  * as E_DLT error.

@@ -68,7 +68,7 @@ LOCAL void handle_gfp(struct ctx_reg *reg, uint32_t error_code);
 
 ==================================================================================
 */
-void (*interrupt_handler_func[NUM_IDT_DESCS])(struct ctx_reg*) = {
+LOCAL void (*interrupt_handler_func[NUM_IDT_DESCS])(struct ctx_reg*) = {
 	[INT_DIV_0]		= handle_division_by_0,
 	[INT_DEBUG]		= handle_debug,
 	[INT_NMI]		= handle_nmi,
@@ -180,7 +180,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:handler for exception with error code
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void exception_handler_err(uint32_t int_num,
+EXPHANDLER void exception_handler_err(uint32_t int_num,
 			struct ctx_reg *reg, uint32_t error_code)
 {
 	switch (int_num) {
@@ -217,50 +217,10 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:handler for exception/interrupt without error code
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void interrupt_handler(uint32_t int_num, struct ctx_reg *reg)
+INTHANDLER void interrupt_handler(uint32_t int_num, struct ctx_reg *reg)
 {
 	if (interrupt_handler_func[int_num]) {
 		interrupt_handler_func[int_num](reg);
-	}
-}
-
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:page_fault_handler
- Input		:uint32_t int_num
- 		 < interrupt number >
- 		 struct ctx_reg *reg
- 		 < context register information >
- 		 uint32_t error_code
- 		 < error code >
- 		 unsigned long fault_address
- 		 < address at which fault occurs >
- Output		:void
- Return		:void
- Description	:handler for page fault
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT void page_fault_handler(uint32_t int_num, struct ctx_reg *reg,
-			uint32_t error_code, unsigned long fault_address)
-{
-	static int count = 0;
-
-	if (1 <= count) {
-		
-	} else {
-		vd_printf("page fault[0x%08X]\n", fault_address);
-		vd_printf("error code:%u\n", error_code);
-		vd_printf("eax:0x%08X ", reg->eax);
-		vd_printf("ebx:0x%08X ", reg->ebx);
-		vd_printf("ecx:0x%08X\n", reg->ecx);
-		vd_printf("eip:0x%08X ", reg->eip);
-		vd_printf("eflags:0x%08X ", reg->eflags);
-		vd_printf("cs:0x%08X\n", reg->cs);
-		vd_printf("esp:0x%08X ", reg->esp);
-		vd_printf("ss:0x%08X\n", reg->ss);
-
-		count++;
 	}
 }
 
@@ -273,28 +233,14 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:void
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-struct iovec{
-	void *iov_base;
-	size_t iov_len;
-};
-
-EXPORT int
+INTHANDLER int
 syscall_test(int ebx, int ecx, int edx, int esi, int edi, int ebp, int eax)
 {
 	printf("\nsyscall!!!!!!!!!!!\n");
 	printf("int number = %d\n", eax);
 	printf("[argument]");
-	if (eax == 5) {
-		printf("1:%s\n", ebx);
-	} else {
-		printf("1:0x%08X ", ebx);
-	}
-	if (eax == 146 ) {
-		struct iovec *io = (struct iovec*)ecx;
-		printf("2:%s\n", io->iov_base);
-	} else {
-		printf("2:0x%08X ", ecx);
-	}
+	printf("1:0x%08X ", ebx);
+	printf("2:0x%08X ", ecx);
 	printf("3:0x%08X ", edx);
 	printf("4:0x%08X ", esi);
 	printf("5:0x%08X ", edi);

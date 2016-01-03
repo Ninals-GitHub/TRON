@@ -100,6 +100,7 @@ struct vm {
 	unsigned long		start;		// start address of a memory
 	unsigned long		end;		// end address of a memory
 	unsigned int		prot;		// vm protection flags
+	unsigned int		mmap_flags;	// mmap flags
 	struct page		**pages;	// vm pages
 	unsigned int		nr_pages;	// number of pages
 	struct memory_space	*mspace;
@@ -114,9 +115,12 @@ struct memory_space {
 	unsigned long		shared_vm;	/* shrared pages		*/
 	unsigned long		exec_vm;
 	unsigned long		stack_vm;
+	unsigned long		start_shared;
+	unsigned long		end_shared;
 	unsigned long		start_code;
 	unsigned long		end_code;
 	unsigned long		start_data, end_data;
+	unsigned long		start_bss, end_bss;
 	unsigned long		start_brk, end_brk;
 	unsigned long		start_stack, end_stack;
 	unsigned long		start_arg, end_arg;
@@ -157,6 +161,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int init_mm(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:destroy_mm
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:destroy virtual memory management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void destroy_mm(void);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -265,15 +280,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_address_vm
  Input		:struct process *proc
  		 < get vm from the process >
- 		 unsigned long address
- 		 < user address which belongs to vm of process >
+ 		 unsigned long start
+ 		 < user start address which belongs to vm of process >
+ 		 unsigned long end
+ 		 < user end address which belongs to vm of process >
  Output		:void
  Return		:struct vm*
  		 < vm to which address belongs >
  Description	:get vm to which address belongs
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT struct vm* get_address_vm(struct process *proc, unsigned long address);
+IMPORT struct vm*
+get_address_vm(struct process *proc, unsigned long start, unsigned long end);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -331,6 +349,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < end address of user space >
  		 unsigned int prot
  		 < permission >
+ 		 unsigned int mmap_flags
+ 		 < mmap flags >
  Output		:void
  Return		:int
  		 < result >
@@ -339,35 +359,9 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 future work;
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-#if 0
 IMPORT int map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
-			unsigned int prot);
-#endif
-#define	map_vm(proc, mmap_start, mmap_end, prot)				\
-		xvm_map_vm(proc, mmap_start, mmap_end, prot, 0)
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:map_vm_annon
- Input		:struct process *proc
- 		 < a process to create its vm >
- 		 unsigned long mmap_start
- 		 < start address of user space >
- 		 unsigned long mmap_end
- 		 < end address of user space >
- 		 unsigned int prot
- 		 < permission >
- Output		:void
- Return		:int
- 		 < result >
- Description	:map a anonymous memory for user space
- 		 this function is currently used for test only
- 		 future work;
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-#define	map_vm_annon(proc, mmap_start, mmap_end, prot)				\
-		xvm_map_vm(proc, mmap_start, mmap_end, prot, 1)
+			unsigned int prot, unsigned int mmap_flags);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -414,13 +408,57 @@ IMPORT void* search_mmap_candidate(struct process *proc, size_t length,
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:switch_ms
- Input		:struct memory_space *ms_to
+ Input		:struct process *from
+ 		 < switch from >
+ 		 struct process *to
  		 < switch to >
  Output		:void
  Return		:void
  Description	:switch memory space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void switch_ms(struct memory_space *ms_to);
+IMPORT void switch_ms(struct process *from, struct process *to);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_extend_brk
+ Input		:struct process *proc
+ 		 < process to extend its brk >
+ 		 unsigned long new_brk
+ 		 < end address of new break. must be aligned to page size >
+ Output		:void
+ Return		:void*
+ 		 < new break >
+ Description	:extend break
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void* vm_extend_brk(struct process *proc, unsigned long new_brk);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_extend_stack
+ Input		:struct process *proc
+ 		 < process to extend its stack area >
+ 		 unsigned long new_extend
+ 		 < new extension size >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:extend stack
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vm_extend_stack(struct process *proc, unsigned long new_extend);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_vm_list
+ Input		:struct process *proc
+ 		 < show its vms >
+ Output		:void
+ Return		:void
+ Description	:show vm list
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void show_vm_list(struct process *proc);
 
 #endif	// __BK_VM_H__

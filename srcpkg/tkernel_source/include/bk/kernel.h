@@ -47,14 +47,21 @@
 #include <cpu.h>
 #include <libstr.h>
 
+#include <bk/bk.h>
 #include <bk/bprocess.h>
 #include <bk/typedef.h>
+#include <bk/signal.h>
 #include <bk/memory/access.h>
 #include <bk/uapi/errno.h>
 
 #include <sys/segment.h>
 
 #include <tk/typedef.h>
+#include <tk/syscall.h>
+#include <tk/dbgspt.h>
+#include <tk/isyscall.h>
+
+#include <tstdlib/list.h>
 
 /*
 ==================================================================================

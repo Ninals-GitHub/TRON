@@ -63,7 +63,7 @@
 
 ==================================================================================
 */
-#define	MMPA_PAGESIZE		PAGESIZE
+#define	MMAP_PAGESIZE		PAGESIZE
 
 /*
 ==================================================================================
@@ -109,6 +109,15 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 {
 	struct process *current = get_current();
 	
+#if 0
+	printf("mmap[*addr=0x%08X, ", addr);
+	printf("length=%d, ", length);
+	printf("prot=0x%08X, ", prot);
+	printf("flags=0x%08X, ", flags);
+	printf("fd=%d, ", fd);
+	printf("offset=%d]\n", offset);
+#endif
+	
 	return(xmmap(current, addr, length, prot, flags, fd, offset));
 }
 
@@ -142,7 +151,7 @@ SYSCALL void* mmap2(void *addr, size_t length, int prot,
 	printf("mmap2:");
 #endif
 	allocated = xmmap(current, addr, length, prot,
-				flags, fd, pgoffset * MMPA_PAGESIZE);
+				flags, fd, pgoffset * MMAP_PAGESIZE);
 	
 	return(allocated);
 }
@@ -224,16 +233,11 @@ EXPORT void* xmmap(struct process *proc, void *addr, size_t length,
 		return(MAP_FAILED);
 	}
 	
-	if (!(flags & MAP_ANONYMOUS)) {
-		/* ------------------------------------------------------------ */
-		/* as for now, map file to memory is not suppoerted 		*/
-		/* future work:							*/
-		/* ------------------------------------------------------------ */
-		err = map_vm(proc, start, end, prot);
-	} else {
-		err = map_vm_annon(proc, start, end, prot);
-	}
-	
+	/* -------------------------------------------------------------------- */
+	/* as for now, map file to memory is not suppoerted			*/
+	/* future work:								*/
+	/* -------------------------------------------------------------------- */
+	err = map_vm(proc, start, end, prot, flags);
 	
 	if (UNLIKELY(err)) {
 		//printf("mmap failed:map_vm failed\n");
@@ -273,7 +277,7 @@ SYSCALL unsigned long brk(unsigned long addr)
 		/* ------------------------------------------------------------ */
 		/* shrink data segment						*/
 		/* ------------------------------------------------------------ */
-		err = munmap((void*)addr, mspace->end_brk - addr);
+		err = unmap_vm(proc, addr, mspace->end_brk - addr);
 		
 		if (UNLIKELY(err)) {
 			return(mspace->end_brk);
@@ -288,23 +292,16 @@ SYSCALL unsigned long brk(unsigned long addr)
 		(unsigned long)PageAlignU((const void*)(addr - mspace->end_brk));
 	
 	if (proc->rlimits[RLIMIT_DATA].rlim_cur <
-			(new_size + (mspace->end_data - mspace->start_data))) {
+			(new_size + (mspace->end_brk - mspace->start_brk))) {
 		//printf("<5:new addr=0x%08X>\n", mspace->end_brk);
 		return(mspace->end_brk);
 	}
 	
-	new_brk = (unsigned long)mmap((void*)mspace->end_brk, new_size,
-					PROT_READ | PROT_WRITE,
-					MAP_PRIVATE | MAP_ANONYMOUS,
-					-1, 0);
-	
-	if (UNLIKELY((void*)new_brk == MAP_FAILED)) {
+	if (UNLIKELY(MMAP_START < (new_size + mspace->end_brk))) {
 		return(mspace->end_brk);
 	}
 	
-	mspace->end_brk = new_brk + new_size;
-	
-	//printf("<4:new addr=0x%08X>\n", mspace->end_brk);
+	new_brk = vm_extend_brk(proc, new_size);
 	
 	return(mspace->end_brk);
 }
@@ -325,7 +322,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL int munmap(void *addr, size_t length)
 {
 	printf("munmap[addr=0x%08X", addr);
-	printf(", length=%d\n", length);
+	printf(", length=%d]\n", length);
 	return(unmap_vm(get_current(),
 			(unsigned long)addr, (unsigned long)addr + length));
 }

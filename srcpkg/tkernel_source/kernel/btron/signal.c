@@ -78,6 +78,32 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_signal
+ Input		:struct process *process
+ 		 < a process to initialize its sinal management >
+ Output		:void
+ Return		:void
+ Description	:initialize signal management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void init_signal(struct process *proc)
+{
+	int i;
+	struct signals *sig = &proc->signals;
+	
+	sig->count = 0;
+	sig->blocked = 0;
+	sig->real_blocked = 0;
+	sig->saved_sigmask = 0;	
+	
+	for (i = 0;i < NR_SIG;i++ ) {
+		sig->action[i].sa_handler = NULL;
+	}
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:rt_sigprocmask
  Input		:int how
  		 < how to change >
@@ -95,7 +121,7 @@ SYSCALL int rt_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 	struct signals *sig;
 	int err;
 	
-	sig = &(get_current())->signals;
+	sig = &get_current()->signals;
 	
 	if (UNLIKELY(!set)) {
 		if (!oldset) {
@@ -174,7 +200,48 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL int rt_sigaction(int signum,
 		const struct sigaction *act, struct sigaction *oldact)
 {
+	int err;
+	struct signals *signals;
 	
+	printf("rt_sigaction[signum=%d, ", signum);
+	printf("*act=0x%08X, ", act);
+	printf("*oldact=0x%08X\n", oldact);
+	
+	if (UNLIKELY(SIGRTMAX <= signum)) {
+		return(-EINVAL);
+	}
+	
+	signals = &get_current()->signals;
+	
+	if (!act) {
+		if (UNLIKELY(!oldact)) {
+			return(-EINVAL);
+		}
+		
+		err = ChkUsrSpaceRW((const void*)oldact, sizeof(struct sigaction));
+		
+		if (err) {
+			return(-EFAULT);
+		}
+		
+		memcpy((void*)oldact, (void*)&signals->action[signum],
+					sizeof(struct sigaction));
+	} else {
+		if (UNLIKELY(signum == SIGKILL || signum == SIGSTOP)) {
+			return(-EINVAL);
+		}
+		
+		err = ChkUsrSpaceR((const void*)act, sizeof(struct sigaction));
+		
+		if (err) {
+			return(-EFAULT);
+		}
+		
+		memcpy((void*)&signals->action[signum], (void*)act,
+					sizeof(struct sigaction));
+	}
+	
+	return(0);
 }
 
 /*
@@ -198,7 +265,7 @@ SYSCALL int tgkill(int tgid, int tid, int sig)
 	printf(", tid=%d", tid);
 	printf(", sig=%d]\n", sig);
 	
-	//for(;;);
+	for(;;);
 }
 
 /*

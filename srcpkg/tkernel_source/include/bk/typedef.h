@@ -98,6 +98,10 @@ typedef	long long		blkcnt_t;	/* Number of blocks		*/
 typedef	unsigned long long	fsblkcnt_t;	/* Number of blocks		*/
 typedef	unsigned long long	fsfilcnt_t;	/* Number of files		*/
 
+typedef struct {
+	int counter;
+} atomic_t;
+
 /*
 ==================================================================================
 

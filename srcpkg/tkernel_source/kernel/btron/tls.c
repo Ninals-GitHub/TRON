@@ -44,7 +44,7 @@
 #include <cpu.h>
 
 #include <bk/kernel.h>
-#include <bk/uapi/ldt.h>
+#include <bk/tls.h>
 
 #include <t2ex/string.h>
 

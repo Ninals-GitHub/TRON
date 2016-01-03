@@ -65,7 +65,7 @@
 #define	SYS_NAME		(TRON_NAME " " DIST_NAME)
 
 //#define	SYS_RELEASE		"0.01"
-#define	SYS_RELEASE		"3"
+#define	SYS_RELEASE		"4"
 
 
 #define	TRON_VERSION		"2.01"
@@ -241,6 +241,38 @@ SYSCALL int oldolduname(struct oldold_utsname *buf)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:getpid
+ Input		:void
+ Output		:void
+ Return		:pid_t
+ 		 < pid of current process >
+ Description	:get pid of current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL pid_t getpid(void)
+{
+	return(get_current()->pid);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:getppid
+ Input		:void
+ Output		:void
+ Return		:pid_t
+ 		 < pid of parent process >
+ Description	:get pid of parent process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL pid_t getppid(void)
+{
+	struct process *parent = get_current()->parent;
+	
+	return(parent->pid);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:gettid
  Input		:void
  Output		:void
@@ -277,7 +309,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t geteuid32(void)
 {
-	//printf("geteuid32[%d]\n", get_current()->euid);
+	printf("geteuid32[%d]\n", get_current()->euid);
 	return(get_current()->euid);
 }
 
@@ -293,7 +325,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t getuid32(void)
 {
-	//printf("getuid32[%d]\n", get_current()->uid);
+	printf("getuid32[%d]\n", get_current()->uid);
 	return(get_current()->uid);
 }
 
@@ -309,7 +341,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t getegid32(void)
 {
-	//printf("getegid32[%d]\n", get_current()->egid);
+	printf("getegid32[%d]\n", get_current()->egid);
 	return(get_current()->egid);
 }
 
@@ -325,7 +357,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t getgid32(void)
 {
-	//printf("getgid32[%d]\n", get_current()->gid);
+	printf("getgid32[%d]\n", get_current()->gid);
 	return(get_current()->gid);
 }
 
@@ -342,6 +374,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT char* get_machine_name(void)
 {
 	return(tron_utsname.machine);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:restart_syscall
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:restart a system call after interruption by a stop
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int restart_syscall(void)
+{
+	printf("restart_syscall pid=%d\n", get_current()->pid);
+	printf("stopped\n");
+	for(;;);
 }
 
 /*

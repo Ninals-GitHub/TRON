@@ -252,6 +252,7 @@ tstdlib_bitsearch0_window( void *base, W width, int window_len )
 					len = 0;
 				}
 				if (mask == (_BIT_SHIFT_LONG(sizeof(unsigned long) * 8 - 1))) {
+					mask = _BIT_SET_LONG(0);
 					++position;
 					break;
 				}

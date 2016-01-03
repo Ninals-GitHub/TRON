@@ -69,6 +69,10 @@
 
 ==================================================================================
 */
+#define	TIME_SEC_TO_MS(sec)		(sec * 1000)
+#define	TIME_MS_TO_US(ms)		(ms * 1000)
+#define	TIME_SEC_TO_US(sec)		(TIME_MS_TO_US(TIME_SEC_TO_MS(sec)))
+
 struct timeval {
 	long	tv_sec;		/* Second */
 	long	tv_usec;	/* Microsecond */

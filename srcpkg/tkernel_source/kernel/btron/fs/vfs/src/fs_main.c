@@ -144,9 +144,7 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 			}
 			
 			fs_attach("mda", "ram", FIMP_FAT, 0, NULL);
-			//vd_printf("ramdisk attatch %d\n", fs_attach("mda", "/", FIMP_FAT, 0, NULL));
-			
-
+			//vd_printf("ramdisk attatch %d\n", fs_attach("mda", "ram", FIMP_FAT, 0, NULL));
 		}
 	} else {		/* Finish */
 		/* Assume all tasks are never executing fs_xxx() call !! */

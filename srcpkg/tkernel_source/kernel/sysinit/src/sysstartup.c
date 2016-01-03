@@ -19,6 +19,7 @@
 
 #include "sysinit.h"
 #include <tk/kernel.h>
+#include <bk/bk.h>
 #include <bk/bprocess.h>
 #include <bk/memory/slab.h>
 #include <bk/memory/vm.h>
@@ -78,9 +79,9 @@ EXPORT ER init_system( void )
 		goto err_ret;
 	}
 #ifdef _BTRON_
-	ercd = init_proc_management();
+	ercd = init_bk_earlier();
 	if (ercd < E_OK) {
-		vd_printf("error init_proc_management\n");
+		vd_printf("error init_bk_earlier\n");
 		goto err_ret;
 	}
 
@@ -101,11 +102,11 @@ EXPORT ER init_system( void )
 		goto err_ret;
 	}
 	
-	/* Initialize vm */
+	/* Initialize bk */
 	DispProgress(0x15);
-	ercd = init_mm();
+	ercd = init_bk();
 	if ( ercd < E_OK ) {
-		vd_printf("init_mm\n");
+		vd_printf("init_bk\n");
 		goto err_ret;
 	}
 #else

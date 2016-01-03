@@ -56,7 +56,8 @@
 */
 LOCAL INLINE void _free_vm(struct process *proc);
 LOCAL INLINE void __free_vm(struct vm *vm);
-LOCAL void copy_vm_contents(struct vm *from, struct vm *to);
+LOCAL void copy_vm_contents(struct vm *to, struct vm *from);
+LOCAL int verify_vm_contents(struct vm *dest, struct vm *with);
 
 /*
 ==================================================================================
@@ -106,34 +107,34 @@ EXPORT int init_mm(void)
 	mspace_cache = kmem_cache_create(mspace_cache_name,
 					sizeof(struct memory_space), 0, 0, NULL);
 	
-	if (!mspace_cache) {
+	if (UNLIKELY(!mspace_cache)) {
 		vd_printf("error:mspace_cache\n");
 		return(-ENOMEM);
 	}
 
 	vm_cache = kmem_cache_create(vm_cache_name, sizeof(struct vm), 0, 0, NULL);
 	
-	if (!vm_cache) {
+	if (UNLIKELY(!vm_cache)) {
 		vd_printf("error:vm_cache\n");
 		return(-ENOMEM);
 	}
 	
-#if 0
-	vm_pages_cache =kmem_cache_create(vm_pages_cache_name,
-					sizeof(struct vm_pages), 0, 0, NULL);
-	
-	if (!vm_pages_cache) {
-		vd_printf("error:vm_pages_cache\n");
-		goto err_create_cache;
-	}
-#endif
-	
 	return(0);
-#if 0
-err_create_cache:
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:destroy_mm
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:destroy virtual memory management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void destroy_mm(void)
+{
+	kmem_cache_destroy(mspace_cache);
 	kmem_cache_destroy(vm_cache);
-	return(-ENOMEM);
-#endif
 }
 
 /*
@@ -152,8 +153,8 @@ EXPORT struct memory_space* alloc_memory_space(void)
 	
 	mspace = (struct memory_space*)kmem_cache_alloc(mspace_cache, 0);
 	
-	if (!mspace) {
-		return(NULL);
+	if (UNLIKELY(!mspace)) {
+		return(mspace);
 	}
 	
 	memset((void*)mspace, 0x00, sizeof(struct memory_space));
@@ -188,18 +189,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:allocate a vm struct
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct vm*
-//alloc_vm(unsigned long start, unsigned long end, unsigned int prot)
-alloc_vm(void)
+EXPORT struct vm* alloc_vm(void)
 {
 	struct vm *vm = (struct vm*)kmem_cache_alloc(vm_cache, 0);
 	
-	init_list(&vm->link_vm);
+	if (UNLIKELY(!vm)) {
+		return(vm);
+	}
 	
-	vm->pages = NULL;
-	vm->nr_pages = 0;
-	vm->start = 0;
-	vm->end = 0;
+	memset((void*)vm, 0x00, sizeof(struct vm));
+	
+	init_list(&vm->link_vm);
 	
 	return(vm);
 }
@@ -218,13 +218,16 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void free_vm_all(struct process *proc)
 {
 	/* -------------------------------------------------------------------- */
-	/* free all page tables and page directory				*/
-	/* -------------------------------------------------------------------- */
-	free_pagedir_tables(proc->mspace->pde);
-	/* -------------------------------------------------------------------- */
 	/* free virtual memory for a user space					*/
 	/* -------------------------------------------------------------------- */
 	_free_vm(proc);
+	
+	/* -------------------------------------------------------------------- */
+	/* free all user page tables and page directory				*/
+	/* -------------------------------------------------------------------- */
+	free_user_pagetables(proc->mspace->pde);
+	
+	free_pagedir(proc->mspace->pde);
 
 }
 
@@ -243,7 +246,7 @@ EXPORT void free_vm(struct process *proc)
 	/* -------------------------------------------------------------------- */
 	/* free user space page tables						*/
 	/* -------------------------------------------------------------------- */
-	free_pagetables(proc->mspace->pde);
+	free_user_pagetables(proc->mspace->pde);
 	/* -------------------------------------------------------------------- */
 	/* free virtual memory for a user space					*/
 	/* -------------------------------------------------------------------- */
@@ -266,7 +269,7 @@ EXPORT struct page** alloc_vm_pages(int nr_pages)
 {
 	struct page **vp;
 	
-	vp = (struct page**)kmalloc(sizeof(struct page*) * nr_pages, 0);
+	vp = (struct page**)kcalloc(nr_pages, sizeof(struct page*), 0);
 	
 	return(vp);
 }
@@ -284,6 +287,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void free_vm_pages(struct vm *vm)
 {
 	vm->nr_pages = 0;
+	
 	kfree((void*)vm->pages);
 }
 
@@ -307,7 +311,7 @@ EXPORT int insert_vm_list(struct vm *new, struct process *proc)
 	struct vm *proc_vm_next;
 	struct vm *proc_vm_prev;
 	
-	if (is_empty_list(&proc->mspace->list_vm)) {
+	if (UNLIKELY(is_empty_list(&proc->mspace->list_vm))) {
 		add_list(&new->link_vm, &proc->mspace->list_vm);
 		return(0);
 	}
@@ -316,7 +320,11 @@ EXPORT int insert_vm_list(struct vm *new, struct process *proc)
 		proc_vm = get_entry(pos, struct vm, link_vm);
 		
 		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
-			add_list(&new->link_vm, pos);
+			if (new->end <= proc_vm->start) {
+				add_list(&new->link_vm, pos->prev);
+			} else {
+				add_list(&new->link_vm, pos);
+			}
 			return(0);
 		}
 		
@@ -343,20 +351,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_address_vm
  Input		:struct process *proc
  		 < get vm from the process >
- 		 unsigned long address
- 		 < user address which belongs to vm of process >
+ 		 unsigned long start
+ 		 < user start address which belongs to vm of process >
+ 		 unsigned long end
+ 		 < user end address which belongs to vm of process >
  Output		:void
  Return		:struct vm*
  		 < vm to which address belongs >
  Description	:get vm to which address belongs
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct vm* get_address_vm(struct process *proc, unsigned long address)
+EXPORT struct vm*
+get_address_vm(struct process *proc, unsigned long start, unsigned long end)
 {
 	struct vm *vm;
 	
 	list_for_each_entry(vm, &proc->mspace->list_vm, link_vm) {
-		if (vm->start <= address && address <= vm->end) {
+		if (vm->start <= start && end <= vm->end) {
 			return(vm);
 		}
 	}
@@ -382,6 +393,7 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 	pde_t *new_pde;
 	
 	if (UNLIKELY(!to->mspace)) {
+		printf("copy_mm:error:unexpected memory space\n");
 		return(-ENOMEM);
 	}
 	
@@ -397,7 +409,7 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 	}
 	
 	to->mspace->pde = new_pde;
-	
+#if 0	// copy at switch_ms
 	/* -------------------------------------------------------------------- */
 	/* copy kernel page tables						*/
 	/* -------------------------------------------------------------------- */
@@ -407,17 +419,10 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 		printf("copy_mm:err_copy_kernel_pagetalbes\n");
 		goto err_copy_kernel_pagetalbes;
 	}
-	
-	/* -------------------------------------------------------------------- */
-	/* copy user space							*/
-	/* -------------------------------------------------------------------- */
-#if 0
-	err = copy_pagetable(from, to);
-	
-	if (err) {
-		goto copy_pagetable_failed;
-	}
 #endif
+	/* -------------------------------------------------------------------- */
+	/* copy user vm and user page tables					*/
+	/* -------------------------------------------------------------------- */
 	err = copy_vm(from, to);
 	
 	if (UNLIKELY(err)) {
@@ -428,8 +433,8 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 	return(0);
 	
 copy_vm_failed:
-	free_pagedir_tables(to->mspace->pde);
-copy_pagetable_failed:
+	free_pagedir_tables_all(to->mspace->pde);
+//copy_pagetable_failed:
 	free_memory_space(to->mspace);
 	return(err);
 
@@ -458,17 +463,57 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 	struct memory_space *ms_to;
 	struct vm *vm_from;
 	struct vm *vm_to;
+	unsigned long size;
 	void *addr;
 	int err;
-#if 1
+	
+	ms_from = from->mspace;
+	ms_to = to->mspace;
+	
+	/* -------------------------------------------------------------------- */
+	/* copy text's vms							*/
+	/* -------------------------------------------------------------------- */
+	vm_from = get_address_vm(from, ms_from->start_code, ms_from->end_code);
+	
+	if (UNLIKELY(!vm_from)) {
+		err = -ENOMEM;
+		goto failed_get_address_vm_from;
+	}
+	
+	vm_to = alloc_vm();
+
+	if (UNLIKELY(!vm_to)) {
+		err = -ENOMEM;
+		goto failed_alloc_vm;
+	}
+	vm_to->start = vm_from->start;
+	vm_to->end = vm_from->end;
+	/* -------------------------------------------------------------------- */
+	/* copy page link information						*/
+	/* -------------------------------------------------------------------- */
+	err = copy_vm_pages(vm_from, vm_to);
+	
+	if (UNLIKELY(err)) {
+		__free_vm(vm_to);
+		goto failed_copy_vm_pages;
+	}
+	vm_to->prot = vm_from->prot;
+	vm_to->mmap_flags = vm_from->mmap_flags;
+	vm_to->mspace = ms_to;
+	/* -------------------------------------------------------------------- */
+	/* add it to process							*/
+	/* -------------------------------------------------------------------- */
+	add_list_tail(&vm_to->link_vm, &to->mspace->list_vm);
+#if 0
 	/* -------------------------------------------------------------------- */
 	/* first of all, copy all vms						*/
 	/* -------------------------------------------------------------------- */
 	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
 		struct vm *vm_to = alloc_vm();
 		
-		if (!vm_to) {
-			return(-ENOMEM);
+		if (UNLIKELY(!vm_to)) {
+			err = -ENOMEM;
+			goto failed_alloc_vm;
 		}
 		
 		vm_to->start = vm_from->start;
@@ -487,7 +532,7 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 		/* ------------------------------------------------------------ */
 		err = copy_vm_pages(vm_from, vm_to);
 		
-		if (err) {
+		if (UNLIKELY(err)) {
 			__free_vm(vm_to);
 			goto failed_copy_vm_pages;
 		}
@@ -497,122 +542,105 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 		add_list_tail(&vm_to->link_vm, &to->mspace->list_vm);
 	}
 #endif
-	ms_from = from->mspace;
-	ms_to = to->mspace;
-
+	
+	/* -------------------------------------------------------------------- */
+	/* copy text pages							*/
+	/* -------------------------------------------------------------------- */
+	err = copy_user_pagetable(from, to,
+				ms_from->start_code, ms_from->end_code);
+	
+	if (UNLIKELY(err)) {
+		printf("copy_vm:error:copy_user_pagetable:text");
+		goto failed_copy_user_pagetable;
+	}
+	
+	//show_pagetables(to, ms_from->start_code, ms_from->start_code + 0x4000);
+	
+	/* -------------------------------------------------------------------- */
+	/* copy data pages							*/
+	/* -------------------------------------------------------------------- */
+	err = copy_user_pagetable(from, to,
+				ms_from->start_data, ms_from->end_data);
+	
+	if (UNLIKELY(err)) {
+		printf("copy_vm:error:copy_user_pagetable:data");
+		goto failed_copy_user_pagetable;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* copy other vms							*/
+	/* -------------------------------------------------------------------- */
+	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
+		unsigned long start;
+		struct vm *vm_to;
+		
+#if 0
+		if ((vm_from->start == ms_from->start_code) ||
+			(vm_from->start == ms_from->start_data)) {
+#else
+		if (UNLIKELY(vm_from->start == ms_from->start_code)) {
+#endif
+			continue;
+		}
+		
+		if (UNLIKELY(vm_from->start == ms_from->start_stack)) {
+			start = PROC_STACK_START;
+			size = PROC_STACK_SIZE;
+		} else {
+			start = vm_from->start;
+			size = vm_from->end - vm_from->start;
+		}
+		
+		addr = xmmap(to, (void*)start, size,
+				vm_from->prot, vm_from->mmap_flags,
+				-1, 0);
+		
+		if (UNLIKELY(addr == MAP_FAILED)) {
+			err = -ENOMEM;
+			goto failed_mmap_bss;
+		}
+		
+		vm_to = get_address_vm(to, (unsigned long)addr,
+						(unsigned long)addr + size);
+		
+		if (UNLIKELY(!vm_to)) {
+			err = -ENOMEM;
+			goto failed_get_address_vm_to;
+		}
+		
+		copy_vm_contents(vm_to, vm_from);
+	}
+	
 #if 0
 	/* -------------------------------------------------------------------- */
-	/* share text area between *from and *to				*/
+	/* copy vm contents							*/
 	/* -------------------------------------------------------------------- */
-	vm_to = alloc_vm();
-	
-	if (UNLIKELY(!vm_to)) {
-		err = -ENOMEM;
-		goto failed_alloc_vm_to;
+	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
+		unsigned long start;
+		struct vm *vm_to;
+		int valid;
+		
+		if ((vm_from->start == ms_from->start_code) ||
+			(vm_from->start == ms_from->start_data))
+		{
+			continue;
+		}
+		
+		if (UNLIKELY(!vm_to)) {
+			err = -ENOMEM;
+			printf("errrrrrrrrr!\n");
+			for(;;);
+		}
+		vm_to = get_address_vm(to, vm_from->start, vm_from->end);
+		
+		valid = verify_vm_contents(vm_to, vm_from);
+		
+		if (valid) {
+			printf("invalid contents\n");
+			for(;;);
+		}
 	}
-	
-	vm_from = get_address_vm(from, ms_from->start_code);
-	
-	if (UNLIKELY(!vm_from)) {
-		goto failed_get_address_vm_from;
-	}
-	
-	err = copy_vm_pages(vm_from, vm_to);
-	
-	if (UNLIKELY(err)) {
-		goto failed_copy_vm_pages_text;
-	}
-	
-	insert_vm_list(vm_to, to);
-	
-	/* -------------------------------------------------------------------- */
-	/* share data area between *from and *to				*/
-	/* -------------------------------------------------------------------- */
-	vm_to = alloc_vm();
-	
-	if (UNLIKELY(!vm_to)) {
-		err = -ENOMEM;
-		goto failed_alloc_vm_to;
-	}
-	
-	vm_from = get_address_vm(from, ms_from->start_data);
-	
-	if (UNLIKELY(!vm_from)) {
-		goto failed_get_address_vm_from_data;
-	}
-	
-	err = copy_vm_pages(vm_from, vm_to);
-	
-	if (UNLIKELY(err)) {
-		goto failed_copy_vm_pages_data;
-	}
-	
-	insert_vm_list(vm_to, to);
 #endif
-	/* -------------------------------------------------------------------- */
-	/* copy bss								*/
-	/* -------------------------------------------------------------------- */
-	unmap_vm(to, ms_from->start_brk, ms_from->end_brk);
-	
-	addr = xmmap(to, (void*)ms_from->start_brk,
-			ms_from->end_brk - ms_from->start_brk,
-			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
-			-1, 0);
-	
-	if (addr == MAP_FAILED) {
-		err = -ENOMEM;
-		goto failed_mmap_bss;
-	}
-	
-	vm_from = get_address_vm(from, ms_from->start_brk);
-	
-	if (UNLIKELY(!vm_from)) {
-		err = -ENOMEM;
-		goto failed_get_address_vm_from;
-	}
-	
-	vm_to = get_address_vm(to, ms_from->start_brk);
-	
-	if (UNLIKELY(!vm_to)) {
-		err = -ENOMEM;
-		goto failed_get_address_vm_to;
-	}
-	
-	copy_vm_contents(vm_to, vm_from);
-	
-	/* -------------------------------------------------------------------- */
-	/* copy stack								*/
-	/* -------------------------------------------------------------------- */
-	unmap_vm(to, ms_from->start_stack,
-				ms_from->end_stack - ms_from->start_stack);
-	
-	addr = xmmap(to, (void*)ms_from->start_stack,
-			ms_from->end_stack - ms_from->start_stack,
-			PROT_READ | PROT_WRITE | PROT_GROWSUP,
-			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
-			-1, 0);
-	
-	if (addr == MAP_FAILED) {
-		err = -ENOMEM;
-		goto failed_mmap_bss;
-	}
-	
-	vm_from = get_address_vm(from, ms_from->start_brk);
-	
-	if (UNLIKELY(!vm_from)) {
-		err = -ENOMEM;
-		goto failed_get_address_vm_from;
-	}
-	
-	vm_to = get_address_vm(to, ms_from->start_brk);
-	
-	if (UNLIKELY(!vm_to)) {
-		err = -ENOMEM;
-		goto failed_get_address_vm_to;
-	}
-	
-	copy_vm_contents(vm_to, vm_from);
 	
 	/* -------------------------------------------------------------------- */
 	/* update memory space information					*/
@@ -635,12 +663,17 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 	ms_to->start_env = ms_from->end_env;
 	ms_to->exe_fd = ms_from->exe_fd;
 	
+	//show_pagetables(to, ms_from->start_code, ms_from->start_code + 0x4000);
+	//show_vm_list(to);
+	
 	return(0);
 
+failed_copy_user_pagetable:
 failed_get_address_vm_to:
 failed_get_address_vm_from:
 failed_copy_vm_pages:
 failed_mmap_bss:
+failed_alloc_vm:
 	free_vm(to);
 	return(err);
 
@@ -677,16 +710,20 @@ EXPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to)
 {
 	struct page **pages;
 	int i;
-	
 	pages = alloc_vm_pages(vm_from->nr_pages);
 	
-	if (!pages) {
+	if (UNLIKELY(!pages)) {
 		return(-ENOMEM);
 	}
 	
+#if 0
+	printf("vm_from->start:0x%08X ", vm_from->start);
+	printf("vm_from->end:0x%08X ", vm_from->end);
+	printf("vm_from->nr_pages:%d\n", vm_from->nr_pages);
+#endif
 	for (i = 0;i < vm_from->nr_pages;i++) {
-		pages[i] = vm_from->pages[i];
-		pages[i]->count++;
+		(pages)[i] = (vm_from->pages)[i];
+		(vm_from->pages)[i]->count++;
 	}
 	
 	vm_to->pages = pages;
@@ -696,7 +733,7 @@ EXPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:xvm_map_vm
+ Funtion	:map_vm
  Input		:struct process *proc
  		 < a process to create its vm >
  		 unsigned long mmap_start
@@ -705,8 +742,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < end address of user space >
  		 unsigned int prot
  		 < permission >
- 		 int anon
- 		 < boolean : anonymous mappiing or not >
+ 		 unsigned int mmap_flags
+ 		 < mmap flags >
  Output		:void
  Return		:int
  		 < result >
@@ -715,47 +752,44 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 future work;
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int xvm_map_vm(struct process *proc,
+EXPORT int map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
-			unsigned int prot, int anon)
+			unsigned int prot, unsigned int mmap_flags)
 {
 	int err;
 	int i, err_i;
 	struct vm *vm = alloc_vm();
 	
-	if (!vm) {
+	if (UNLIKELY(!vm)) {
 		printf("map_vm failed:1\n");
 		return(-ENOMEM);
 	}
 	
-	if (mmap_end <= mmap_start) {
+	if (UNLIKELY(mmap_end <= mmap_start)) {
 		printf("map_vm failed:2\n");
 		return(-EINVAL);
 	}
 	
 	vm->start = mmap_start & PAGE_MASK;
 	vm->end = RoundPage(mmap_end);
-	vm->prot = prot;
 	vm->nr_pages = PageCount(mmap_end - mmap_start);
 	
 	vm->pages = alloc_vm_pages(vm->nr_pages);
 	
-	if (!vm->pages) {
+	if (UNLIKELY(!vm->pages)) {
 		err = -ENOMEM;
 		printf("map_vm failed:3\n");
 		goto failed_alloc_vm_pages;
 	}
 	
 	vm->prot = prot;
+	vm->mmap_flags = mmap_flags;
+	vm->mspace = proc->mspace;
 	
 	for (i = 0;i < vm->nr_pages;i++) {
-		//if (anon) {
 			vm->pages[i] = alloc_zeroed_page();
-		//} else {
-		//	vm->pages[i] = alloc_page();
-		//}
-		
-		if (!vm->pages[i]) {
+			
+		if (UNLIKELY(!vm->pages[i])) {
 			err_i = i;
 			err = -ENOMEM;
 			printf("map_vm failed:4\n");
@@ -767,14 +801,14 @@ EXPORT int xvm_map_vm(struct process *proc,
 	
 	err = map_pages_to_vm(proc, vm);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		printf("map_vm failed:5\n");
 		goto failed_map_pages_to_vm;
 	}
 	
 	err = insert_vm_list(vm, proc);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		printf("map_vm failed:6\n");
 		err = -EINVAL;
 		goto failed_insert_vm;
@@ -784,10 +818,16 @@ EXPORT int xvm_map_vm(struct process *proc,
 	
 failed_insert_vm:
 failed_map_pages_to_vm:
+	_free_pagetables(proc->mspace->pde, mmap_start, mmap_end);
+	free_vm_pages(vm);
+	__free_vm(vm);
+	return(err);
+	
 failed_alloc_page:
 	for (i = 0;i < err_i;i++) {
 		free_page(vm->pages[i]);
 	}
+	free_vm_pages(vm);
 failed_alloc_vm_pages:
 
 	__free_vm(vm);
@@ -836,12 +876,16 @@ EXPORT int unmap_vm(struct process *proc,
 		//printf("vm->start:0x%08X ", vm->start);
 		//printf("vm->end:0x%08X\n", vm->end);
 		if (vm->start == mmap_start && mmap_end == vm->end) {
+			_free_pagetables(proc->mspace->pde, vm->start, vm->end);
+			
+			del_list(&vm->link_vm);
+			
 			if (vm->nr_pages && vm->pages) {
 				free_vm_pages(vm);
 			}
 			__free_vm(vm);
 			return(err);
-		} else if (vm->start < mmap_start && mmap_end < vm->end) {
+		} else if (vm->start <= mmap_start && mmap_end <= vm->end) {
 		/* ------------------------------------------------------------ */
 		/* split vm area						*/
 		/* ------------------------------------------------------------ */
@@ -851,6 +895,12 @@ EXPORT int unmap_vm(struct process *proc,
 			unsigned long i;
 			unsigned long index;
 			
+#if 0
+			printf("unmap:vm->start[0x%08X] ", vm->start);
+			printf("unmap:vm->end[0x%08X]\n", vm->end);
+			printf("unmap:mmap_start[0x%08X] ", mmap_start);
+			printf("unmap:mmap_end[0x%08X]\n", mmap_end);
+#endif
 			prev = alloc_vm();
 			
 			if (UNLIKELY(!prev)) {
@@ -899,11 +949,9 @@ EXPORT int unmap_vm(struct process *proc,
 			/* ---------------------------------------------------- */
 			/* free pages of split area				*/
 			/* ---------------------------------------------------- */
-			for (;i < index + nr_del;i++) {
-				free_page(vm->pages[i]);
-			}
+			_free_pagetables(proc->mspace->pde, mmap_start, mmap_end);
 			
-			index = i;
+			index = index + nr_del;
 			/* ---------------------------------------------------- */
 			/* copy pages to next area				*/
 			/* ---------------------------------------------------- */
@@ -917,6 +965,11 @@ EXPORT int unmap_vm(struct process *proc,
 			add_list(&next->link_vm, &vm->link_vm);
 			
 			del_list(&vm->link_vm);
+			
+			if (vm->nr_pages && vm->pages) {
+				free_vm_pages(vm);
+			}
+			__free_vm(vm);
 		}
 	}
 	
@@ -969,7 +1022,7 @@ EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
 	candidate.start = MMAP_START + offset;
 	candidate.end = candidate.start + length;
 	
-	if (proc->mspace->start_stack <= candidate.end) {
+	if (UNLIKELY(proc->mspace->start_stack <= candidate.end)) {
 		return(MAP_FAILED);
 	}
 	
@@ -1019,17 +1072,239 @@ EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:switch_ms
- Input		:struct memory_space *ms_to
+ Input		:struct process *from
+ 		 < switch from >
+ 		 struct process *to
  		 < switch to >
  Output		:void
  Return		:void
  Description	:switch memory space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void switch_ms(struct memory_space *ms_to)
+EXPORT void switch_ms(struct process *from, struct process *to)
 {
-	loadPdbr((unsigned long)ms_to->pde - KERNEL_BASE_ADDR);
+	int err;
+	
+	err = copy_kernel_pagetables(from, to);
+	
+	if (UNLIKELY(err)) {
+		printf("switch_ms:unexpected error\n");
+		for(;;);
+	}
+	
+	//show_pagetables(to, to->mspace->start_code, to->mspace->start_code + 0x4000);
+	
+	loadPdbr((unsigned long)to->mspace->pde - KERNEL_BASE_ADDR);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_extend_brk
+ Input		:struct process *proc
+ 		 < process to extend its brk >
+ 		 unsigned long new_brk
+ 		 < extension size of new break. must be aligned to page size >
+ Output		:void
+ Return		:void*
+ 		 < new break >
+ Description	:extend break
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void* vm_extend_brk(struct process *proc, unsigned long new_brk)
+{
+	struct memory_space *mspace = proc->mspace;
+	struct vm *vm_brk;
+	struct vm vm_extend;
+	void *addr;
+	unsigned long nr_ex_pages;
+	struct page **new_pages;
+	int i;
+	int err;
+	
+	if (UNLIKELY(mspace->start_brk == mspace->end_brk)) {
+		addr = xmmap(proc, (void*)mspace->start_brk, new_brk,
+				PROT_READ | PROT_WRITE,
+				MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+		
+		if (UNLIKELY((void*)MAP_FAILED == addr)) {
+			return(addr);
+		}
+		
+		goto new_brk_out;
+	}
+	
+	vm_brk = get_address_vm(proc, mspace->start_brk, mspace->end_brk);
+	
+	//printf("vm_brk->start:0x%08X ", vm_brk->start);
+	//printf("vm_brk->end:0x%08X\n", vm_brk->end);
+	
+	if (!vm_brk) {
+		return((void*)MAP_FAILED);
+	}
+	
+	nr_ex_pages = PageCount(new_brk);
+	
+	new_pages = alloc_vm_pages(vm_brk->nr_pages + nr_ex_pages);
+	
+	if (!new_pages) {
+		return((void*)MAP_FAILED);
+	}
+	
+	for (i = 0;i < vm_brk->nr_pages;i++) {
+		new_pages[i] = vm_brk->pages[i];
+	}
+	
+	for (i = vm_brk->nr_pages;i < vm_brk->nr_pages + nr_ex_pages;i++) {
+		new_pages[i] = alloc_zeroed_page();
+	}
+	
+	vm_extend.nr_pages = nr_ex_pages;
+	vm_extend.pages = &new_pages[vm_brk->nr_pages];
+	vm_extend.prot = vm_brk->prot;
+	vm_extend.mspace = vm_brk->mspace;
+	vm_extend.start = vm_brk->end;
+	vm_extend.end = vm_extend.start + new_brk;
+	
+	err = map_pages_to_vm(proc, &vm_extend);
+	
+	if (err) {
+		vm_extend.pages = new_pages;
+		free_vm_pages(&vm_extend);
+		return((void*)MAP_FAILED);
+	}
+	
+	nr_ex_pages += vm_brk->nr_pages;
+	free_vm_pages(vm_brk);
+	
+	vm_brk->pages = new_pages;
+	vm_brk->end += new_brk;
+	vm_brk->nr_pages = nr_ex_pages;
+	
+	
+new_brk_out:
+	mspace->end_brk += new_brk;
+	//show_vm_list(proc);
+	
+	return((void*)mspace->end_brk);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_extend_stack
+ Input		:struct process *proc
+ 		 < process to extend its stack area >
+ 		 unsigned long new_extend
+ 		 < new extension size >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:extend stack
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
+{
+
+	struct memory_space *mspace = proc->mspace;
+	struct vm *vm_stack;
+	struct vm vm_extend;
+	unsigned long nr_ex_pages;
+	struct page **new_pages;
+	int i;
+	int err;
+	
+	vm_stack = get_address_vm(proc, mspace->start_stack, mspace->end_stack);
+	
+	printf("vm_stack->start:0x%08X ", vm_stack->start);
+	printf("vm_statck->end:0x%08X\n", vm_stack->end);
+	
+	if (!vm_stack) {
+		return(-ENOMEM);
+	}
+	
+	nr_ex_pages = PageCount(new_extend);
+	
+	new_pages = alloc_vm_pages(vm_stack->nr_pages + nr_ex_pages);
+	
+	if (!new_pages) {
+		return(-ENOMEM);
+	}
+	
+	for (i = 0;i < vm_stack->nr_pages;i++) {
+		new_pages[i] = vm_stack->pages[i];
+	}
+	
+	for (i = vm_stack->nr_pages;i < vm_stack->nr_pages + nr_ex_pages;i++) {
+		new_pages[i] = alloc_zeroed_page();
+	}
+	
+	vm_extend.nr_pages = nr_ex_pages;
+	vm_extend.pages = &new_pages[vm_stack->nr_pages];
+	vm_extend.prot = vm_stack->prot;
+	vm_extend.mspace = vm_stack->mspace;
+	vm_extend.start = vm_stack->start - new_extend;
+	vm_extend.end = vm_stack->start;
+	
+	err = map_pages_to_vm(proc, &vm_extend);
+	
+	if (err) {
+		vm_extend.pages = new_pages;
+		free_vm_pages(&vm_extend);
+		return(err);
+	}
+	
+	nr_ex_pages += vm_stack->nr_pages;
+	free_vm_pages(vm_stack);
+	
+	vm_stack->pages = new_pages;
+	vm_stack->start -= new_extend;
+	vm_stack->nr_pages = nr_ex_pages;
+	
+	mspace->start_stack = vm_stack->start;
+	printf("new vm_stack->start:0x%08X ", vm_stack->start);
+	printf("new vm_statck->end:0x%08X\n", vm_stack->end);
+	
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_vm_list
+ Input		:struct process *proc
+ 		 < show its vms >
+ Output		:void
+ Return		:void
+ Description	:show vm list
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void show_vm_list(struct process *proc)
+{
+	struct memory_space *mspace = proc->mspace;
+	struct vm *vm;
+	struct vm *temp;
+	int index = 0;
+	
+	printf("show vm list[pid=%d]:\n", proc->pid);
+	
+	if (UNLIKELY(is_empty_list(&mspace->list_vm))) {
+		printf("there is no vm list\n");
+		return;
+	}
+	
+	printf("start_code =0x%08X, end_code =0x%08X\n",
+		mspace->start_code, mspace->end_code);
+	printf("start_data =0x%08X, end_data =0x%08X\n",
+		mspace->start_data, mspace->end_data);
+	printf("start_brk  =0x%08X, end_brk  =0x%08X\n",
+		mspace->start_brk, mspace->end_brk);
+	printf("start_stack=0x%08X, end_stack=0x%08X\n",
+		mspace->start_stack, mspace->end_stack);
+	
+	list_for_each_entry_safe(vm, temp, &proc->mspace->list_vm, link_vm) {
+		printf("[%d]:vm->start=0x%08X, vm->end=0x%08X\n",
+				index++, vm->start, vm->end);
+	}
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -1063,7 +1338,7 @@ LOCAL INLINE void _free_vm(struct process *proc)
 	struct vm *vm;
 	struct vm *temp;
 	
-	if (is_empty_list(&proc->mspace->list_vm)) {
+	if (UNLIKELY(is_empty_list(&proc->mspace->list_vm))) {
 		return;
 	}
 	/* -------------------------------------------------------------------- */
@@ -1097,18 +1372,21 @@ LOCAL INLINE void __free_vm(struct vm *vm)
 /*
 ==================================================================================
  Funtion	:copy_vm_contents
- Input		:struct vm *from
- 		 < copy from >
- 		 struct vm *to
+ Input		:struct vm *to
  		 < copy to >
+ 		 struct vm *from
+ 		 < copy from >
  Output		:void
  Return		:void
  Description	:copy contents of vm
 ==================================================================================
 */
-LOCAL void copy_vm_contents(struct vm *from, struct vm *to)
+LOCAL void copy_vm_contents(struct vm *to, struct vm *from)
 {
 	int i;
+	
+	//printf("from->nr_pages:%d ", from->nr_pages);
+	//printf("to->nr_pages:%d\n", to->nr_pages);
 	
 	for (i = 0;i < from->nr_pages;i++) {
 		struct page *page_from = from->pages[i];
@@ -1117,8 +1395,45 @@ LOCAL void copy_vm_contents(struct vm *from, struct vm *to)
 		unsigned long addr_from = page_to_address(page_from);
 		unsigned long addr_to = page_to_address(page_to);
 		
+		//printf("addr_from:0x%08X ", addr_from);
+		//printf("addr_to:0x%08X\n", addr_to);
+		
 		memcpy((void*)addr_to, (void*)addr_from, PAGESIZE);
 	}
+}
+
+/*
+==================================================================================
+ Funtion	:verify_vm_contents
+ Input		:struct vm *dest
+ 		 < verify the contents *with >
+ 		 struct vm *with
+ 		 < verify with >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:verify the vm contents
+==================================================================================
+*/
+LOCAL int verify_vm_contents(struct vm *dest, struct vm *with)
+{
+	int i, j;
+	
+	for (i = 0;i < with->nr_pages;i++) {
+		struct page *page_with = with->pages[i];
+		struct page *page_dest = dest->pages[i];
+		
+		char *addr_with = (char*)page_to_address(page_with);
+		char *addr_dest = (char*)page_to_address(page_dest);
+		
+		for (j = 0;j < PAGESIZE;j++) {
+			if (*(addr_with + j) != *(addr_dest + j)) {
+				return(1);
+			}
+		}
+	}
+	
+	return(0);
 }
 
 /*

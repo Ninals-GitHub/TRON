@@ -528,7 +528,7 @@ EXPORT void* kcalloc(size_t n, size_t size, unsigned int flags)
 	object = kmalloc(size * n, flags);
 	
 	if (object) {
-		memset(object, 0x00, size);
+		memset(object, 0x00, size * n);
 	}
 	
 	return(object);

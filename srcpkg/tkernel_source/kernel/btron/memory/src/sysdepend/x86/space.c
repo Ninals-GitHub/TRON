@@ -798,7 +798,7 @@ EXPORT ER InitLogicalSpace( void )
 	/* -------------------------------------------------------------------- */
 	/* copy initrams to the memory which will be managed by the kernel	*/
 	/* -------------------------------------------------------------------- */
-	copyInitramfs();
+	//copyInitramfs();	// moved to icrt0_t2ex for grub 2.0
 
 	return E_OK;
 }

@@ -92,7 +92,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:default handler(3) for breakpoint exception
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void handle_breakpoint(struct ctx_reg *reg)
+EXPHANDLER void handle_breakpoint(struct ctx_reg *reg)
 {
 	int err;
 	

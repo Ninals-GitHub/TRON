@@ -185,6 +185,7 @@ struct task_context_block {
 	INT			lsid;		/* Task space ID */
 	
 	uint32_t		need_iret:1;	/* need iret for first dispatch	*/
+	uint32_t		forked:1;	/* forked task			*/
 };
 
 #define	KERNEL_STACK_SIZE	8192

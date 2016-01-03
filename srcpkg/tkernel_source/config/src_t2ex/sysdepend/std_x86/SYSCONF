@@ -76,6 +76,7 @@ ProductNo	0x0000 0x0000 0x0000 0x0000
 #	BTRON/OS
 #
 BMaxProcId	512	# Maximum process ID
+BMaxProcStack	8192	# Maximum user tack size(kb)
 
 #
 #	T-Kernel/OS

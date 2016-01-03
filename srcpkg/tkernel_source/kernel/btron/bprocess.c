@@ -60,6 +60,7 @@
 
 ==================================================================================
 */
+LOCAL INLINE BOOL is_process_exist(pid_t pid);
 
 /*
 ==================================================================================
@@ -254,7 +255,7 @@ EXPORT struct process* alloc_process(pid_t pid)
 		new_proc->state = P_NONEXIST;
 		init_list(&new_proc->list_tasks);
 		new_proc->pid = pid;
-		new_proc->tgid = pid;
+		//new_proc->tgid = pid;
 		
 		new_proc->parent = current;
 		init_list(&new_proc->list_children);
@@ -271,10 +272,13 @@ EXPORT struct process* alloc_process(pid_t pid)
 		if (!new_proc) {
 			return(NULL);
 		}
+		
 		/* ------------------------------------------------------------ */
-		/* initialize new procwss's signals				*/
+		/* initialize signal management					*/
 		/* ------------------------------------------------------------ */
 		init_signal(new_proc);
+		
+		new_proc->w4a = NULL;
 		
 		/* ------------------------------------------------------------ */
 		/* set up default rlimit					*/
@@ -304,19 +308,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void free_process(pid_t pid)
 {
 	struct process *proc;
+	struct task *current_task;
 	
 	if (UNLIKELY(max_pid <= pid)) {
 		return;
 	}
 	
 	proc = &proc_table[pid];
+	current_task = get_current_task();
 	/* -------------------------------------------------------------------- */
 	/* give children up for adoption to init				*/
 	/* -------------------------------------------------------------------- */
 	if (!is_empty_list(&proc->list_children)) {
 		struct process *child_proc;
+		struct process *temp;
 
-		list_for_each_entry(child_proc, &proc->list_children, sibling) {
+		list_for_each_entry_safe(child_proc, temp,
+					&proc->list_children, sibling) {
 			del_list(&child_proc->sibling);
 			add_list_tail(&child_proc->sibling, &init->list_children);
 		}
@@ -330,24 +338,31 @@ EXPORT void free_process(pid_t pid)
 
 		list_for_each_entry_safe(task, temp,
 						&proc->list_tasks, task_node) {
-			del_list(&task->task_node);
+			if (UNLIKELY(current_task == task)) {
+				continue;
+			}
+			//del_list(&task->task_node);
 			free_task(task);
 		}
 	}
 	/* -------------------------------------------------------------------- */
 	/* free all vm and page tables						*/
 	/* -------------------------------------------------------------------- */
+	BEGIN_CRITICAL_SECTION;
 	free_vm_all(proc);
 	
 	proc->state		= P_NONEXIST;
 	proc->flags		= 0;
 	proc->priority		= 0;
 	proc->pid		= 0;
-	proc->tgid		= 0;
 	proc->group_leader	= NULL;
 	proc->parent		= NULL;
 	proc->utime		= 0;
 	proc->stime		= 0;
+	
+	free_task_self(current_task);
+	
+	END_CRITICAL_SECTION;
 }
 
 /*
@@ -414,12 +429,7 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 		return(EC_NOEXS);
 	}
 	
-	init->tgid = init_pid;
-	
-	/* -------------------------------------------------------------------- */
-	/* initialize signal management						*/
-	/* -------------------------------------------------------------------- */
-	init_signal(init);
+	//init->tgid = init_pid;
 	
 	/* -------------------------------------------------------------------- */
 	/* set up default rlimit						*/
@@ -445,29 +455,43 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:init_signal
- Input		:struct process *proc
- 		 < process to initialize its sinals >
+ Funtion	:get_pid_process
+ Input		:pid_t pid
+ 		 < pid to get a process >
  Output		:void
- Return		:void
- Description	:initialize signal management
+ Return		:struct process*
+ 		 < process corresponds to the specified pid >
+ Description	:get a process information from pid
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void init_signal(struct process *proc)
+EXPORT struct process* get_pid_process(pid_t pid)
 {
-	int i;
-	struct signals *sig = &proc->signals;
-	
-	sig->count = 0;
-	sig->blocked = 0;
-	sig->real_blocked = 0;
-	sig->saved_sigmask = 0;	
-	
-	for (i = 0;i < NR_SIG;i++ ) {
-		sig->action[i].sa_handler = NULL;
+	if (UNLIKELY(max_pid <= pid)) {
+		return(NULL);
 	}
+	
+	if (!is_process_exist(pid)) {
+		return(NULL);
+	}
+	
+	return(&proc_table[pid]);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_child_process
+ Input		:struct process *child
+ 		 < child process to examine >
+ Output		:void
+ Return		:BOOL
+ 		 < result >
+ Description	:test whether the *child is current's child or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT BOOL is_child_prcess(struct process *child)
+{
+	return(child->parent == get_current());
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -487,6 +511,22 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+==================================================================================
+ Funtion	:is_process_exist
+ Input		:pid_t pid
+ 		 < pid to examine >
+ Output		:void
+ Return		:BOOL
+ 		 < result >
+ Description	:test whether a process is exists or not
+==================================================================================
+*/
+LOCAL INLINE BOOL is_process_exist(pid_t pid)
+{
+	return(tstdlib_bittest((void*)pid_bitmap, pid));
+}
+
 /*
 ==================================================================================
  Funtion	:void

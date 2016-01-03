@@ -39,7 +39,9 @@
 
 #include <tk/isyscall.h>
 
-#define SYSCALL		EXPORT		/* Definition of system call */
+#define SYSCALL		EXPORT		/* Definition of system call		*/
+#define EXPHANDLER	EXPORT		/* Definition of exception hander	*/
+#define INTHANDLER	EXPORT		/* Definition of interrutp hander	*/
 
 #ifndef __tcb__
 #define __tcb__

@@ -100,7 +100,7 @@ copy_to_user(void *to_user, const void *from_kernel, size_t size)
 	char *to;
 	char *from;
 	
-	err = ChkSpace(to_user, size, MA_READ|MA_WRITE, TMF_PPL(USER_RPL));
+	err = _ChkSpace(to_user, size, MA_READ|MA_WRITE, TMF_PPL(USER_RPL));
 	
 	if (err) {
 		return(0);
@@ -139,7 +139,7 @@ copy_form_user(void *to_kernel, const void *from_user, size_t size)
 	char *to;
 	char *from;
 	
-	err = ChkSpace(from_user, size, MA_READ, TMF_PPL(USER_RPL));
+	err = _ChkSpace(from_user, size, MA_READ, TMF_PPL(USER_RPL));
 	
 	if (err) {
 		return(0);

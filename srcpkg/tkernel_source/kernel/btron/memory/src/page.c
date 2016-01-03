@@ -40,13 +40,14 @@
  * representation of each source header.
  */
 
+#include <cpu.h>
+#include <typedef.h>
 #include <bk/memory/page.h>
 #include <bk/uapi/berrno.h>
-#include <typedef.h>
 #include <tstdlib/bitop.h>
 #include <sys/rominfo.h>
 #include <sys/sysinfo.h>
-//#include <sys/sysdepend/std_x86/multiboot.h>
+
 
 /*
 ==================================================================================
@@ -57,7 +58,6 @@
 */
 LOCAL void init_page_allocator(void);
 LOCAL void __free_page(struct page *page);
-LOCAL INLINE void _free_pagetables(pde_t *pde, unsigned long end);
 
 
 /*
@@ -91,6 +91,21 @@ LOCAL long nr_free_pages;
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+void print_page_bitmap(void)
+{
+	int i;
+	char *bitmap = (char*)page_bitmap;
+	
+	vd_printf("page_bitmap_size:%lu\n", page_bitmap_size);
+	
+	vd_printf("page_bitmap:");
+	for(i = 0;i < page_bitmap_size;i++) {
+		vd_printf("%02X", *(bitmap + i));
+		//if (i == (80*25 / 2) *3)break;
+	}
+	vd_printf("\n");
+}
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:init_memmgr
@@ -184,6 +199,12 @@ EXPORT struct page* alloc_pages(int num)
 						page_bitmap_bit_size, num);
 	tstdlib_bitset_window((void*)page_bitmap, index, num);
 	END_CRITICAL_SECTION;
+	
+	if (UNLIKELY(page_bitmap_bit_size <= ( index + num))) {
+		vd_printf("alloc_pages:unexpected error:index[%d]", index);
+		vd_printf(" num[%d]\n", num);
+		for(;;);
+	}
 	
 	if (0 <= index) {
 		for (i = 0;i < num;i++) {
@@ -339,12 +360,123 @@ EXPORT pde_t* alloc_pagedir(void)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_pagetables
+ Input		:struct process *proc
+ 		 < show its own page tables >
+ 		 unsigned long start
+ 		 < start address to show >
+ 		 unsigned long end
+ 		 < end address to show >
+ Output		:void
+ Return		:void
+ Description	:show page tables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void
+show_pagetables(struct process *proc, unsigned long start, unsigned long end)
+{
+	int nr;
+	int nr_page;
+	pde_t *pde = proc->mspace->pde;
+	unsigned long la = start;
+	
+	printf("\n");
+	printf("show pde:0x%08X\n", pde);
+	
+	for (nr = PDIR_INDEX(start);nr <= PDIR_INDEX(end);nr++) {
+		pte_t *pte;
+		
+		pte = (pte_t*)toLogicalAddress(*(pde + nr) & PAGE_MASK);
+		
+		for(nr_page = PAGE_INDEX(la);nr_page < PT_ENTRIES;nr_page++) {
+			printf("0x%08X ", *(pte + nr_page));
+			la += PAGESIZE;
+			if (end <= la) {
+				printf("\n");
+				return;
+			}
+		}
+	}
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_free_pagetables
+ Input		:pde_t *pde
+ 		 < address of page directory to free >
+ 		 unsigned long start
+ 		 < start address to free page tables >
+ 		 unsigned long end
+ 		 < end address to free page talbes >
+ Output		:void
+ Return		:void
+ Description	:free page tables specified by logica addresses
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void _free_pagetables(pde_t *pde, unsigned long start, unsigned long end)
+{
+	int nr;
+	int nr_page;
+	int nr_page_end;
+	int not_present;
+	
+	/* -------------------------------------------------------------------- */
+	/* free page tables							*/
+	/* -------------------------------------------------------------------- */
+	for (nr = PDIR_INDEX(start);nr <= PDIR_INDEX(end);nr++) {
+		pte_t *table = (pte_t*)(*(pde + nr) & PAGE_MASK);
+		
+		if (!table) {
+			continue;
+		}
+		
+		table = (pte_t*)toLogicalAddress(table);
+		
+		if (UNLIKELY(nr == PDIR_INDEX(start))) {
+			nr_page = PAGE_INDEX(start);
+		} else {
+			nr_page = 0;
+		}
+		
+		if (UNLIKELY(nr == PDIR_INDEX(end))) {
+			nr_page_end = PAGE_INDEX(end) + 1;
+		} else {
+			nr_page_end = PT_ENTRIES;
+		}
+		
+		if ((nr_page_end - nr_page) == PT_ENTRIES) {
+			not_present = 1;
+		} else {
+			not_present = 0;
+		}
+		
+		for( ;nr_page < nr_page_end;nr_page++) {
+			pte_t *pte = (pte_t*)(*(table + nr_page) & PAGE_MASK);
+			
+			if (!pte) {
+				continue;
+			}
+			
+			pte = (pte_t*)toLogicalAddress(pte);
+			
+			free_pagetable(pte);
+		}
+		
+		if (not_present) {
+			free_pagetable(table);
+		}
+	}
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_pagetable
  Input		:pte_t *pte
  		 < address of page table to free >
  Output		:void
  Return		:void
- Description	:free page table
+ Description	:free a page of page table
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void free_pagetable(pte_t *pte)
@@ -352,6 +484,10 @@ EXPORT void free_pagetable(pte_t *pte)
 	struct page *page = get_page((void*)pte);
 	
 	free_page(page);
+	
+	if (!page->count) {
+		*pte = 0;
+	}
 }
 
 /*
@@ -369,7 +505,7 @@ EXPORT void free_pagetables_all(pde_t *pde)
 	/* -------------------------------------------------------------------- */
 	/* free page tables for a user space					*/
 	/* -------------------------------------------------------------------- */
-	_free_pagetables(pde, (~0UL));
+	_free_pagetables(pde, 0, (~0UL));
 }
 
 /*
@@ -382,12 +518,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:free page talbes only for user space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void free_pagetables(pde_t *pde)
+EXPORT void free_user_pagetables(pde_t *pde)
 {
 	/* -------------------------------------------------------------------- */
 	/* free page tables for a user space					*/
 	/* -------------------------------------------------------------------- */
-	_free_pagetables(pde, KERNEL_BASE_ADDR);
+	_free_pagetables(pde, 0, KERNEL_BASE_ADDR);
 }
 
 /*
@@ -427,7 +563,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:free page directory and page tables
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void free_pagedir_tables(pde_t *pde)
+EXPORT void free_pagedir_tables_all(pde_t *pde)
 {
 	struct page *dir_page;
 	
@@ -520,7 +656,16 @@ EXPORT int copy_kernel_pagetables(struct process *from, struct process *to)
 	/* copy old pde to new pde for kernel space				*/
 	/* -------------------------------------------------------------------- */
 	for (nr = PDIR_INDEX(KERNEL_BASE_ADDR);nr < PDIR_ENTRIES;nr++) {
-		*(new_pde + nr) = *(old_pde + nr);
+		if (!*(old_pde + nr)) {
+			continue;
+		}
+		
+		if (!*(new_pde + nr)) {
+			*(new_pde + nr) = *(old_pde + nr);
+		} else if (*(new_pde + nr) != *(old_pde + nr)) {
+			printf("copy_user_pagetable:error:unexpected *new_pde\n");
+			for(;;);
+		}
 		/* ------------------------------------------------------------ */
 		/* there is no need to copy kernel page talbes			*/
 		/* ------------------------------------------------------------ */
@@ -528,6 +673,93 @@ EXPORT int copy_kernel_pagetables(struct process *from, struct process *to)
 	}
 	
 	return(0);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_user_pagetable
+ Input		:struct process *from
+ 		 < copy from >
+ 		 struct process *to
+ 		 < copy to >
+ 		 unsigned long start
+ 		 < start address to copy from >
+ 		 unsigned long end
+ 		 < end address to copy from >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy user pagetables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int copy_user_pagetable(struct process *from, struct process *to,
+					unsigned long start, unsigned long end)
+{
+	int err;
+	int nr;
+	int nr_page;
+	pde_t *old_pde = from->mspace->pde;
+	pde_t *new_pde = to->mspace->pde;
+	unsigned long la = start;
+	
+	if (UNLIKELY(!to->mspace->pde)) {
+		return(-ENOMEM);
+	}
+	
+	if (UNLIKELY(end <= start)) {
+		return(-EINVAL);
+	}
+	
+	if (UNLIKELY(KERNEL_BASE_ADDR < end)) {
+		return(-ENOMEM);
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* copy old pde to new pde for user space				*/
+	/* -------------------------------------------------------------------- */
+	for (nr = PDIR_INDEX(start);nr <= PDIR_INDEX(end);nr++) {
+		pte_t *old_pte;
+		pte_t *new_pte;
+		
+		if (!(*(old_pde + nr) & PAGE_MASK)) {
+			continue;
+		}
+		
+		old_pte = (pte_t*)toLogicalAddress(*(old_pde + nr) & PAGE_MASK);
+		
+		if (!*(new_pde +nr)) {
+			new_pte = alloc_pagetable();
+		
+			if (UNLIKELY(!new_pte)) {
+				printf("copy_pagetalbe:error:cannot allocate new pte\n");
+				err = -ENOMEM;
+				goto err_alloc_pagetable;
+			}
+			
+			*(new_pde + nr) = (pde_t)(page_to_paddr(get_page(new_pte)) & PAGE_MASK);
+		} else {
+			new_pte = (pte_t*)toLogicalAddress(*(new_pde + nr) & PAGE_MASK);
+		}
+		
+		//printf("new_pde:0x%08X ", new_pde);
+		//printf("new_pde + nr[%d]:0x%08X\n", nr, *(new_pde + nr));
+		
+		for (nr_page = PAGE_INDEX(la);nr_page < PT_ENTRIES;nr_page++) {
+			*(new_pte + nr_page) = *(old_pte + nr_page);
+			la += PAGESIZE;
+			if (end < la) {
+				return(0);
+			}
+		}
+	}
+	
+	return(0);
+
+err_alloc_pagetable:
+	free_pagedir_tables_all(new_pde);
+err_alloc_pagedir:
+	return(err);
 }
 
 /*
@@ -551,45 +783,11 @@ EXPORT int copy_pagetable(struct process *from, struct process *to)
 	pde_t *old_pde = from->mspace->pde;
 	pde_t *new_pde;
 	
-	/* -------------------------------------------------------------------- */
-	/* allocate new page directory						*/
-	/* -------------------------------------------------------------------- */
-	new_pde = alloc_pagedir();
-	
-	if (UNLIKELY(!new_pde)) {
-		err = -ENOMEM;
-		goto err_alloc_pagedir;
-	}
 	
 	/* -------------------------------------------------------------------- */
 	/* copy old pde to new pde for user space				*/
 	/* -------------------------------------------------------------------- */
-	for (nr = 0;nr < PDIR_INDEX(KERNEL_BASE_ADDR);nr++) {
-		pte_t *old_pte;
-		pte_t *new_pte;
-		
-		*(new_pde + nr) = *(old_pde + nr);
-		
-		if (!(*(old_pde + nr) & PAGE_MASK)) {
-			continue;
-		}
-		
-		old_pte = (pte_t*)toLogicalAddress(*(old_pde + nr) & PAGE_MASK);
-		
-		new_pte = alloc_pagetable();
-		
-		if (UNLIKELY(!new_pte)) {
-			err = -ENOMEM;
-			goto err_alloc_pagetable;
-		}
-		
-		for (nr_page = 0;nr_page < PT_ENTRIES;nr_page++) {
-			*(new_pte + nr_page) = *(old_pte + nr_page);
-		}
-		
-		*(new_pde + nr) =
-			(pde_t)(page_to_paddr(get_page(new_pte)) & PAGE_MASK);
-	}
+	err = copy_user_pagetable(from, to, 0, KERNEL_BASE_ADDR - 1);
 	
 	/* -------------------------------------------------------------------- */
 	/* copy old pde to new pde for kernel space				*/
@@ -597,16 +795,15 @@ EXPORT int copy_pagetable(struct process *from, struct process *to)
 	err = copy_kernel_pagetables(from, to);
 	
 	if (UNLIKELY(err)) {
+		printf("copy_pagetables:error:copy kernel page talbes\n");
 		goto err_copy_kernel_pagetable;
 	}
-	
-	to->mspace->pde = new_pde;
 	
 	return(0);
 
 err_copy_kernel_pagetable:
 err_alloc_pagetable:
-	free_pagedir_tables(new_pde);
+	free_pagedir_tables_all(new_pde);
 err_alloc_pagedir:
 	return(err);
 }
@@ -788,7 +985,6 @@ EXPORT pte_t* get_la_pte(unsigned long laddr)
 	return(pte);
 }
 
-
 /*
 ----------------------------------------------------------------------------------
 	T-Kernel Interface
@@ -920,7 +1116,8 @@ LOCAL void init_page_allocator(void)
 	pages = (struct page*)allocLowMemory(nr_pages * sizeof(struct page));
 	
 	page_bitmap_bit_size = nr_pages;
-	page_bitmap_size = page_bitmap_bit_size / (sizeof(unsigned long) * 8);
+	//page_bitmap_size = page_bitmap_bit_size / (sizeof(unsigned long) * 8);
+	page_bitmap_size = page_bitmap_bit_size / 8;
 	
 	
 	vd_printf("nr_pages:%d pages:%d bitmap_size:%d\n", nr_pages, nr_pages * sizeof(struct page), page_bitmap_size);
@@ -982,49 +1179,6 @@ LOCAL void __free_page(struct page *page)
 		page->flags = PAGE_RESERVED;
 		nr_free_pages++;
 	} END_CRITICAL_SECTION;
-}
-
-/*
-==================================================================================
- Funtion	:_free_pagetables
- Input		:pde_t *pde
- 		 < address of page directory to free >
- 		 unsigned long end
- 		 < end address to free page talbes >
- Output		:void
- Return		:void
- Description	:free page tables
-==================================================================================
-*/
-LOCAL INLINE void _free_pagetables(pde_t *pde, unsigned long end)
-{
-	int nr;
-	int nr_page;
-	
-	/* -------------------------------------------------------------------- */
-	/* free page tables							*/
-	/* -------------------------------------------------------------------- */
-	for (nr = 0;nr < PDIR_INDEX(end);nr++) {
-		pte_t *table = (pte_t*)(*(pde + nr) & PAGE_MASK);
-		
-		if (!table) {
-			continue;
-		}
-		
-		table = (pte_t*)toLogicalAddress(table);
-		
-		for(nr_page = 0;nr_page < PT_ENTRIES;nr_page++) {
-			pte_t *pte = (pte_t*)(*(table + nr_page) & PAGE_MASK);
-			
-			if (!pte) {
-				continue;
-			}
-			
-			pte = (pte_t*)toLogicalAddress(pte);
-			
-			free_pagetable(pte);
-		}
-	}
 }
 
 /*

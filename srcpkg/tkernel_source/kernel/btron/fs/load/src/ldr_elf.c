@@ -1080,6 +1080,7 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	struct process	*current = get_current();
 	struct memory_space *mspace = current->mspace;
 	unsigned long	map_size;
+	unsigned long	bss_start;
 
 	if ( hdr->e_type == ET_EXEC ) {
 		relsec = (HasDynSeg(hdr, ldr) ? FALSE : HasRelSec(hdr, ldr));
@@ -1121,24 +1122,6 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	/* free virtual memory and page tables for user space			*/
 	/* -------------------------------------------------------------------- */
 	free_vm(get_current());
-	/* -------------------------------------------------------------------- */
-	/* map bss area								*/
-	/* -------------------------------------------------------------------- */
-	map_size = (unsigned long)eli.bss_ladr - PAGE_ALIGN(eli.bss_ladr);
-	map_size += eli.bss_size;
-#if 0
-	printf("bss:map_size 0x%08X\n", map_size);
-#endif
-	addr = mmap((void*)PAGE_ALIGN(eli.bss_ladr), map_size,
-			PROT_READ | PROT_WRITE | PROT_EXEC,
-			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
-			-1, 0);
-	
-	if (addr == MAP_FAILED) {
-		printf("error map_vm(bss)\n");
-		er = -ENOMEM;
-		goto err_ret3;
-	}
 	
 	/* -------------------------------------------------------------------- */
 	/* map text area							*/
@@ -1187,7 +1170,8 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	map_size += (unsigned long)lofs - PAGE_ALIGN(lofs);
 	map_size += eli.data_size;
 #if 0
-	printf("data:map_size 0x%08X\n", map_size);
+	printf("data:addr=0x%08X, map_size=0x%08X\n",
+		PAGE_ALIGN(eli.data_ladr), map_size);
 #endif
 	addr = mmap((void*)PAGE_ALIGN(eli.data_ladr), map_size,
 			PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_FIXED,
@@ -1198,15 +1182,16 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 		er = -ENOMEM;
 		goto err_ret3;
 	}
+
 	mspace->start_data = (unsigned long)addr;
+	
 	mspace->end_data = mspace->start_data + eli.data_size;
 #if 0
 	printf("data:0x%08X ", addr);
 	printf("start:0x%08X ", mspace->start_data);
 	printf("end:0x%08X\n", mspace->end_data);
 #endif
-	mspace->start_brk = (unsigned long)PageAlignU((void*)mspace->end_data);
-	mspace->end_brk = (unsigned long)PageAlignU((void*)mspace->end_data);
+
 #if 0
 	printf("ldr:0x%08X eli.data_fofs:0x%08X eli.data_ladr + lofs:0x%08X eli.data_size:0x%08X\n",ldr, eli.data_fofs, eli.data_ladr + lofs, eli.data_size);
 #endif
@@ -1223,6 +1208,36 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 		er = elf_relocation(pg, ldr, &eli, lofs);
 				if ( er < E_OK ) {printf("elf_load 06\n");goto err_ret2;}
 	}
+	
+	/* -------------------------------------------------------------------- */
+	/* map bss area								*/
+	/* -------------------------------------------------------------------- */
+	map_size = (unsigned long)eli.bss_ladr - PAGE_ALIGN(eli.bss_ladr);
+	map_size += eli.bss_size;
+#if 0
+	printf("bss:addr=0x%08X, map_size=0x%08X\n", PAGE_ALIGN(eli.bss_ladr), map_size);
+#endif
+	if (PAGE_ALIGN(eli.bss_ladr) < mspace->end_data) {
+		bss_start = PageAlignU((const void*)mspace->end_data);
+	} else {
+		bss_start = eli.bss_ladr;
+	}
+	addr = mmap((void*)PAGE_ALIGN(bss_start), map_size,
+			PROT_READ | PROT_WRITE | PROT_EXEC,
+			MAP_PRIVATE | MAP_FIXED | MAP_ANONYMOUS,
+			-1, 0);
+	
+	if (addr == MAP_FAILED) {
+		printf("error map_vm(bss)\n");
+		er = -ENOMEM;
+		goto err_ret3;
+	}
+	
+	mspace->start_bss = (unsigned long)addr;
+	mspace->end_bss = mspace->start_bss + map_size;
+	
+	mspace->start_brk = (unsigned long)PageAlignU((void*)mspace->end_bss);
+	mspace->end_brk = mspace->start_brk;
 	
 	/* Get entry point address */
 	pg->entry = (FP)((B*)hdr->e_entry + lofs);

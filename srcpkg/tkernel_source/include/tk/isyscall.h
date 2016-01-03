@@ -293,4 +293,32 @@ IMPORT ER  _td_get_otm_u( SYSTIM_U *tim_u, UINT *ofs );
 IMPORT INT _tk_get_cfn( CONST UB *name, INT *val, INT max );
 IMPORT INT _tk_get_cfs( CONST UB *name, UB *buf, INT max );
 
+#ifdef	_BTRON_
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_slp_tsk
+ Input		:struct task *task
+ 		 < task to sleep >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:move a task state to wait state for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER _bk_slp_tsk(struct task *task);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_wup_tsk
+ Input		:struct task *task
+ 		 < task to wake up >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:wake up a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER _bk_wup_tsk(struct task *task);
+#endif	// _BTRON_
+
 #endif /* _ISYSCALL_ */

@@ -122,10 +122,10 @@ SYSCALL ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 	if (!test_size) {
 		return(-EINVAL);
 	}
-	
-	//printf("buf=%s, ", buf);
-	//printf("bufsiz=%d]\n", bufsiz);
-	
+#if 0
+	printf("buf=%s, ", buf);
+	printf("bufsiz=%d]\n", bufsiz);
+#endif
 	return(test_size);
 }
 

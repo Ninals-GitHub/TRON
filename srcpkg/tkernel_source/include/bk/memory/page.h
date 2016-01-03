@@ -301,12 +301,45 @@ IMPORT pde_t* alloc_pagedir(void);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_pagetables
+ Input		:struct process *proc
+ 		 < show its own page tables >
+ 		 unsigned long start
+ 		 < start address to show >
+ 		 unsigned long end
+ 		 < end address to show >
+ Output		:void
+ Return		:void
+ Description	:show page tables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void
+show_pagetables(struct process *proc, unsigned long start, unsigned long end);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_free_pagetables
+ Input		:pde_t *pde
+ 		 < address of page directory to free >
+ 		 unsigned long start
+ 		 < start address to free page tables >
+ 		 unsigned long end
+ 		 < end address to free page talbes >
+ Output		:void
+ Return		:void
+ Description	:free page tables specified by logica addresses
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void _free_pagetables(pde_t *pde, unsigned long start, unsigned long end);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_pagetable
  Input		:pte_t *pte
  		 < address of page table to free >
  Output		:void
  Return		:void
- Description	:free page table
+ Description	:free a page of page table
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void free_pagetable(pte_t *pte);
@@ -322,6 +355,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void free_pagetables_all(pde_t *pde);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_pagetables
+ Input		:pde_t *pde
+ 		 < address of page direcotry to free page talbes >
+ Output		:void
+ Return		:void
+ Description	:free page talbes only for user space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void free_user_pagetables(pde_t *pde);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -357,7 +402,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:free page directory and page tables
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void free_pagedir_tables(pde_t *pde);
+IMPORT void free_pagedir_tables_all(pde_t *pde);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -405,6 +450,26 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int copy_kernel_pagetables(struct process *from, struct process *to);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_user_pagetable
+ Input		:struct process *from
+ 		 < copy from >
+ 		 struct process *to
+ 		 < copy to >
+ 		 unsigned long start
+ 		 < start address to copy from >
+ 		 unsigned long end
+ 		 < end address to copy from >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy user pagetables
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int copy_user_pagetable(struct process *from, struct process *to,
+					unsigned long start, unsigned long end);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

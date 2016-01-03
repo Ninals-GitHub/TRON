@@ -53,6 +53,7 @@
 #include <tk/winfo.h>
 
 #include <bk/typedef.h>
+#include <bk/atomic.h>
 #include <bk/memory/vm.h>
 #include <bk/uapi/signal.h>
 #include <bk/uapi/sys/resource.h>
@@ -131,6 +132,13 @@ struct signals {
 
 /*
 ----------------------------------------------------------------------------------
+	for wait4
+----------------------------------------------------------------------------------
+*/
+struct wait4_args;
+
+/*
+----------------------------------------------------------------------------------
 	process
 ----------------------------------------------------------------------------------
 */
@@ -149,16 +157,15 @@ struct process {
 	int			exit_state;
 	int			exit_code;
 	long			priority;
+	
+	atomic_t		usage;		/* usage counter		*/
 	/* -------------------------------------------------------------------- */
 	/* process relationship			 				*/
 	/* -------------------------------------------------------------------- */
 	struct list		list_tasks;
-	
 	pid_t			pid;
-	pid_t			tgid;
-	
 	struct process		*parent;
-	struct list		list_children;	/* list of the children of 	*/
+	struct list		list_children;	/* list of the children		*/
 	struct list		sibling;	/* list entry of list_children	*/
 	struct task		*group_leader;	/* task group leader		*/
 	/* -------------------------------------------------------------------- */
@@ -174,14 +181,15 @@ struct process {
 	gid_t			gid;
 	gid_t			egid;
 	/* -------------------------------------------------------------------- */
-	/* signals				 				*/
-	/* -------------------------------------------------------------------- */
-	struct signals		signals;
-	int			exit_signal;
-	/* -------------------------------------------------------------------- */
 	/* rlimit				 				*/
 	/* -------------------------------------------------------------------- */
 	struct rlimit		rlimits[RLIMIT_NLIMITS];
+	/* -------------------------------------------------------------------- */
+	/* signal				 				*/
+	/* -------------------------------------------------------------------- */
+	struct signals		signals;
+	struct wait4_args	*w4a;
+	struct list		wait4_list;
 	/* -------------------------------------------------------------------- */
 	/* process's memory space						*/
 	/* -------------------------------------------------------------------- */
@@ -337,17 +345,30 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER init_proc( CONST T_CTSK *pk_ctsk );
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_pid_process
+ Input		:pid_t pid
+ 		 < pid to get a process >
+ Output		:void
+ Return		:struct process*
+ 		 < process corresponds to the specified pid >
+ Description	:get a process information from pid
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct process* get_pid_process(pid_t pid);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:init_signal
- Input		:struct process *proc
- 		 < process to initialize its sinals >
+ Funtion	:is_child_process
+ Input		:struct process *child
+ 		 < child process to examine >
  Output		:void
- Return		:void
- Description	:initialize signal management
+ Return		:BOOL
+ 		 < result >
+ Description	:test whether the *child is current's child or not
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void init_signal(struct process *proc);
+IMPORT BOOL is_child_prcess(struct process *child);
 
 #endif	// __BK_BPROCESS_H__

@@ -1048,9 +1048,7 @@ EXPORT struct task* alloc_task(void)
 	struct task	*tcb;
 	struct task	*current_task;
 	void		*sstack;
-	void		*stack;
 	unsigned long	sstksz;
-	unsigned long	stksz;
 	
 	/* -------------------------------------------------------------------- */
 	/* allocate kernel stack						*/
@@ -1065,20 +1063,7 @@ EXPORT struct task* alloc_task(void)
 	
 	current_task = get_current_task();
 	
-#if 0 // user stack is allocated on exec
-	/* -------------------------------------------------------------------- */
-	/* allocate user stack							*/
-	/* -------------------------------------------------------------------- */
-	stksz = current_task->stksz;
-	
-	if (0 < stksz) {
-		stack = IAmalloc((UINT)stksz, current_task->tskatr);
-		
-		if (!stack) {
-			goto fail_user_stack;
-		}
-	}
-#endif
+	// user stack is allocated on exec
 	
 	/* -------------------------------------------------------------------- */
 	/* allocate task control block						*/
@@ -1123,18 +1108,21 @@ EXPORT struct task* alloc_task(void)
 	
 	tcb->state	= TS_DORMANT;
 	
-	init_list(&tcb->task_node);
-	
 	tcb->tskid = get_task_id(tcb);
+	
+	/* -------------------------------------------------------------------- */
+	/* process management			 				*/
+	/* -------------------------------------------------------------------- */
+	/* *proc must be set by caller						*/
+	init_list(&tcb->task_node);
+	tcb->set_child_tid = NULL;
+	tcb->clear_child_tid = NULL;
+	
 	
 	return(tcb);
 	
 fail_tcb:
 	IAfree(sstack, TA_RNG0);
-fail_user_stack:
-#if 0
-	IAfree(stack, current_task->tskatr);
-#endif
 	return(NULL);
 }
 
@@ -1143,10 +1131,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_task
  Input		:struct task *task
 		 < to be freed >
-		 int free_all
-		 < 0:free only kernel stack. This assumes to be called from
-		     fork() when failed.
-		   1:completely free a task >
  Output		:void
  Return		:void
  Description	:free a task
@@ -1157,14 +1141,53 @@ EXPORT ER free_task(struct task *task)
 	TSTAT	state;
 	ER	ercd = E_OK;
 	
-	state = (TSTAT)task->state;
-	if (state != TS_DORMANT) {
-		ercd = (state == TS_NONEXIST)? E_NOEXS : E_OBJ;
-	} else {
-		_del_tsk(task);
-	}
+	_ter_tsk(task);
+	make_dormant(task);
+	
+	_del_tsk(task);
 	
 	return(ercd);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_task_self
+ Input		:struct task *me
+		 < to be freed >
+ Output		:void
+ Return		:void
+ Description	:free me!
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER free_task_self(struct task *me)
+{
+	TSTAT	state;
+
+	if ( me->svclocked != NULL ) {
+		/* Unlock all extended SVC locks */
+		AllUnlockSVC(me);
+	}
+	
+	state = (TSTAT)me->state;
+	if ( state == TS_READY ) {
+		make_non_ready(me);
+	} else if ( (state & TS_WAIT) != 0 ) {
+		wait_cancel(me);
+		if ( me->wspec->rel_wai_hook != NULL ) {
+			(*me->wspec->rel_wai_hook)(me);
+		}
+	}
+
+#ifdef NUM_MTXID
+	/* signal mutex */
+	signal_all_mutex(me);
+#endif
+
+	del_list(&me->task_node);
+	cleanup_context(me);
+	
+	make_dormant(me);
+	_del_tsk(me);
 }
 
 /*

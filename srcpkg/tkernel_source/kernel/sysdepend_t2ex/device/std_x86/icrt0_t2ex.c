@@ -93,6 +93,11 @@ EXPORT void _kernel_entry( uint32_t magic, void *info )
 	}
 	
 	/* -------------------------------------------------------------------- */
+	/* copy initrams to the memory which will be managed by the kernel	*/
+	/* -------------------------------------------------------------------- */
+	copyInitramfs();
+	
+	/* -------------------------------------------------------------------- */
 	/* kernel startup							*/
 	/* -------------------------------------------------------------------- */
 	before_startup();
@@ -144,6 +149,9 @@ EXPORT int copyInitramfs(void)
 		/* the memory area of initramfs is not freed forever 		*/
 		/* ------------------------------------------------------------ */
 		ramfs_addr = (uint32_t)allocLowMemory(ramfs_size);
+		
+		vd_printf("ramfs_addr=0x%08X, ", ramfs_addr);
+		vd_printf("module addr=0x%08X\n", getInitramfsAddress());
 		
 		if (!ramfs_addr) {
 			vd_printf("ramfs does not exist\n");
@@ -297,9 +305,6 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 
 			boot_info.num_mmap_entries++;
 		}
-
-		vd_printf("lowmem_top:0x%08X\n", boot_info.lowmem_top);
-		vd_printf("lowmem_limit:0x%08X\n", boot_info.lowmem_limit);
 	} else {
 		vd_printf("Unknown memory area. Cannot boot the kernel\n");
 		boot_info.num_mmap_entries = 0;
@@ -441,9 +446,13 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 		vd_printf("vbe_interface_len:0x%08X", info->vbe_interface_len);
 		boot_info.vbe_info = (struct multiboot_vbe_info*)
 		((unsigned long)vbe_addr | KERNEL_BASE_ADDR);
+		vd_printf("\n");
 	} else {
 		boot_info.vbe_info = NULL;
 	}
+	
+	vd_printf("lowmem_top:0x%08X\n", boot_info.lowmem_top);
+	vd_printf("lowmem_limit:0x%08X\n", boot_info.lowmem_limit);
 }
 
 /*
