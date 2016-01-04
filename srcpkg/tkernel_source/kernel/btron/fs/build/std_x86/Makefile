@@ -80,6 +80,7 @@ clean:
 	( cd ../../vfs/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) clean)
+	$(RM) $(FS_TARGET)
 
 install:
 	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) install )

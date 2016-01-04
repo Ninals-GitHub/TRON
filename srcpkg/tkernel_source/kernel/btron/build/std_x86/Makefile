@@ -89,3 +89,4 @@ clean:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../ ; $(MAKE) clean )
+	$(RM) $(BKERNEL_TARGET)
