@@ -43,10 +43,9 @@
 #include <typedef.h>
 #include <bk/typedef.h>
 #include <bk/bprocess.h>
-#include <bk/uapi/berrno.h>
+#include <bk/exit.h>
+#include <bk/kernel.h>
 #include <bk/uapi/errcode.h>
-#include <bk/memory/vm.h>
-#include <bk/memory/page.h>
 #include <tk/sysmgr.h>
 #include <sys/rominfo.h>
 #include <sys/sysinfo.h>
@@ -278,7 +277,9 @@ EXPORT struct process* alloc_process(pid_t pid)
 		/* ------------------------------------------------------------ */
 		init_signal(new_proc);
 		
-		new_proc->w4a = NULL;
+		//new_proc->w4a = NULL;
+		init_list(&new_proc->wait4_list);
+		init_list(&new_proc->wait4_node);
 		
 		/* ------------------------------------------------------------ */
 		/* set up default rlimit					*/
@@ -346,22 +347,36 @@ EXPORT void free_process(pid_t pid)
 		}
 	}
 	/* -------------------------------------------------------------------- */
+	/* delete wait 4 list							*/
+	/* -------------------------------------------------------------------- */
+	exit_wait4_list(proc);
+	/* -------------------------------------------------------------------- */
+	/* wake up 4 and entroll this process to its parent's wait4 list	*/
+	/* -------------------------------------------------------------------- */
+	wakeup4(proc);
+	/* -------------------------------------------------------------------- */
+	/* bye relationship							*/
+	/* -------------------------------------------------------------------- */
+	del_list(&proc->sibling);
+	
+	/* -------------------------------------------------------------------- */
 	/* free all vm and page tables						*/
 	/* -------------------------------------------------------------------- */
 	BEGIN_CRITICAL_SECTION;
 	free_vm_all(proc);
-	
+	//printf("bye pid = %d\n", pid);
 	proc->state		= P_NONEXIST;
+#if 0
 	proc->flags		= 0;
 	proc->priority		= 0;
-	proc->pid		= 0;
+	//proc->pid		= 0;
 	proc->group_leader	= NULL;
 	proc->parent		= NULL;
 	proc->utime		= 0;
 	proc->stime		= 0;
+#endif
 	
 	free_task_self(current_task);
-	
 	END_CRITICAL_SECTION;
 }
 
@@ -491,6 +506,21 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT BOOL is_child_prcess(struct process *child)
 {
 	return(child->parent == get_current());
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_init_proc
+ Input		:void
+ Output		:void
+ Return		:struct process *
+ 		 < init process >
+ Description	:get init process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct process* get_init_proc(void)
+{
+	return(&proc_table[0]);
 }
 
 /*

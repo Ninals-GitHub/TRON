@@ -57,7 +57,7 @@
 LOCAL pid_t xwait(struct wait4_args *wargs);
 LOCAL INLINE pid_t xwait_children(struct wait4_args *wargs);
 LOCAL INLINE pid_t xwait_a_child(struct wait4_args *wargs);
-LOCAL int xwait_for(void);
+LOCAL pid_t xwait_for(struct wait4_args *w4a);
 LOCAL void exit_process(struct process *proc);
 
 /*
@@ -87,7 +87,6 @@ struct wait4_args {
 	int			options;
 	pid_t			wake_upper_pid;
 	struct rusage		*rusage;
-	struct list		wait4_node;
 };
 /*
 ==================================================================================
@@ -161,7 +160,9 @@ SYSCALL pid_t wait4(pid_t pid, int *status, int options, struct rusage *rusage)
 	w4a.rusage = rusage;
 	w4a.wake_upper_pid = 0;
 	
-	return(xwait(&w4a));
+	pid = xwait(&w4a);
+	
+	return(pid);
 }
 
 /*
@@ -177,50 +178,21 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void wakeup4(struct process *child)
 {
 	struct process *parent = child->parent;
-	struct process *current;
-	struct process *children;
-	struct wait4_args *w4a = child->w4a;
 	struct task *task;
 	int err;
 	
-	/* -------------------------------------------------------------------- */
-	/* no one waits								*/
-	/* -------------------------------------------------------------------- */
-	if (!w4a) {
-		return;
-	}
-	
-	current = get_current();
-	
-	/* -------------------------------------------------------------------- */
-	/* delete w4a reference							*/
-	/* -------------------------------------------------------------------- */
-	if (w4a->wait_for == WAIT_FOR_A_CHILD) {
-		child->w4a = NULL;
-	} else {
-		list_for_each_entry (children, &current->list_children, sibling) {
-			children->w4a = NULL;
-		}
-	}
-	
-	/* -------------------------------------------------------------------- */
-	/* set up w4a								*/
-	/* -------------------------------------------------------------------- */
-	w4a->wake_upper_pid = child->pid;
+	add_list_tail(&child->wait4_node, &parent->wait4_list);
 	
 	/* -------------------------------------------------------------------- */
 	/* wake up parent tasks							*/
 	/* -------------------------------------------------------------------- */
-#if 0
 	list_for_each_entry (task, &parent->list_tasks, task_node) {
-		err = _bk_wup_tsk(task);
+		err = _bk_rsm_tsk(task);
 		
 		if (UNLIKELY(err)) {
-			printf("_bk_slp_tsk:unexpected error[%d]\n", err);
+			//printf("_bk_rsm_tsk(taskid=%d):unexpected error[%d]\n", task->tskid, err);
 		}
 	}
-#endif
-	_bk_wup_tsk(get_tcb(w4a->wait_tid));
 }
 
 /*
@@ -244,7 +216,6 @@ SYSCALL void exit_group(int status)
 	/* -------------------------------------------------------------------- */
 	/* next task is dispatched in free_process function			*/
 	/* -------------------------------------------------------------------- */
-	wakeup4(current);
 	free_process(current->pid);
 	
 	printf("exit_group:unexpected error\n");
@@ -271,12 +242,37 @@ SYSCALL void exit(int status)
 	/* -------------------------------------------------------------------- */
 	/* next task is dispatched in free_process function			*/
 	/* -------------------------------------------------------------------- */
-	wakeup4(current);
 	free_process(current->pid);
 	
 	printf("exit:unexpected error\n");
 	
 	for(;;);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:exit_wait4_list
+ Input		:struct process *proc
+ 		 < proc to free a wait4 list >
+ Output		:void
+ Return		:void
+ Description	:free a wait4 list when a process itsel is killed
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void exit_wait4_list(struct process *proc)
+{
+	struct process *wait4_proc;
+	struct process *temp;
+	
+	if (is_empty_list(&proc->wait4_list)) {
+		return;
+	}
+	
+	list_for_each_entry_safe(wait4_proc, temp,
+					&proc->wait4_list, wait4_node) {
+		exit_process(wait4_proc);
+		del_list(&wait4_proc->wait4_node);
+	}
 }
 
 /*
@@ -341,28 +337,29 @@ LOCAL INLINE pid_t xwait_children(struct wait4_args *w4a)
 	struct process *child;
 	struct process *current;
 	int err;
+	pid_t pid;
 	
 	current = get_current();
 	
-	list_for_each_entry (child, &current->list_children, sibling) {
-		child->w4a = w4a;
+	if (!is_empty_list(&current->wait4_list)) {
+		goto wait4;
 	}
 	
-	err = xwait_for();
-	
-	if (UNLIKELY(err)) {
-		child->w4a = NULL;
-		goto error_out;
+	if (is_empty_list(&current->list_children)) {
+		//printf("no children1\n");
+		return(-ECHILD);
 	}
 	
-	return(w4a->wake_upper_pid);
-
-error_out:
-	list_for_each_entry (child, &current->list_children, sibling) {
-		child->w4a = NULL;
+	if (UNLIKELY(current == get_init_proc()) &&
+		is_singular_list(&current->list_children)) {
+		//printf("no children2\n");
+		return(-ECHILD);
 	}
 	
-	return(-ECHILD);
+wait4:
+	pid = xwait_for(w4a);
+	
+	return(pid);
 }
 
 /*
@@ -380,7 +377,7 @@ LOCAL INLINE pid_t xwait_a_child(struct wait4_args *w4a)
 {
 	struct process *child;
 	struct process *current;
-	int err;
+	int pid;
 	
 	child = get_pid_process(w4a->wait_pid);
 	
@@ -394,45 +391,72 @@ LOCAL INLINE pid_t xwait_a_child(struct wait4_args *w4a)
 		return(-ECHILD);
 	}
 	
-	child->w4a = w4a;
+	if (!is_empty_list(&current->wait4_list)) {
+		goto wait4;
+	}
 	
-	err = xwait_for();
-
-	
-	if (UNLIKELY(err)) {
-		child->w4a = NULL;
+	if (is_empty_list(&current->list_children)) {
+		//printf("no children1\n");
 		return(-ECHILD);
 	}
 	
-	return(w4a->wake_upper_pid);
+	if (UNLIKELY(current == get_init_proc()) &&
+		is_singular_list(&current->list_children)) {
+		//printf("no children2\n");
+		return(-ECHILD);
+	}
+	
+wait4:	
+	pid = xwait_for(w4a);
+
+	return(pid);
 }
 
 /*
 ==================================================================================
  Funtion	:xwait_for
- Input		:void
+ Input		:struct wait4_args *w4a
+ 		 < wait4 arguments >
  Output		:void
- Return		:int
+ Return		:pid_t
  		 < result >
  Description	:tasks of current process are sleep in. zzz...
 ==================================================================================
 */
-LOCAL int xwait_for(void)
+LOCAL pid_t xwait_for(struct wait4_args *w4a)
 {
 	struct task *task;
 	struct task *current_task;
 	struct process *current;
+	struct process *wait4_proc;
 	int err;
+	pid_t pid;
 	
 	current = get_current();
 	current_task = get_current_task();
+	
+	if (!is_empty_list(&current->wait4_list)) {
+		struct process *temp;
+		
+		if (w4a->wait_pid == -1) {
+			goto wakenup;
+		}
+		
+		list_for_each_entry_safe(wait4_proc, temp,
+					&current->wait4_list, wait4_node) {
+			if (UNLIKELY(wait4_proc->pid == w4a->wait_pid)) {
+				del_list(&wait4_proc->wait4_node);
+				goto wakenup_from_a_child;
+			}
+		}
+	}
 	
 	list_for_each_entry (task, &current->list_tasks, task_node) {
 		if (UNLIKELY(current_task == task)) {
 			continue;
 		}
 		
-		err = _bk_slp_tsk(task);
+		err = _bk_sus_tsk(task);
 		
 		if (UNLIKELY(err)) {
 			//printf("_bk_slp_tsk:unexpected error[%d]\n", err);
@@ -441,15 +465,50 @@ LOCAL int xwait_for(void)
 	
 	printf("sleep zzz...\n");
 	
-	err = _tk_slp_tsk(TMO_FEVR);
-	
-	printf("i'm waken!!!\n");
-	
+	//err = _tk_slp_tsk(TMO_FEVR);
+	err = _tk_sus_tsk(current_task->tskid);
+		
 	if (UNLIKELY(err)) {
 		printf("_tk_slp_tsk:unexpected error[%d]\n", err);
+		return(err);
 	}
 	
-	return(err);
+	if (is_empty_list(&current->wait4_list)) {
+		printf("current->wait4_list is null\n");
+		return(-ECHILD);
+	}
+
+wakenup:
+	if (w4a->wait_pid == -1) {
+		wait4_proc = get_first_entry(&current->wait4_list,
+						struct process, wait4_node);
+		//printf("wait4_proc:pid:%d\n", wait4_proc->pid);
+		del_list(&wait4_proc->wait4_node);
+	} else {
+		struct process *temp;
+		
+		list_for_each_entry_safe(wait4_proc, temp,
+					&current->wait4_list, wait4_node) {
+			if (UNLIKELY(wait4_proc->pid == w4a->wait_pid)) {
+				del_list(&wait4_proc->wait4_node);
+				break;
+			}
+		}
+	}
+	
+	if (!wait4_proc) {
+		printf("xwaken_up:unexpected error\n");
+		return(-ECHILD);
+	}
+
+wakenup_from_a_child:
+	pid = wait4_proc->pid;
+	
+	exit_process(wait4_proc);
+	
+	//printf("i'm waken from[%d]!!!\n", pid);
+	
+	return(pid);
 }
 
 /*
@@ -463,8 +522,7 @@ LOCAL int xwait_for(void)
 */
 LOCAL void exit_process(struct process *proc)
 {
-	wakeup4(proc);
-	free_process(proc->pid);
+	free_pid(proc->pid);
 }
 
 /*

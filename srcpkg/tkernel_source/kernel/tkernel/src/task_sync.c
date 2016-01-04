@@ -427,4 +427,97 @@ EXPORT ER _bk_wup_tsk(struct task *task)
 	return(ercd);
 }
 
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_sus_tsk
+ Input		:struct task *task
+ 		 < task to suspend >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:suspend a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER _bk_sus_tsk(struct task *task)
+{
+	TSTAT	state;
+	ER	ercd = E_OK;
+	
+	state = (TSTAT)task->state;
+	if ( !task_alive(state) ) {
+		ercd = ( state == TS_NONEXIST )? E_NOEXS: E_OBJ;
+		goto error_exit;
+	}
+	if ( task == ctxtsk && dispatch_disabled >= DDS_DISABLE ) {
+		ercd = E_CTX;
+		goto error_exit;
+	}
+	if ( task->suscnt == INT_MAX ) {
+		ercd = E_QOVR;
+		goto error_exit;
+	}
+
+	/* Update suspend request count */
+	++task->suscnt;
+
+	/* Move to forced wait state */
+	if ( state == TS_READY ) {
+		make_non_ready(task);
+		task->state = TS_SUSPEND;
+
+	} else if ( state == TS_WAIT ) {
+		task->state = TS_WAITSUS;
+	}
+
+    error_exit:
+
+	return ercd;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_rsm_tsk
+ Input		:struct task *task
+ 		 < task to resume from suspend >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:resume a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER _bk_rsm_tsk(struct task *task)
+{
+	ER	ercd = E_OK;
+
+	switch ( task->state ) {
+	  case TS_NONEXIST:
+		ercd = E_NOEXS;
+		break;
+
+	  case TS_DORMANT:
+	  case TS_READY:
+	  case TS_WAIT:
+		ercd = E_OBJ;
+		break;
+
+	  case TS_SUSPEND:
+		if ( --task->suscnt == 0 ) {
+			make_ready(task);
+		}
+		break;
+	  case TS_WAITSUS:
+		if ( --task->suscnt == 0 ) {
+			task->state = TS_WAIT;
+		}
+		break;
+
+	  default:
+		ercd = E_SYS;
+		break;
+	}
+
+	return ercd;
+}
+
 #endif	// _BTRON_

@@ -319,6 +319,33 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER _bk_wup_tsk(struct task *task);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_sus_tsk
+ Input		:struct task *task
+ 		 < task to suspend >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:suspend a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER _bk_sus_tsk(struct task *task);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:_bk_rsm_tsk
+ Input		:struct task *task
+ 		 < task to resume from suspend >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:resume a task for btron
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ER _bk_rsm_tsk(struct task *task);
+
 #endif	// _BTRON_
 
 #endif /* _ISYSCALL_ */

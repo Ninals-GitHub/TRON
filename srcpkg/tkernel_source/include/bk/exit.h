@@ -40,29 +40,8 @@
  * representation of each source header.
  */
 
-#ifndef	__BK_KERNEL_H__
-#define	__BK_KERNEL_H__
-
-#include <machine.h>
-#include <cpu.h>
-#include <libstr.h>
-
-#include <bk/bk.h>
-#include <bk/bprocess.h>
-#include <bk/typedef.h>
-#include <bk/signal.h>
-#include <bk/memory/access.h>
-#include <bk/uapi/errno.h>
-#include <bk/uapi/errcode.h>
-
-#include <sys/segment.h>
-
-#include <tk/typedef.h>
-#include <tk/syscall.h>
-#include <tk/dbgspt.h>
-#include <tk/isyscall.h>
-
-#include <tstdlib/list.h>
+#ifndef	__BK_EXIT_H__
+#define	__BK_EXIT_H__
 
 /*
 ==================================================================================
@@ -98,12 +77,14 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:exit_wait4_list
+ Input		:struct process *proc
+ 		 < proc to free a wait4 list >
  Output		:void
  Return		:void
- Description	:void
+ Description	:free a wait4 list when a process itsel is killed
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+IMPORT void exit_wait4_list(struct process *proc);
 
-#endif	// __BK_KERNEL_H__
+#endif	// __BK_EXIT_H__

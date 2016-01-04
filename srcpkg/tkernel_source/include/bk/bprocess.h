@@ -188,8 +188,9 @@ struct process {
 	/* signal				 				*/
 	/* -------------------------------------------------------------------- */
 	struct signals		signals;
-	struct wait4_args	*w4a;
+	//struct wait4_args	*w4a;
 	struct list		wait4_list;
+	struct list		wait4_node;
 	/* -------------------------------------------------------------------- */
 	/* process's memory space						*/
 	/* -------------------------------------------------------------------- */
@@ -370,5 +371,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT BOOL is_child_prcess(struct process *child);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_init_proc
+ Input		:void
+ Output		:void
+ Return		:struct process *
+ 		 < init process >
+ Description	:get init process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct process* get_init_proc(void);
 
 #endif	// __BK_BPROCESS_H__
