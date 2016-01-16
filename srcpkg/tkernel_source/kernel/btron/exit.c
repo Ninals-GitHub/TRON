@@ -54,6 +54,8 @@
 
 ==================================================================================
 */
+struct wait4_args;
+
 LOCAL pid_t xwait(struct wait4_args *wargs);
 LOCAL INLINE pid_t xwait_children(struct wait4_args *wargs);
 LOCAL INLINE pid_t xwait_a_child(struct wait4_args *wargs);
