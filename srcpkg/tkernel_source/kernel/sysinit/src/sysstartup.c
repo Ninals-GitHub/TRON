@@ -79,9 +79,9 @@ EXPORT ER init_system( void )
 		goto err_ret;
 	}
 #ifdef _BTRON_
-	ercd = init_bk_earlier();
+	ercd = init_bk_early();
 	if (ercd < E_OK) {
-		vd_printf("error init_bk_earlier\n");
+		vd_printf("error init_bk_early\n");
 		goto err_ret;
 	}
 
@@ -180,6 +180,15 @@ EXPORT void start_system( void )
 	if ( ercd < E_OK ) {
 		goto err_ret;
 	}
+	
+#ifdef _BTRON_
+	ercd = init_bk_lately();
+	if (ercd < E_OK) {
+		vd_printf("error init_bk_lately\n");
+		goto err_ret;
+	}
+
+#endif
 
 	return;
 

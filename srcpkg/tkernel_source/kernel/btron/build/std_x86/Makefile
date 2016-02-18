@@ -61,9 +61,10 @@ BKERNEL_TARGET = bkernel.o
 
 BUILD_PATH = build/$(TETYPE)_$(MACHINE)
 
-OBJ = ../../memory/build/$(TETYPE)_$(MACHINE)/memory.o
-OBJ += ../../fs/build/$(TETYPE)_$(MACHINE)/fs.o
+OBJ = ../../memory/$(BUILD_PATH)/memory.o
+OBJ += ../../fs/$(BUILD_PATH)/fs.o
 OBJ += ../../kernel.o
+OBJ += ../../drivers/$(BUILD_PATH)/drivers.o
 
 # ----------------------------------------------------------------------------
 
@@ -77,16 +78,19 @@ $(BKERNEL_TARGET):$(OBJ)
 $(OBJ):
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) )
+	( cd ../../drivers/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../ ; $(MAKE) )
 
 ready_for_rebuild:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
+	( cd ../../drivers/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../ ; $(MAKE) ready_for_rebuild )
 	$(RM) $(BKERNEL_TARGET)
 
 clean:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) clean )
+	( cd ../../drivers/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../ ; $(MAKE) clean )
 	$(RM) $(BKERNEL_TARGET)

@@ -56,6 +56,7 @@
 #include <bk/atomic.h>
 #include <bk/memory/vm.h>
 #include <bk/uapi/signal.h>
+#include <bk/fs/fs_states.h>
 #include <bk/uapi/sys/resource.h>
 
 #include <sys/queue.h>
@@ -132,13 +133,6 @@ struct signals {
 
 /*
 ----------------------------------------------------------------------------------
-	for wait4
-----------------------------------------------------------------------------------
-*/
-struct wait4_args;
-
-/*
-----------------------------------------------------------------------------------
 	process
 ----------------------------------------------------------------------------------
 */
@@ -188,13 +182,16 @@ struct process {
 	/* signal				 				*/
 	/* -------------------------------------------------------------------- */
 	struct signals		signals;
-	//struct wait4_args	*w4a;
 	struct list		wait4_list;
 	struct list		wait4_node;
 	/* -------------------------------------------------------------------- */
 	/* process's memory space						*/
 	/* -------------------------------------------------------------------- */
 	struct memory_space	*mspace;
+	/* -------------------------------------------------------------------- */
+	/* process's file system states						*/
+	/* -------------------------------------------------------------------- */
+	struct fs_states	fs;
 };
 
 /*
@@ -271,6 +268,21 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 LOCAL INLINE struct memory_space* get_scheduled_mspace(void)
 {
 	return(get_scheduled()->mspace);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_ring
+ Input		:void
+ Output		:void
+ Return		:unsigned int
+ 		 < ring >
+ Description	:get ring of current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE unsigned int get_ring(void)
+{
+	return((get_current_task()->tskatr & TA_RNG3) >> 8);
 }
 
 /*
@@ -383,5 +395,31 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT struct process* get_init_proc(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_soft_limit
+ Input		:int rlimit
+ 		 < rlimit number >
+ Output		:void
+ Return		:unsigned long
+ 		 < soft limimt >
+ Description	:get a soft limit of a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT unsigned long get_soft_limit(int rlimit);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_hard_limit
+ Input		:int rlimit
+ 		 < rlimit number >
+ Output		:void
+ Return		:unsigned long
+ 		 < hard limit >
+ Description	:get a hard limit of a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT unsigned long get_hard_limit(int rlimit);
 
 #endif	// __BK_BPROCESS_H__

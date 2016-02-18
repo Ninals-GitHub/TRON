@@ -52,7 +52,11 @@
 #define __ERRNO_H__
 
 #include <tk/errno.h>
-#include <bk/uapi/btron/errno.h>
+
+#ifdef _BTRON_
+	#include <bk/uapi/btron/errno.h>
+	#include <bk/uapi/errcode.h>
+#endif
 
 #ifdef	__cplusplus
 extern	"C" {
@@ -88,7 +92,7 @@ typedef	int	errno_t;
  *  Error numbers:
  *	(*) will not occur in T2EX implementation
  */
-#if 0
+#ifndef _BTRON_
 #define EPERM		1	/* Operation not permitted		*/
 #define ENOENT		2	/* No such file or directory		*/
 #define ESRCH		3	/* No such process(*)			*/
@@ -200,15 +204,31 @@ typedef	int	errno_t;
  */
 #define EX_PERM 		ERCD(EC_ERRNO, EPERM)
 #define EX_NOENT		ERCD(EC_ERRNO, ENOENT)
+
+#ifndef _BTRON_
 #define EX_SRCH 		ERCD(EC_ERRNO, ESRCH)
+#endif
+
 #define EX_IO			ERCD(EC_ERRNO, EIO)
 #define EX_NXIO 		ERCD(EC_ERRNO, ENXIO)
+
+#ifndef _BTRON_
 #define EX_2BIG 		ERCD(EC_ERRNO, E2BIG)
+#endif
+
 #define EX_NOEXEC		ERCD(EC_ERRNO, ENOEXEC)
+
+#ifndef _BTRON_
 #define EX_BADF 		ERCD(EC_ERRNO, EBADF)
 #define EX_CHILD		ERCD(EC_ERRNO, ECHILD)
+#endif
+
 #define EX_AGAIN		ERCD(EC_ERRNO, EAGAIN)
+
+#ifndef _BTRON_
 #define EX_DEADLK		ERCD(EC_ERRNO, EDEADLK)
+#endif
+
 #define EX_NOMEM		ERCD(EC_ERRNO, ENOMEM)
 #define EX_ACCES		ERCD(EC_ERRNO, EACCES)
 #define EX_FAULT		ERCD(EC_ERRNO, EFAULT)
@@ -221,15 +241,29 @@ typedef	int	errno_t;
 #define EX_INVAL		ERCD(EC_ERRNO, EINVAL)
 #define EX_NFILE		ERCD(EC_ERRNO, ENFILE)
 #define EX_MFILE		ERCD(EC_ERRNO, EMFILE)
+
+#ifndef _BTRON_
 #define EX_NOTTY		ERCD(EC_ERRNO, ENOTTY)
+#endif
+
 #define EX_FBIG 		ERCD(EC_ERRNO, EFBIG)
+
+#ifndef _BTRON_
 #define EX_NOSPC		ERCD(EC_ERRNO, ENOSPC)
+#endif
+
 #define EX_SPIPE		ERCD(EC_ERRNO, ESPIPE)
 #define EX_ROFS 		ERCD(EC_ERRNO, EROFS)
+
+#ifndef _BTRON_
 #define EX_MLINK		ERCD(EC_ERRNO, EMLINK)
 #define EX_PIPE 		ERCD(EC_ERRNO, EPIPE)
 #define EX_DOM			ERCD(EC_ERRNO, EDOM)
+#endif
+
 #define EX_RANGE		ERCD(EC_ERRNO, ERANGE)
+
+#ifndef _BTRON_
 #define EX_WOULDBLOCK		ERCD(EC_ERRNO, EWOULDBLOCK)
 #define EX_INPROGRESS		ERCD(EC_ERRNO, EINPROGRESS)
 #define EX_ALREADY		ERCD(EC_ERRNO, EALREADY)
@@ -257,18 +291,34 @@ typedef	int	errno_t;
 #define EX_TIMEDOUT		ERCD(EC_ERRNO, ETIMEDOUT)
 #define EX_CONNREFUSED		ERCD(EC_ERRNO, ECONNREFUSED)
 #define EX_LOOP 		ERCD(EC_ERRNO, ELOOP)
+#endif
+
 #define EX_NAMETOOLONG		ERCD(EC_ERRNO, ENAMETOOLONG)
+
+#ifndef _BTRON_
 #define EX_HOSTDOWN		ERCD(EC_ERRNO, EHOSTDOWN)
 #define EX_HOSTUNREACH		ERCD(EC_ERRNO, EHOSTUNREACH)
+#endif
+
 #define EX_NOTEMPTY		ERCD(EC_ERRNO, ENOTEMPTY)
+
+#ifndef _BTRON_
 #define EX_DQUOT		ERCD(EC_ERRNO, EDQUOT)
 #define EX_NOLCK		ERCD(EC_ERRNO, ENOLCK)
+#endif
+
 #define EX_NOSYS		ERCD(EC_ERRNO, ENOSYS)
+
+#ifndef _BTRON_
 #define EX_FTYPE		ERCD(EC_ERRNO, EFTYPE)
 #define EX_ILSEQ		ERCD(EC_ERRNO, EILSEQ)
+#endif
+
 #define EX_NOTSUP		ERCD(EC_ERRNO, ENOTSUP)
 #define EX_INTR 		ERCD(EC_ERRNO, EINTR)
 #define EX_OVERFLOW		ERCD(EC_ERRNO, EOVERFLOW)
+
+#ifndef _BTRON_
 #define	EX_AI_AGAIN		ERCD(EC_ERRNO, EAI_AGAIN)
 #define	EX_AI_BADFLAGS		ERCD(EC_ERRNO, EAI_BADFLAGS)
 #define	EX_AI_FAIL		ERCD(EC_ERRNO, EAI_FAIL)
@@ -281,7 +331,7 @@ typedef	int	errno_t;
 #define	EX_AI_SYSTEM		ERCD(EC_ERRNO, EAI_SYSTEM)
 #define	EX_AI_BADHINTS		ERCD(EC_ERRNO, EAI_BADHINTS)
 #define	EX_AI_OVERFLOW		ERCD(EC_ERRNO, EAI_OVERFLOW)
-
+#endif
 #ifdef	__cplusplus
 }
 #endif

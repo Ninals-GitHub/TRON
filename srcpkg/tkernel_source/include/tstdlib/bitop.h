@@ -75,6 +75,8 @@ typedef __wchar_t	wchar_t;
 */
 extern BOOL tstdlib_bitclr( void *base, W offset );
 extern BOOL tstdlib_bitset( void *base, W offset );
+extern long
+tstdlib_bitsearch0_set( void *base, W offset, W width );
 extern void
 tstdlib_bitset_window( void *base, W offset, int window_len );
 extern BOOL tstdlib_bittest( void *base, W offset );

@@ -19,6 +19,10 @@
 # source files
 SRC	+= bitop.c
 
+#if _BTRON_
+SRC	+= util.c
+#endif
+
 # source file path
 VPATH   += ../../../tstdlib
 HEADER  += ../../../tstdlib

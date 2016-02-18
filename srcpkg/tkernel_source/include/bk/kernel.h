@@ -45,6 +45,7 @@
 
 #include <machine.h>
 #include <cpu.h>
+#include <compiler.h>
 #include <libstr.h>
 
 #include <bk/bk.h>
@@ -63,6 +64,7 @@
 #include <tk/isyscall.h>
 
 #include <tstdlib/list.h>
+#include <tstdlib/util.h>
 
 /*
 ==================================================================================

@@ -167,7 +167,7 @@ tstdlib_bitsearch0( void *base, W offset, W width )
 }
 
 /* tstdlib_bitsearch0 : perform 0 search on bit string and set*/
-BOOL
+long
 tstdlib_bitsearch0_set( void *base, W offset, W width )
 {
 	register UB *cp, mask;
@@ -191,9 +191,9 @@ tstdlib_bitsearch0_set( void *base, W offset, W width )
 						int old;
 						old = (*cp & mask);
 						*cp |= mask;
-						return((BOOL)old);
+						return(old);
 					} else {
-						return(FALSE);
+						return(-1);
 					}
 				}
 				mask = _BIT_SHIFT(mask);
@@ -210,7 +210,7 @@ tstdlib_bitsearch0_set( void *base, W offset, W width )
 		}
 	}
 
-	return(FALSE);
+	return(-1);
 }
 
 

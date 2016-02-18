@@ -44,6 +44,9 @@
 #include <bk/memory/vm.h>
 #include <bk/futex.h>
 
+#include <bk/fs/vfs.h>
+#include <bk/drivers/drivers.h>
+
 /*
 ==================================================================================
 
@@ -78,7 +81,7 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:init_bk_earlier
+ Funtion	:init_bk_early
  Input		:void
  Output		:void
  Return		:int
@@ -87,7 +90,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 mainly set up large memory
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int init_bk_earlier(void)
+EXPORT int init_bk_early(void)
 {
 	int err;
 	
@@ -129,6 +132,41 @@ EXPORT int init_bk(void)
 	if (UNLIKELY(err)) {
 		return(err);
 	}
+	/* -------------------------------------------------------------------- */
+	/* initialize file system object caches					*/
+	/* -------------------------------------------------------------------- */
+	err = init_fs();
+	
+	if (UNLIKELY(err)) {
+		vd_printf("error:init_fs\n");
+		return(err);
+	}
+	
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_bk_lately
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:initialize bk after t-kernel is initialized
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int init_bk_lately(void)
+{
+	int err;
+	/* -------------------------------------------------------------------- */
+	/* initialize bk drivers						*/
+	/* -------------------------------------------------------------------- */
+	err = init_drivers();
+	
+	if (UNLIKELY(err)) {
+		vd_printf("error:init_drivers\n");
+		return(err);
+	}
 	
 	return(0);
 }
@@ -145,6 +183,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void destroy_bk(void)
 {
 	destroy_mm();
+	
+	destroy_fs();
 }
 
 /*

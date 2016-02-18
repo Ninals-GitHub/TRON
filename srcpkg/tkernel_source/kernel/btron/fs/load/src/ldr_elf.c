@@ -1218,9 +1218,10 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	printf("bss:addr=0x%08X, map_size=0x%08X\n", PAGE_ALIGN(eli.bss_ladr), map_size);
 #endif
 	if (PAGE_ALIGN(eli.bss_ladr) < mspace->end_data) {
-		bss_start = PageAlignU((const void*)mspace->end_data);
+		bss_start =
+			(unsigned long)PageAlignU((const void*)mspace->end_data);
 	} else {
-		bss_start = eli.bss_ladr;
+		bss_start = (unsigned long)eli.bss_ladr;
 	}
 	addr = mmap((void*)PAGE_ALIGN(bss_start), map_size,
 			PROT_READ | PROT_WRITE | PROT_EXEC,

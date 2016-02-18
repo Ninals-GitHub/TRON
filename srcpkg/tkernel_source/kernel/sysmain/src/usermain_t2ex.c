@@ -96,7 +96,6 @@ EXPORT	INT	usermain( void )
 {
 	ER	err;
 	
-	
 	/* Start the device drivers */
 #ifdef DRV_CONSOLE
 	err = ConsoleIO(0, NULL);

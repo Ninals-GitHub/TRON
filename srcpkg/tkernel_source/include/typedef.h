@@ -71,6 +71,10 @@ typedef INT		(*FUNCP)();	/* Function address general */
 #define LOCAL		static		/* Local symbol definition */
 #define EXPORT				/* Global symbol definition */
 #define IMPORT		extern		/* Global symbol reference */
+#define	_INIT_				/* bk initialization function statement	*/
+
+typedef	int (*INITCALL)(void);		/* bk initialization function type	*/
+#define	INITCALL_DEFINE(func)	IMPORT int _INIT_ func(void)
 
 /*
  * Boolean value

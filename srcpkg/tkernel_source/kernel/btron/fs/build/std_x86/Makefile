@@ -59,6 +59,7 @@ FS_TARGET = fs.o
 OBJ = ../../vfs/$(BUILD_PATH)/vfs.o
 OBJ += ../../load/$(BUILD_PATH)/load.o
 OBJ += ../../fimp/$(BUILD_PATH)/fimp.o
+OBJ += ../../ramfs/$(BUILD_PATH)/ramfs.o
 
 # ----------------------------------------------------------------------------
 
@@ -74,12 +75,14 @@ $(OBJ):
 	( cd ../../vfs/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
+	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
 
 clean:
 	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../vfs/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) clean)
+	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) clean)
 	$(RM) $(FS_TARGET)
 
 install:
@@ -102,6 +105,7 @@ ready_for_rebuild:
 	( cd ../../vfs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild)
+	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild)
 	$(RM) $(FS_TARGET)
 
 clean_source:

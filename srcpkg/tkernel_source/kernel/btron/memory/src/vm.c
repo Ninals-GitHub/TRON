@@ -45,6 +45,7 @@
 #include <bk/memory/mmap.h>
 #include <bk/memory/vm.h>
 #include <bk/memory/page.h>
+#include <bk/memory/slab.h>
 #include <bk/uapi/berrno.h>
 
 /*

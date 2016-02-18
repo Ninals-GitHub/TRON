@@ -42,6 +42,8 @@
 
 
 #include <cpu.h>
+#include <bk/bprocess.h>
+#include <bk/memory/page.h>
 #include <bk/memory/access.h>
 #include <tk/sysdef.h>
 
@@ -100,9 +102,10 @@ copy_to_user(void *to_user, const void *from_kernel, size_t size)
 	char *to;
 	char *from;
 	
-	err = _ChkSpace(to_user, size, MA_READ|MA_WRITE, TMF_PPL(USER_RPL));
+	//err = _ChkSpace(to_user, size, MA_READ|MA_WRITE, TMF_PPL(USER_RPL));
+	err = ChkUsrSpaceRW(to_user, size);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		return(0);
 	}
 	
@@ -139,9 +142,10 @@ copy_form_user(void *to_kernel, const void *from_user, size_t size)
 	char *to;
 	char *from;
 	
-	err = _ChkSpace(from_user, size, MA_READ, TMF_PPL(USER_RPL));
+	//err = _ChkSpace(from_user, size, MA_READ, TMF_PPL(USER_RPL));
+	err = ChkUsrSpaceR(from_user, size);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		return(0);
 	}
 	
@@ -154,6 +158,163 @@ copy_form_user(void *to_kernel, const void *from_user, size_t size)
 	
 	return(size);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:strncpy_from_user
+ Input		:char *to_kernel
+ 		 < kernel buffer to which copy from user memory >
+ 		 const char *from_user
+ 		 < user address from which copy to kernel memory >
+ 		 size_t max
+ 		 < max length to copy >
+ Output		:void
+ Return		:size_t
+ 		 < copied length or result >
+ Description	:copy string resides on user memory to kernel buffer
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT size_t
+strncpy_from_user(char *to_kernel, const char *from_user, size_t max)
+{
+	unsigned long uaddr = (unsigned long)from_user;
+	unsigned long kaddr = (unsigned long)to_kernel;
+	size_t copied = 0;
+	int err;
+	int i;
+	
+	if (UNLIKELY(!max)) {
+		vd_printf("strncpy_from_user:max is 0\n");
+		return(0);
+	}
+	
+	max--;
+	
+	while (0 < max) {
+		char *to;
+		char *from;
+		size_t copy_len;
+		
+		if (PAGE_ALIGN(uaddr) == PAGE_ALIGN(uaddr + max)) {
+			copy_len = max;
+		} else {
+			copy_len = RoundPage(uaddr) - uaddr;
+			
+			if (UNLIKELY(max <= copy_len)) {
+				copy_len = max;
+			}
+		}
+		
+		err = ChkUsrSpaceR((void*)uaddr, copy_len);
+		
+		if (UNLIKELY(err)) {
+			vd_printf("strncpy_from_user:check space is failed\n");
+			return(0);
+		}
+		
+		to = (char*)kaddr;
+		from = (char*)uaddr;
+		
+		for (i = 0;i < copy_len;i++) {
+			if (*from == '\0') {
+				*to = '\0';
+				return(copied);
+			}
+			*(to++) = *(from++);
+			copied++;
+		}
+		
+		uaddr += copy_len;
+		kaddr += copy_len;
+		max -= copy_len;
+	}
+	
+	to_kernel[copied] = '\0';
+	
+	return(copied);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:ChkUsrSpaceR
+ Input		:const void *addr
+ 		 < address of user space to check >
+ 		 size_t len
+ 		 < check length >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:check read permission of user address space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER ChkUsrSpaceR( const void *addr, size_t len )
+{
+	unsigned int rng = get_ring();
+	
+	if (LIKELY(rng)) {
+		return(_ChkSpace(addr, len, MA_READ, TMF_PPL(rng)));
+	}
+	
+	return(_ChkSpace(addr, len, MA_READ, TMF_PPL(rng)));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:ChkUsrSpaceRW
+ Input		:const void *addr
+ 		 < address to check >
+ 		 size_t len
+ 		 < check length >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:check write permisstion of user address space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER ChkUsrSpaceRW( const void *addr, size_t len )
+{
+	unsigned int rng = get_ring();
+	
+	if (LIKELY(rng)) {
+		return(_ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(rng)));
+	}
+	
+	return(_ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(rng)));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:ChkSpaceRE
+ Input		:const void *addr
+ 		 < user address to check >
+ 		 size_t len
+ 		 < check length >
+ Output		:void
+ Return		:ER
+ 		 < result >
+ Description	:check execution permisstion of user address space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ER ChkUsrSpaceRE( const void *addr, size_t len )
+{
+	unsigned int rng = get_ring();
+	
+	if (LIKELY(rng)) {
+		return(_ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(rng)));
+	}
+	
+	return(_ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(rng)));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

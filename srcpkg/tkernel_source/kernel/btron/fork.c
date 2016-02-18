@@ -250,6 +250,8 @@ LOCAL INLINE int copy_process(struct process *new)
 {
 	struct process *current = get_current();
 	
+	copy_fs_states(new, current);
+	
 	return(copy_mm(current, new));
 }
 

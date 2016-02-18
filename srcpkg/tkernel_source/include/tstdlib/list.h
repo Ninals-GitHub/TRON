@@ -86,28 +86,6 @@ struct list {
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:container_of
- Input		:pointer
-		 < pointer to the member of the struct >
-		 type
-		 < type of the struct >
-		 member
-		 < member of the struct >
- Output		:void
- Return		:pointer to the struct entry which contains a specified member
- Description	:get the address of struct entry from its member
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-#define	container_of(pointer, type, member)					\
-(										\
-{										\
-	const typeof(((type*)0)->member) *_m_pointer = (pointer);		\
-	(type*)((char*)_m_pointer - offsetof(type, member));			\
-}										\
-)
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_entry
  Input		:pointer
 		 < pointer to the member of the struct >
@@ -138,6 +116,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 #define	get_first_entry(list_ptr, type, member)					\
 		get_entry((list_ptr)->next, type, member)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:INIT_LIST
+ Input		:name
+ 		 < name of a list to initalize >
+ Output		:void
+ Return		:void
+ Description	:initialize a static list
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define	INIT_LIST(name)		{&(name), &(name)}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

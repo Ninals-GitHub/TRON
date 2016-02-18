@@ -71,6 +71,8 @@ struct ErrCode{
 	} c;
 };
 
+typedef long			ssize_t;
+
 typedef int			pid_t;
 
 typedef unsigned long long	cputime_t;
@@ -86,21 +88,38 @@ typedef	unsigned int		ino_t;		/* File serial number		*/
 typedef	long			off_t;		/* File size (offset)		*/
 
 typedef	long long		off64_t;	/* File size (offset)		*/
+typedef	off64_t			loff_t;		/* file size (offset)		*/
 
-typedef	unsigned int		mode_t;		/* File attribute		*/
+//typedef	unsigned int		mode_t;		/* File attribute		*/
 typedef	unsigned int		nlink_t;	/* Number of links		*/
 typedef	unsigned int		dev_t;		/* Device number		*/
-typedef	unsigned int		uid_t;		/* User ID			*/
-typedef	unsigned int		gid_t;		/* Group ID			*/
+//typedef	unsigned int		uid_t;		/* User ID			*/
+//typedef	unsigned int		gid_t;		/* Group ID			*/
 typedef	long			blksize_t;	/* Block size			*/
-typedef	long long		blkcnt_t;	/* Number of blocks		*/
+//typedef	long long		blkcnt_t;	/* Number of blocks		*/
 
 typedef	unsigned long long	fsblkcnt_t;	/* Number of blocks		*/
 typedef	unsigned long long	fsfilcnt_t;	/* Number of files		*/
 
+typedef	unsigned short		mode_t;		/* file attribute		*/
+typedef	unsigned short		umode_t;	/* file attribute		*/
+typedef	unsigned short		uid_t;		/* user id			*/
+typedef	unsigned short		gid_t;		/* group id			*/
+typedef	uid_t			uid16_t;	/* 16 bit user id		*/
+typedef	gid_t			gid16_t;	/* 16 bit group id		*/
+typedef	uint32_t		uid32_t;	/* 32 bit user id		*/
+typedef	uint32_t		gid32_t;	/* 32 bit group id		*/
+typedef	uint64_t		blkcnt_t;	/* inode's block count		*/
+typedef	uint64_t		sector_t;	/* sector count			*/
+typedef	unsigned int		gfp_t;
+
 typedef struct {
 	int counter;
 } atomic_t;
+
+typedef struct {
+	long counter;
+} atomic_long_t;
 
 /*
 ==================================================================================

@@ -117,6 +117,24 @@ copy_form_user(void *to_kernel, const void *from_user, size_t size);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:strncpy_from_user
+ Input		:char *to_kernel
+ 		 < kernel buffer to which copy from user memory >
+ 		 const char *from_user
+ 		 < user address from which copy to kernel memory >
+ 		 size_t max
+ 		 < max length to copy >
+ Output		:void
+ Return		:size_t
+ 		 < copied length or result >
+ Description	:copy string resides on user memory to kernel buffer
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT size_t
+strncpy_from_user(char *to_kernel, const char *from_user, size_t max);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:ChkSpaceR
  Input		:CONST void *addr
  		 < address to check >
@@ -143,8 +161,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:check read permission of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-//LOCAL ER ChkUsrSpaceR( const void *addr, size_t len )
-#define	ChkUsrSpaceR(addr, len)	_ChkSpace(addr, len, MA_READ, TMF_PPL(USER_RPL))
+IMPORT ER ChkUsrSpaceR( const void *addr, size_t len );
+//#define	ChkUsrSpaceR(addr, len)	_ChkSpace(addr, len, MA_READ, TMF_PPL(USER_RPL))
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -174,9 +192,9 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:check write permisstion of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-//LOCAL ER ChkUsrSpaceRW( const void *addr, size_t len )
-#define	ChkUsrSpaceRW(addr, len)						\
-		_ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(USER_RPL))
+IMPORT ER ChkUsrSpaceRW( const void *addr, size_t len );
+//#define	ChkUsrSpaceRW(addr, len)						\
+//		_ChkSpace(addr, len, MA_READ|MA_WRITE, TMF_PPL(USER_RPL))
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -206,8 +224,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:check execution permisstion of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-//LOCAL ER ChkUsrSpaceRE( const void *addr, size_t len )
-#define	ChkUsrSpaceRE(addr, len)						\
-		_ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(USER_RPL))
+IMPORT ER ChkUsrSpaceRE( const void *addr, size_t len );
+//#define	ChkUsrSpaceRE(addr, len)						\
+//		_ChkSpace(addr, len, MA_READ|MA_EXECUTE, TMF_PPL(USER_RPL))
 
 #endif	// __BK_ACCESS_H__

@@ -45,6 +45,7 @@
 #include <bk/bprocess.h>
 #include <bk/exit.h>
 #include <bk/kernel.h>
+#include <bk/signal.h>
 #include <bk/uapi/errcode.h>
 #include <tk/sysmgr.h>
 #include <sys/rominfo.h>
@@ -245,6 +246,7 @@ EXPORT struct process* alloc_process(pid_t pid)
 	/* future work : allocate from slab allocator				*/
 	/* -------------------------------------------------------------------- */
 	if (LIKELY(pid < max_pid)) {
+		int err;
 		struct process *current = get_current();
 		
 		new_proc = &proc_table[pid];
@@ -272,6 +274,13 @@ EXPORT struct process* alloc_process(pid_t pid)
 			return(NULL);
 		}
 		
+		err = alloc_fs_states(new_proc);
+		
+		if (err) {
+			vd_printf("alloc_fs_states:error\n");
+			goto failed_alloc_fs_states;
+		}
+		
 		/* ------------------------------------------------------------ */
 		/* initialize signal management					*/
 		/* ------------------------------------------------------------ */
@@ -294,6 +303,10 @@ EXPORT struct process* alloc_process(pid_t pid)
 	}
 	
 	return(new_proc);
+
+failed_alloc_fs_states:
+	free_memory_space(new_proc->mspace);
+	return(NULL);
 }
 
 /*
@@ -346,6 +359,10 @@ EXPORT void free_process(pid_t pid)
 			free_task(task);
 		}
 	}
+	/* -------------------------------------------------------------------- */
+	/* free fs								*/
+	/* -------------------------------------------------------------------- */
+	free_fs_states(proc);
 	/* -------------------------------------------------------------------- */
 	/* delete wait 4 list							*/
 	/* -------------------------------------------------------------------- */
@@ -521,6 +538,44 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT struct process* get_init_proc(void)
 {
 	return(&proc_table[0]);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_soft_limit
+ Input		:int rlimit
+ 		 < rlimit number >
+ Output		:void
+ Return		:unsigned long
+ 		 < soft limimt >
+ Description	:get a soft limit of a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT unsigned long get_soft_limit(int rlimit)
+{
+	struct process *proc = get_current();
+	struct rlimit *rlim = &proc->rlimits[rlimit];
+	
+	return(rlim->rlim_cur);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_hard_limit
+ Input		:int rlimit
+ 		 < rlimit number >
+ Output		:void
+ Return		:unsigned long
+ 		 < hard limit >
+ Description	:get a hard limit of a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT unsigned long get_hard_limit(int rlimit)
+{
+	struct process *proc = get_current();
+	struct rlimit *rlim = &proc->rlimits[rlimit];
+	
+	return(rlim->rlim_max);
 }
 
 /*

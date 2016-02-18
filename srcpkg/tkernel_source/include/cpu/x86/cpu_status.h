@@ -46,6 +46,13 @@ IMPORT UINT	lowpow_discnt;
 					dispatch();			\
 				}					\
 				enaint(_cpsr_);}
+#define OUT_CRITICAL_SECTION	if ( !isDI(_cpsr_)			\
+				  && ctxtsk != schedtsk			\
+				  && !isTaskIndependent()		\
+				  && !dispatch_disabled ) {		\
+					dispatch();			\
+				}					\
+				enaint(_cpsr_);
 
 /*
  * Start/End interrupt disable section

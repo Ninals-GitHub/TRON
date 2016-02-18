@@ -83,12 +83,24 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:container_of
+ Input		:pointer
+		 < pointer to the member of the struct >
+		 type
+		 < type of the struct >
+		 member
+		 < member of the struct >
  Output		:void
- Return		:void
- Description	:void
+ Return		:pointer to the struct entry which contains a specified member
+ Description	:get the address of struct entry from its member
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+#define	container_of(pointer, type, member)					\
+(										\
+{										\
+	const typeof(((type*)0)->member) *_m_pointer = (pointer);		\
+	(type*)((char*)_m_pointer - offsetof(type, member));			\
+}										\
+)
 
 #endif	// __COMPILER_H__

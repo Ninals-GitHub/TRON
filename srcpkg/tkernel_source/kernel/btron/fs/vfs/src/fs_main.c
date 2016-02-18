@@ -49,6 +49,8 @@
  */
 
 
+#include <bk/fs/vfs.h>
+#include <bk/drivers/major.h>
 #include "fsdefs.h"
 
 /* Default "console" file system */
@@ -127,7 +129,8 @@ LOCAL	INT	fatfs_initialize(void)
 EXPORT	INT	fs_main(INT ac, UB *arg[])
 {
 	INT	sts;
-
+	
+	vd_printf("fs_main\n");
 	sts = 0;
 	if (ac >= 0) {		/* Startup */
 		if (fs_tk_is_initialized() == 0) {
@@ -153,8 +156,193 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 			sts = fs_tk_finalize();
 		}
 	}
+	
+	make_init_fs();
 
 exit0:
 	return sts;
 }
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Open Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_fs
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:initialize file system management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int init_fs(void)
+{
+	int err;
+	
+	err = init_super_block();
+	
+	if (err) {
+		vd_printf("failed init_super_block\n");
+		return(err);
+	}
+	
+	err = init_vnode();
+	
+	if (err) {
+		vd_printf("failed init_vnode\n");
+		goto failed_init_vnode;
+	}
+	err = init_dentry();
+	
+	if (err) {
+		vd_printf("failed init_dentry\n");
+		goto failed_init_dentry;
+	}
+	
+	err = init_mount();
+	
+	if (err) {
+		vd_printf("failed init_mount\n");
+		goto failed_init_mount;
+	}
+	
+	err = init_files();
+	
+	if (err) {
+		vd_printf("failed init_files\n");
+		goto failed_init_files;
+	}
+	
+	err = init_block_device();
+	
+	if (err) {
+		vd_printf("failed init_block_devicek\n");
+		goto failed_init_block_device;
+	}
+	
+	err = init_char_device();
+	
+	if (err) {
+		vd_printf("failed init_char_device\n");
+		goto failed_init_char_device;
+	}
+	
+	return(err);
+
+failed_init_char_device:
+	destroy_block_device_cache();
+failed_init_block_device:
+	destroy_files_cache();
+failed_init_files:
+	destroy_mount_cache();
+failed_init_mount:
+	destroy_dentry_cache();
+failed_init_dentry:
+	destroy_vnode_cache();
+failed_init_vnode:
+	destroy_super_block_cache();
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:destroy_fs
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:destroy fs management
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void destroy_fs(void)
+{
+	destroy_super_block_cache();
+	destroy_vnode_cache();
+	destroy_dentry_cache();
+	destroy_mount_cache();
+	destroy_files_cache();
+	destroy_block_device_cache();
+	destroy_char_device_cache();
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:make_init_fs
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make initial file system space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int make_init_fs(void)
+{
+	int err;
+	int fd;
+	char buf[] = "hello vfs world!";
+	
+	err = mount_root_fs();
+	
+	if (err) {
+		vd_printf("failed mount_root_fs\n");
+		return(err);
+	}
+	
+	err = mkdir("/dev", 0);
+	
+	if (UNLIKELY(err)) {
+		vd_printf("mkdir /dev failed\n");
+		return(err);
+	}
+	
+	err = mknod("/dev/tty", S_IFCHR, make_dev(TTYAUX_MAJOR, 0));
+	
+	if (UNLIKELY(err)) {
+		vd_printf("mknod /dev/tty failed\n");
+		return(err);
+	}
+	
+	fd = open("/dev/tty", 0, 0);
+	
+	if (UNLIKELY(fd < 0)) {
+		vd_printf("open /dev/tty failed\n");
+		return(err);
+	}
+	
+	err = write(fd, buf, sizeof(buf));
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+
+
+/*
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	
+	< Local Functions >
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+==================================================================================
+ Funtion	:void
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/
 

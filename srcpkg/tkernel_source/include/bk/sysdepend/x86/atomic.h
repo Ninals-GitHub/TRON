@@ -85,14 +85,14 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:atomic_init
+ Funtion	:ATOMIC_INIT
  Input		:value
  Output		:void
  Return		:void
  Description	:initialize atomic value
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-#define	atomic_init(value)	{ (value) }
+#define	ATOMIC_INIT(value)	{ (value) }
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -106,6 +106,22 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 static ALWAYS_INLINE int atomic_read(const atomic_t *v)
+{
+	return(ACCESS_ONCE((v)->counter));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_read
+ Input		:const atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:void
+ Return		:int
+ 		 < read value >
+ Description	:atomically read a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE long atomic_long_read(const atomic_long_t *v)
 {
 	return(ACCESS_ONCE((v)->counter));
 }
@@ -130,6 +146,52 @@ static ALWAYS_INLINE void atomic_write(atomic_t *v, int i)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_write
+ Input		:atomic_long_t *v
+ 		 < pointer to counter >
+ 		 int i
+ 		 < value to write >
+ Output		:atomic_t *v
+ 		 < pointer to counter >
+ Return		:void
+ Description	:atomically write a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE void atomic_long_write(atomic_long_t *v, long i)
+{
+	v->counter = i;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_init
+ Input		:atomic_t *v
+ 		 < initializee >
+ 		 int value
+ 		 < initial value >
+ Output		:void
+ Return		:void
+ Description	:initialize atomic value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define	atomic_init(v, value)	atomic_write(v, value)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_init
+ Input		:atomic_long_t *v
+ 		 < initializee >
+ 		 long value
+ 		 < initial value >
+ Output		:void
+ Return		:void
+ Description	:initialize atomic value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define	atomic_long_init(v, value)	atomic_long_write(v, value)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:atomic_add
  Input		:int i
  		 < value to add >
@@ -142,6 +204,30 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 static ALWAYS_INLINE void atomic_add(int i, atomic_t *v)
+{
+	ASM (
+		LOCK_PREFIX ";"
+		"addl	%[value], %[counter]		\n\t"
+		: [counter]"+m"(v->counter)
+		: [value]"ir"(i)
+		:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_add
+ Input		:long i
+ 		 < value to add >
+ 		 atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:void
+ Description	:atomically add a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE void atomic_long_add(long i, atomic_long_t *v)
 {
 	ASM (
 		LOCK_PREFIX ";"
@@ -178,6 +264,30 @@ static ALWAYS_INLINE void atomic_sub(int i, atomic_t *v)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_sub
+ Input		:long i
+ 		 < value to subtract >
+ 		 atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:void
+ Description	:atomically subtract a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE void atomic_long_sub(long i, atomic_long_t *v)
+{
+	ASM(
+		LOCK_PREFIX ";"
+		"subl	%[value], %[counter]		\n\t"
+		: [counter]"+m"(v->counter)
+		: [value]"ir"(i)
+		:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:atomic_inc
  Input		:atomic_t *v
  		 < pointer to counter >
@@ -188,6 +298,28 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 static ALWAYS_INLINE void atomic_inc(atomic_t *v)
+{
+	ASM(
+		LOCK_PREFIX ";"
+		"incl	%[counter]			\n\t"
+		: [counter]"+m"(v->counter)
+		:
+		:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_inc
+ Input		:atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:void
+ Description	:atomically increment a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE void atomic_long_inc(atomic_long_t *v)
 {
 	ASM(
 		LOCK_PREFIX ";"
@@ -226,6 +358,34 @@ result:
 	return 1;
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_inc_and_test
+ Input		:atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:int
+ 		 < boolean result >
+ Description	:atomically increment a value and test it
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE int atomic_long_inc_and_test(atomic_long_t *v)
+{
+	asm goto(
+		LOCK_PREFIX ";"
+		"incl	%[counter]			\n\t"
+		"je	%l[result]			\n\t"
+		: 
+		: [counter]"m"(v->counter)
+		: "memory"
+		: result
+	);
+	return 0;
+result:
+	return 1;
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -239,6 +399,28 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 static ALWAYS_INLINE void atomic_dec(atomic_t *v)
+{
+	ASM(
+		LOCK_PREFIX ";"
+		"decl	%[counter]			\n\t"
+		: [counter]"+m"(v->counter)
+		:
+		:
+	);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_dec
+ Input		:atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:void
+ Description	:atomically decrement a value
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE void atomic_long_dec(atomic_long_t *v)
 {
 	ASM(
 		LOCK_PREFIX ";"
@@ -281,6 +463,36 @@ result:
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_sub_and_test
+ Input		:long i
+ 		 < value to subtract >
+ 		 atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:int
+ 		 < boolean result >
+ Description	:atomically subtract a value and test it
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE int atomic_long_sub_and_test(long i, atomic_long_t *v)
+{
+	asm goto(
+		LOCK_PREFIX ";"
+		"subl	%[value], %[counter]		\n\t"
+		"je	%l[result]			\n\t"
+		: 
+		: [value]"ir"(i), [counter]"m"(v->counter)
+		: "memory"
+		: result
+	);
+	return 0;
+result:
+	return 1;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:atomic_dec_and_test
  Input		:atomic_t *v
  		 < pointer to counter >
@@ -292,6 +504,34 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 static ALWAYS_INLINE int atomic_dec_and_test(atomic_t *v)
+{
+	asm goto(
+		LOCK_PREFIX ";"
+		"decl	%[counter]			\n\t"
+		"je	%l[result]			\n\t"
+		: 
+		: [counter]"m"(v->counter)
+		: "memory"
+		: result
+	);
+	return 0;
+result:
+	return 1;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:atomic_long_dec_and_test
+ Input		:atomic_long_t *v
+ 		 < pointer to counter >
+ Output		:atomic_long_t *v
+ 		 < pointer to counter >
+ Return		:int
+ 		 < boolean result >
+ Description	:atomically decrement a value and test it
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+static ALWAYS_INLINE int atomic_long_dec_and_test(atomic_long_t *v)
 {
 	asm goto(
 		LOCK_PREFIX ";"
