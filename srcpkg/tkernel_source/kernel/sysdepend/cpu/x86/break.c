@@ -96,22 +96,22 @@ EXPHANDLER void handle_breakpoint(struct ctx_reg *reg)
 {
 	int err;
 	
-	vd_printf("breakpoint");
+	//vd_printf("breakpoint");
 	
-	vd_printf("reg->eip:0x%08X\n", reg->eip);
+	//vd_printf("reg->eip:0x%08X\n", reg->eip);
 	
 	reg->eip--;
 	
 	err = restore_bp((void*)reg->eip);
 	
 	if (!err) {
-		vd_printf("resotre\n");
+		//vd_printf("resotre\n");
 		ASM (
 		"jmp	flush_after_restore	\n\t"
 		"flush_after_restore: \n"
 		);
 	} else {
-		vd_printf("\n");
+		//vd_printf("\n");
 	}
 }
 
@@ -132,7 +132,7 @@ EXPORT void insert_bp(void *addr)
 	debug_bp.i = *insertee;
 	debug_bp.address = (unsigned long)addr;
 	
-	printf("instruction:0x%02X\n", debug_bp.i);
+	//printf("instruction:0x%02X\n", debug_bp.i);
 	
 	*insertee = DEBUG_TRAP_INST;
 }

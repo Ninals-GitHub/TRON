@@ -510,7 +510,7 @@ LOCAL	void	cmd_cp(INT ac, B *av[])
 {
 	INT	fsz, n, wofs, wlen;
 	FILE	*sfp, *dfp;
-	UB	*buf;
+	UB	*buf = NULL;
 	B	dst[FILENAME_MAX + 1], *p;
 	struct stat_ms	st;
 

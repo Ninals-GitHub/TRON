@@ -380,7 +380,8 @@ EXPORT void free_process(pid_t pid)
 	/* free all vm and page tables						*/
 	/* -------------------------------------------------------------------- */
 	BEGIN_CRITICAL_SECTION;
-	free_vm_all(proc);
+	//free_vm_all(proc);
+	free_vm(proc);
 	//printf("bye pid = %d\n", pid);
 	proc->state		= P_NONEXIST;
 #if 0
@@ -481,6 +482,8 @@ EXPORT ER init_proc( CONST T_CTSK *pk_ctsk )
 	/* set initial pde							*/
 	/* -------------------------------------------------------------------- */
 	init->mspace->pde = (pde_t*)get_system_pde();
+	
+	init->state = P_RUN;
 	
 	return(EC_OK);
 }

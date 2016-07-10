@@ -18,7 +18,7 @@
 
 #include <tk/kernel.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 #include "ready_queue.h"
 #include <cpu.h>
 #include "tkdev_timer.h"
@@ -320,7 +320,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ID get_task_id(struct task *task)
 {
-	struct task *table = (struct task*)tcb_table;
 	ID index = (ID)(task - tcb_table);
 	
 	return(ID_TSK(index));

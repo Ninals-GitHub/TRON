@@ -180,7 +180,7 @@ SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 	return(fs_write(fd, buf, count));
 }
 #endif
-
+#if 0
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:writev
@@ -213,7 +213,8 @@ SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
 	
 	for (i = 0;i < iovcnt;i++) {
 		ssize_t write_len;
-		write_len = fs_write(fd, iov->iov_base, iov->iov_len);
+		printf("fd:%d iov_base:0x%08X iov_len:0x%08X\n", fd, iov[i].iov_base, iov[i].iov_len);
+		//write_len = fs_write(fd, iov->iov_base, iov->iov_len);
 		if (UNLIKELY(write_len < 0)) {
 			return(write_len);
 		}
@@ -229,7 +230,7 @@ SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
 	
 	return(len);
 }
-
+#endif
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void

@@ -201,6 +201,8 @@ lgamma_r(double x, int *signgamp)
 {
 	double t,y,z,nadj,p,p1,p2,p3,q,r,w;
 	int i,hx,lx,ix;
+	
+	nadj = 0;
 
 	EXTRACT_WORDS(hx,lx,x);
 

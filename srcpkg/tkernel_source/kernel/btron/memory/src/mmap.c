@@ -47,6 +47,7 @@
 #include <bk/memory/page.h>
 #include <bk/memory/mmap.h>
 #include <bk/uapi/berrno.h>
+#include <bk/fs/vfs.h>
 
 /*
 ==================================================================================
@@ -55,6 +56,10 @@
 
 ==================================================================================
 */
+LOCAL int
+check_alignment(void *addr, size_t length, int prot, int flags, off_t offset);
+LOCAL int check_flags(int flags);
+LOCAL int check_open_file(int fd, int prot, int flags);
 
 /*
 ==================================================================================
@@ -84,78 +89,10 @@ SYSCALL void* mmap(void *addr, size_t length, int prot,
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
 /*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:mmap
- Input		:void *addr
- 		 < base address of virtual memory to request a mapping >
- 		 size_t length
- 		 < size of memory to request a mapping >
- 		 int prot
- 		 < page protection >
- 		 int flags
- 		 < mmap flags >
- 		 int fd
- 		 < file descriptor >
- 		 off_t offset
- 		 < offset in a file >
- Output		:void
- Return		:void *addr
- 		 < base address of mapped memory >
- Description	:make a new memory mapping
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+----------------------------------------------------------------------------------
+	kernel internal operations
+----------------------------------------------------------------------------------
 */
-SYSCALL void* mmap(void *addr, size_t length, int prot,
-			int flags, int fd, off_t offset)
-{
-	struct process *current = get_current();
-	
-#if 0
-	printf("mmap[*addr=0x%08X, ", addr);
-	printf("length=%d, ", length);
-	printf("prot=0x%08X, ", prot);
-	printf("flags=0x%08X, ", flags);
-	printf("fd=%d, ", fd);
-	printf("offset=%d]\n", offset);
-#endif
-	
-	return(xmmap(current, addr, length, prot, flags, fd, offset));
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:mmap2
- Input		:void *addr
- 		 < base address of virtual memory to request a mapping >
- 		 size_t length
- 		 < size of memory to request a mapping >
- 		 int prot
- 		 < page protection >
- 		 int flags
- 		 < mmap flags >
- 		 int fd
- 		 < file descriptor >
- 		 off_t offset
- 		 < offset in a file in unit of page size >
- Output		:void
- Return		:void *addr
- 		 < base address of mapped memory >
- Description	:make a new memory mapping with page size offset
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL void* mmap2(void *addr, size_t length, int prot,
-			int flags, int fd, off_t pgoffset)
-{
-	struct process *current = get_current();
-	void *allocated;
-#if 0
-	printf("mmap2:");
-#endif
-	allocated = xmmap(current, addr, length, prot,
-				flags, fd, pgoffset * MMAP_PAGESIZE);
-	
-	return(allocated);
-}
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:xmmap
@@ -195,14 +132,30 @@ EXPORT void* xmmap(struct process *proc, void *addr, size_t length,
 	printf(", fd=%d", fd);
 	printf(", offset=%d]\n", offset);
 #endif
-	if (UNLIKELY(addr && ((unsigned long)addr & ~PAGE_MASK))) {
-		//printf("mmap failed:address alignment 0x%08X\n", ((unsigned long)addr & ~PAGE_MASK));
-		return(MAP_FAILED);
+	
+	err = check_alignment(addr, length, prot, flags, offset);
+	
+	if (UNLIKELY(err)) {
+		//printf("err(%d) at %s[1]\n", err, __func__);
+		return((void*)err);
 	}
 	
-	if (UNLIKELY(offset & ~PAGE_MASK)) {
-		//printf("mmap failed:offset alignment\n");
-		return(MAP_FAILED);
+	err = check_flags(flags);
+	
+	if (UNLIKELY(err)) {
+		//printf("err(%d) at %s[2]\n", err, __func__);
+		return((void*)err);
+	}
+	
+	if ((flags & MAP_ANONYMOUS) && (0 <= fd)) {
+		fd = -1;
+	}
+	
+	err = check_open_file(fd, prot, flags);
+	
+	if (UNLIKELY(err)) {
+		//printf("err(%d) at %s[3]\n", err, __func__);
+		return((void*)err);
 	}
 	
 	if (UNLIKELY(!addr && !(flags & MAP_FIXED))) {
@@ -213,8 +166,8 @@ EXPORT void* xmmap(struct process *proc, void *addr, size_t length,
 							flags, fd, offset);
 		
 		if (candidate == MAP_FAILED) {
-			//printf("cannot search mmap candidate\n");
-			return(MAP_FAILED);
+			printf("cannot search mmap candidate\n");
+			return((void*)-ENOMEM);
 		}
 		start = (unsigned long)candidate;
 		//printf("mmap:new addr:0x%08X\n", start);
@@ -222,29 +175,125 @@ EXPORT void* xmmap(struct process *proc, void *addr, size_t length,
 		start = (unsigned long)addr;
 	}
 	
-	end  = start + length;
+	end  = start + RoundPage(length);
 	
 	if (!candidate) {
 		err = unmap_vm(proc, start, end);
 	}
 	
 	if (UNLIKELY(err)) {
-		//printf("mmpa failed:unmap existing memory\n");
-		return(MAP_FAILED);
+		printf("mmpa failed:unmap existing memory\n");
+		return((void*)err);
 	}
 	
 	/* -------------------------------------------------------------------- */
-	/* as for now, map file to memory is not suppoerted			*/
+	/* as for now, shared memory is not suppoerted				*/
 	/* future work:								*/
 	/* -------------------------------------------------------------------- */
-	err = map_vm(proc, start, end, prot, flags);
+	err = map_vm(proc, start, end, length, prot, flags, fd, offset);
 	
 	if (UNLIKELY(err)) {
-		//printf("mmap failed:map_vm failed\n");
-		return(MAP_FAILED);
+		printf("mmap failed:map_vm failed\n");
+		return((void*)err);
 	}
 	
+	//printf("start:0x%08X\n", start);
+	
 	return((void*)start);
+}
+
+/*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL void* mmap(void *addr, size_t length, int prot,
+			int flags, int fd, off_t offset)
+{
+	struct process *current = get_current();
+	
+#if 0
+	printf("sysmmap[*addr=0x%08X, ", addr);
+	printf("length=%d, ", length);
+	printf("prot=0x%08X, ", prot);
+	printf("flags=0x%08X, ", flags);
+	printf("fd=%d, ", fd);
+	printf("offset=%d]\n", offset);
+#endif
+	
+	return(xmmap(current, addr, length, prot, flags, fd, offset));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap2
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file in unit of page size >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping with page size offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+extern int ld_flags;
+SYSCALL void* mmap2(void *addr, size_t length, int prot,
+			int flags, int fd, off_t pgoffset)
+{
+	struct process *current = get_current();
+	void *allocated;
+	
+	allocated = xmmap(current, addr, length, prot,
+				flags, fd, pgoffset * MMAP_PAGESIZE);
+	
+#if 0
+	printf("mmap2[*addr=0x%08X, ", allocated);
+	printf("len=0x%08X, ", length);
+#if 1
+	printf("prot=0x%08X, ", prot);
+	printf("flags=0x%08X, ", flags);
+#endif
+	printf("%d, ", fd);
+
+#if 0
+	printf("addr=0x%08X ", addr);
+	printf("off=%ld]\n", pgoffset);
+#else
+	printf("\n");
+#endif
+#endif
+	
+	return(allocated);
 }
 
 /*
@@ -260,7 +309,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL unsigned long brk(unsigned long addr)
 {
-	unsigned long new_brk;
 	unsigned long new_size;
 	struct process *proc = get_current();
 	struct memory_space *mspace = proc->mspace;
@@ -301,7 +349,8 @@ SYSCALL unsigned long brk(unsigned long addr)
 		return(mspace->end_brk);
 	}
 	
-	new_brk = vm_extend_brk(proc, new_size);
+	vm_extend_brk(proc, new_size);
+	//printf("<6:new addr=0x%08X>\n", mspace->end_brk);
 	
 	return(mspace->end_brk);
 }
@@ -321,10 +370,28 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int munmap(void *addr, size_t length)
 {
+	int err;
+	
+#if 0
 	printf("munmap[addr=0x%08X", addr);
 	printf(", length=%d]\n", length);
-	return(unmap_vm(get_current(),
-			(unsigned long)addr, (unsigned long)addr + length));
+#endif
+	
+	err = check_alignment(addr, length, 0, 0, 0);
+	
+	if (UNLIKELY(err)) {
+		printf("error at %s [%d]\n", __func__, -err);
+		return(err);
+	}
+	
+	length = RoundPage(length);
+	
+	err =
+	unmap_vm(get_current(), (unsigned long)addr, (unsigned long)addr + length);
+	
+	//show_vm_list(get_current());
+	
+	return(err);
 }
 
 /*
@@ -343,12 +410,50 @@ SYSCALL unsigned long sbrk(long addr)
 	struct process *proc = get_current();
 	struct memory_space *mspace = proc->mspace;
 	
+	printf("sbrk\n");
+	
 	if (UNLIKELY(!addr)) {
 		return(mspace->end_brk);
 	}
 	
 	return(brk(mspace->end_brk + addr));
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mprotect
+ Input		:void *addr
+ 		 < start address of a memory region to set memory protectoin >
+ 		 size_t len
+ 		 < size of a memory region >
+ 		 int prot
+ 		 < protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set protection on a region of memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int mprotect(void *addr, size_t len, int prot)
+{
+	if (UNLIKELY(!len)) {
+		/* do nothing							*/
+		return(0);
+	}
+	
+	if (UNLIKELY(((unsigned long)addr) & PAGE_UMASK)) {
+		return(-EINVAL);
+	}
+	
+#if 0
+	printf("mprotect:addr=0x%08X ", addr);
+	printf("len=0x%08X ", len);
+	printf("prot=0x%02X\n", prot);
+#endif
+	
+	return(vm_mprotect(addr, len, prot));
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -368,6 +473,95 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+==================================================================================
+ Funtion	:check_alignment
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/
+LOCAL int
+check_alignment(void *addr, size_t length, int prot, int flags, off_t offset)
+{
+	if (UNLIKELY(!length)) {
+		return(-EINVAL);
+	}
+
+	if (UNLIKELY(addr && ((unsigned long)addr & ~PAGE_MASK))) {
+		//printf("mmap failed:address alignment 0x%08X\n", ((unsigned long)addr & ~PAGE_MASK));
+		return(-EINVAL);
+	}
+	
+	if (UNLIKELY(offset & ~PAGE_MASK)) {
+		//printf("mmap failed:offset alignment\n");
+		return(-EINVAL);
+	}
+	
+	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:check_flags
+ Input		:int flags
+ 		 < mmap flags >
+ Output		:void
+ Return		:void
+ Description	:void
+==================================================================================
+*/
+LOCAL int check_flags(int flags)
+{
+	if (!(flags & MAP_PRIVATE) && !(flags & MAP_SHARED)) {
+		return(-EINVAL);
+	}
+	
+	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:check_open_file
+ Input		:int fd
+ 		 < open file descriptor to check >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check open file
+==================================================================================
+*/
+LOCAL int check_open_file(int fd, int prot, int flags)
+{
+	struct file *file;
+	
+	if (fd < 0) {
+		return(0);
+	}
+	
+	file = get_open_file(fd);
+	
+	if (UNLIKELY(!file)) {
+		return(-EACCES);
+	}
+	
+	return(0);
+}
+
 /*
 ==================================================================================
  Funtion	:void

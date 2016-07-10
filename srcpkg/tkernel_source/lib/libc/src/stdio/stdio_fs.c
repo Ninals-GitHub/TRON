@@ -51,6 +51,7 @@
 
 #include <basic.h>
 #include <t2ex/fs.h>
+#include <bk/fs/file.h>
 
 struct __libc_stat {
 	unsigned int	st_mode;
@@ -65,6 +66,7 @@ EXPORT	int	__libc_open( const char *path, int oflags, mode_t mode )
 }
 #endif
 
+#ifndef	_BTRON_
 EXPORT	int	__libc_close( int fd )
 {
 	return fs_close( fd );
@@ -84,6 +86,27 @@ EXPORT	off64_t	__libc_lseek( int fd, off64_t offset64, int whence )
 {
 	return fs_lseek64( fd, offset64, whence );
 }
+#else
+EXPORT	int	__libc_close( int fd )
+{
+	return close( fd );
+}
+
+EXPORT	int	__libc_read( int fd, void *buf, size_t count )
+{
+	return read( fd, buf, count );
+}
+
+EXPORT	int	__libc_write( int fd, const void *buf, size_t count )
+{
+	return kwrite( fd, buf, count );
+}
+
+EXPORT	off64_t	__libc_lseek( int fd, off64_t offset64, int whence )
+{
+	return lseek64( fd, offset64, whence );
+}
+#endif
 
 #ifndef	_T2EX
 EXPORT	ER	__libc_fcntl(int fd, int cmd, int arg)
@@ -92,6 +115,7 @@ EXPORT	ER	__libc_fcntl(int fd, int cmd, int arg)
 }
 #endif
 
+#ifndef _BTRON_
 EXPORT	int	__libc_fstat( int fd, struct __libc_stat *buf  )
 {
 	int	r;
@@ -106,4 +130,19 @@ EXPORT	int	__libc_fstat( int fd, struct __libc_stat *buf  )
 
 	return 0;
 }
+#else
+EXPORT	int	__libc_fstat( int fd, struct __libc_stat *buf  )
+{
+	int	r;
+	struct stat64	s;
 
+	r = fs_fstat64( fd, &s );
+	if (r < 0) return -1;
+
+	buf->st_mode = s.st_mode;
+	buf->st_size = s.st_size;
+	buf->st_blksize = s.st_blksize;
+
+	return 0;
+}
+#endif

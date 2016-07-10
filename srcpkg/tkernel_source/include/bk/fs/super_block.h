@@ -44,7 +44,6 @@
 #define	__BK_FS_SUPER_BLOCK_H__
 
 #include <bk/kernel.h>
-
 #include <t2ex/sys/types.h>
 
 /*
@@ -72,6 +71,7 @@ struct shrink_control;
 
 ==================================================================================
 */
+
 /*
 ----------------------------------------------------------------------------------
 	operations for super-block
@@ -308,7 +308,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < flags >
  Output		:void
  Return		:void
- Description	:free a vnode
+ Description	:destroy a vnode
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void vfs_destroy_vnode(struct vnode *vnode, int flags);

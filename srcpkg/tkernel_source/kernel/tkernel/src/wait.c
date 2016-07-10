@@ -19,7 +19,7 @@
 
 #include <tk/kernel.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 
 /*
  * Update the task state to release wait. When it becomes ready state,

@@ -44,6 +44,8 @@
 #include <bk/wait.h>
 #include <bk/memory/slab.h>
 
+#include <bk/uapi/sys/time.h>
+
 /*
 ==================================================================================
 
@@ -76,6 +78,27 @@
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:nanosleep
+ Input		:const struct timespec *req
+ 		 < request sleep time >
+ 		 struct timespec *rem
+ 		 < remaining time >
+ Output		:struct timespec *rem
+ 		 < remaining time >
+ Return		:int
+ 		 < result >
+ Description	:high-resolution sleep
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int nanosleep(const struct timespec *req, struct timespec *rem)
+{
+	//printf("nanosleep:sec=%d nanosec=%d\n", req->tv_sec, req->tv_nsec);
+	return(0);
+}
+
+
 #if 0
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

@@ -56,10 +56,12 @@ TETYPE	= std
 BUILD_PATH = build/$(TETYPE)_$(MACHINE)
 
 FS_TARGET = fs.o
+
 OBJ = ../../vfs/$(BUILD_PATH)/vfs.o
 OBJ += ../../load/$(BUILD_PATH)/load.o
 OBJ += ../../fimp/$(BUILD_PATH)/fimp.o
 OBJ += ../../ramfs/$(BUILD_PATH)/ramfs.o
+OBJ += ../../sysdepend/$(BUILD_PATH)/vdso_kernel.o
 
 # ----------------------------------------------------------------------------
 
@@ -76,6 +78,7 @@ $(OBJ):
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
 	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) ; $(MAKE) install )
+	( cd ../../sysdepend/$(BUILD_PATH) ; $(MAKE) )
 
 clean:
 	( cd ../../fs_if/$(BUILD_PATH) ; $(MAKE) clean )
@@ -83,6 +86,7 @@ clean:
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) clean)
 	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) clean)
+	( cd ../../sysdepend/$(BUILD_PATH) ; $(MAKE) clean )
 	$(RM) $(FS_TARGET)
 
 install:
@@ -106,6 +110,7 @@ ready_for_rebuild:
 	( cd ../../fimp/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../load/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild)
 	( cd ../../ramfs/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild)
+	( cd ../../sysdepend/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	$(RM) $(FS_TARGET)
 
 clean_source:

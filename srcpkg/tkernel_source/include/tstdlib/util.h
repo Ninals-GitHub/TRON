@@ -111,4 +111,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void* kmemdup(const void *src, size_t len, int gfp);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kstrncpy_len
+ Input		:char *dest
+ 		 < a copy destination string >
+ 		 char *source
+ 		 < a string to copy >
+ 		 size_t n
+ 		 < max size of a string length >
+ 		 int gfp
+ 		 < gfp flags >
+ Output		:void
+ Return		:ssize_t
+ 		 < copied string length >
+ Description	:copy a string and return its length
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ssize_t kstrncpy_len(char *dest, const char *source, size_t n, int gfp);
+
 #endif	// __FORMAT_H__

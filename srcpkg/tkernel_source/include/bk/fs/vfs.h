@@ -52,6 +52,9 @@
 #include <bk/fs/file.h>
 #include <bk/fs/block_device.h>
 #include <bk/fs/character_device.h>
+#include <bk/fs/page_cache.h>
+
+#include <bk/fs/ramfs/initramfs.h>
 
 /*
 ==================================================================================
@@ -68,6 +71,35 @@
 
 ==================================================================================
 */
+/*
+----------------------------------------------------------------------------------
+	file types
+----------------------------------------------------------------------------------
+*/
+#define	DT_UNKNOWN	0
+#define	DT_FIFO		1		// a fifo
+#define	DT_CHR		2		// a character device
+#define	DT_DIR		4		// a directory
+#define	DT_BLK		6		// a block device
+#define	DT_REG		8		// a regular file
+#define	DT_LNK		10		// a symbolic link
+#define	DT_SOCK		12		// a socket
+#define	DT_WHT		14		// whiteout
+
+/*
+----------------------------------------------------------------------------------
+	directory entries for linux
+----------------------------------------------------------------------------------
+*/
+struct linux_dirent64 {
+	ino64_t		d_ino;		// inode number
+	loff_t		d_off;		// offset to next dirent
+	unsigned short	d_reclen;	// length of this dirent
+	unsigned char	d_type;		// file type
+	char		d_name[];	// filename
+					// length is actually (d_reclen - 2 -
+					// offsetof(struct linux_dirent, d_name)
+};
 
 /*
 ==================================================================================

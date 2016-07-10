@@ -49,6 +49,8 @@ strtof(CONST char *s, char **sp)
 #define fpi &fpi0
 #endif
 
+	u.f = 0;
+	
 	k = strtodg(s, sp, fpi, &exp, bits);
 	switch(k & STRTOG_Retmask) {
 	  case STRTOG_NoNumber:

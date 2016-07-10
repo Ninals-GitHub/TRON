@@ -215,12 +215,14 @@ EXPORT int mount_root_fs(void)
 		goto failed_mount;
 	}
 	
+	root->d_parent = root;
+	
 	mnt_root->mnt.mnt_root = root;
 	mnt_root->mnt.mnt_sb = root->d_sb;
 	mnt_root->mnt.mnt_flags = mount_flags;
 	
-	set_root(get_current(), &mnt_root->mnt, root);
-	set_cwd(get_current(), &mnt_root->mnt, root);
+	vfs_set_root(get_current(), &mnt_root->mnt, root);
+	vfs_set_cwd(get_current(), &mnt_root->mnt, root);
 	
 	return(0);
 

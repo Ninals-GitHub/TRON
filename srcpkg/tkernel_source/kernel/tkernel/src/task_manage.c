@@ -19,7 +19,7 @@
 
 #include <tk/kernel.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 #include "check.h"
 #include <cpu.h>
 #include <tm/tmonitor.h>
@@ -32,7 +32,6 @@ IMPORT const T_CTSK c_init_task;
 /*
  * Create task
  */
-static id = 0;
 SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 {
 #if CHK_RSATR
@@ -119,7 +118,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 	sstack = IAmalloc((UINT)sstksz, TA_RNG0);
 #endif
 	if ( sstack == NULL ) {
-	vd_printf("failed IAmalloc1\n");
+		//vd_printf("failed IAmalloc1\n");
 		return E_NOMEM;
 	}
 
@@ -152,7 +151,7 @@ SYSCALL ID _tk_cre_tsk P1( CONST T_CTSK *pk_ctsk )
 
 #if USE_OBJECT_NAME
 	//if ( (pk_ctsk->tskatr & TA_DSNAME) != 0 ) {
-		tcb->name[0] = id + 0x30;
+		tcb->name[0] = tcb->tskid + 0x30;
 		tcb->name[1] = NULL;
 		if(pk_ctsk->dsname[0])
 		strncpy((char*)tcb->name, (char*)pk_ctsk->dsname, OBJECT_NAME_LENGTH);
@@ -364,7 +363,7 @@ SYSCALL void _tk_ext_tsk( void )
 #ifdef DORMANT_STACK_SIZE
 	/* To avoid destroying stack used in 'make_dormant',
 	   allocate the dummy area on the stack. */
-	volatile VB _dummy[DORMANT_STACK_SIZE];
+	//volatile VB _dummy[DORMANT_STACK_SIZE];
 #endif
 
 	/* Check context error */
@@ -393,7 +392,7 @@ SYSCALL void _tk_ext_tsk( void )
 
 #ifdef DORMANT_STACK_SIZE
 	/* for WARNING */
-	_dummy[0] = 0;
+	//_dummy[0] = 0;
 #endif
 }
 
@@ -1138,7 +1137,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER free_task(struct task *task)
 {
-	TSTAT	state;
 	ER	ercd = E_OK;
 	
 	_ter_tsk(task);
@@ -1188,6 +1186,8 @@ EXPORT ER free_task_self(struct task *me)
 	
 	make_dormant(me);
 	_del_tsk(me);
+	
+	return(0);
 }
 
 /*

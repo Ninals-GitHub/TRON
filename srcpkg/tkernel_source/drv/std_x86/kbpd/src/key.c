@@ -25,6 +25,7 @@
 /*
  * sending quasi-device message for shift press
  */
+#if 0
 LOCAL void sendPseudoSPressMsg( void )
 {
 	CommonMsg	*msg = &kpMgrInfo.statMach.spressMsg;
@@ -39,6 +40,7 @@ LOCAL void sendPseudoSPressMsg( void )
         /* sending shift press message */
 	//kpSendPseudoMsg((T_MSG*)msg);
 }
+#endif
 
 /*
  * generate shift key event

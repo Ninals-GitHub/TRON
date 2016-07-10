@@ -78,7 +78,7 @@ EXPORT void Unlock( FastLock *lock )
  */
 EXPORT ER CreateLock( FastLock *lock, CONST UB *name )
 {
-IMPORT unsigned long no_support;
+//IMPORT unsigned long no_support;
 	T_CSEM	csem;
 	ER	ercd;
 

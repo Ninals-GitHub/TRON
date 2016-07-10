@@ -42,6 +42,7 @@
 
 #include <bk/kernel.h>
 #include <bk/memory/mmap.h>
+#include <bk/memory/access.h>
 #include <bk/uapi/futex.h>
 #include <bk/uapi/sys/time.h>
 
@@ -172,11 +173,12 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 	struct process *current;
 	struct timespec _ktimeout;
 	struct timespec *ktimeout;
+	int op_mask = op & FUTEX_CMD_MASK;
 	int val2;
 	
 	current = get_current();
 	
-	printf("futex[current pid=%d]!!!!!!\n", current->pid);
+	//printf("futex[current pid=%d]!!!!!!\n", current->pid);
 #if 1
 	printf("*uaddr=0x%08X, ", uaddr);
 	printf("op=%d, ", op);
@@ -194,11 +196,11 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 	}
 	printf("val3=%d]\n", val3);
 #endif
-	for (;;); // futex is currently not supported
+	//for (;;); // futex is currently not supported
 	/* -------------------------------------------------------------------- */
 	/* as for now, only wait and wake are supported				*/
 	/* -------------------------------------------------------------------- */
-	switch (op) {
+	switch (op_mask) {
 	case	FUTEX_WAIT:
 		break;
 	case	FUTEX_WAKE:
@@ -226,7 +228,7 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 		return(-EACCES);
 	}
 	
-	if (check_copy_timeout(timeout, &_ktimeout, op)) {
+	if (check_copy_timeout(timeout, &_ktimeout, op_mask)) {
 		return(-EFAULT);
 	}
 	
@@ -234,14 +236,14 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 		ktimeout = NULL;
 	}
 	
-	if (check_uaddr2(uaddr2, op)) {
+	if (check_uaddr2(uaddr2, op_mask)) {
 		return(-EACCES);
 	}
 	
 	/* -------------------------------------------------------------------- */
 	/* specific commands need timeout value as val2				*/
 	/* -------------------------------------------------------------------- */
-	switch (op) {
+	switch (op_mask) {
 	case	FUTEX_REQUEUE:
 	case	FUTEX_CMP_REQUEUE:
 	case	FUTEX_WAKE_OP:
@@ -251,10 +253,12 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 		break;
 	}
 	
+	printf("execute fustex command\n");
+	
 	/* -------------------------------------------------------------------- */
 	/* execute futex command						*/
 	/* -------------------------------------------------------------------- */
-	switch (op) {
+	switch (op_mask) {
 	case	FUTEX_WAIT:
 		return(futex_wait(uaddr, val, (const struct timespec*)ktimeout));
 	case	FUTEX_WAKE:
@@ -275,7 +279,7 @@ SYSCALL int futex(int *uaddr, int op, int val, const struct timespec *timeout,
 		return(-ENOSYS);
 	}
 	
-	for(;;);
+	//for(;;);
 	return(0);
 
 unsupported_op:
@@ -319,8 +323,9 @@ LOCAL ALWAYS_INLINE int check_uaddr(int *uaddr)
 	if (align & (sizeof(int) - 1)) {
 		return(-EACCES);
 	}
-
-	return(ChkUsrSpaceR(uaddr, sizeof(int)));
+	
+	//return(ChkUsrSpaceR(uaddr, sizeof(int)));
+	return(vm_check_accessR(uaddr, sizeof(int)));
 }
 
 /*
@@ -360,7 +365,8 @@ LOCAL ALWAYS_INLINE int check_uaddr2(int *uaddr2, int op)
 		return(-ENOSYS);
 	}
 	
-	return(ChkUsrSpaceR(uaddr2, sizeof(int)));
+//	return(ChkUsrSpaceR(uaddr2, sizeof(int)));
+	return(vm_check_accessR(uaddr2, sizeof(int)));
 }
 
 /*
@@ -417,7 +423,8 @@ check_copy_timeout(const struct timespec *timeout,
 		return(-ENOSYS);
 	}
 	
-	err = ChkUsrSpaceR(timeout, sizeof(struct timespec));
+	//err = ChkUsrSpaceR(timeout, sizeof(struct timespec));
+	err = vm_check_accessR((void*)timeout, sizeof(struct timespec));
 	
 	if (err) {
 		return(err);

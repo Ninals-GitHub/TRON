@@ -123,20 +123,13 @@ EXPORT	ID	CreTask(FP entry, PRI pri, W name, UW par, W stksz)
 	T_CTSK	ctsk;
 	ID	tskid;
 	ER	er;
-	static int netd = 0;
-
+	
 	/* Creates a task */
 	ctsk.exinf = (VP)name;
 	ctsk.task = entry;
 	ctsk.itskpri = pri;
 	ctsk.stksz = stksz;
 	ctsk.tskatr = TA_HLNG | TA_RNG0;
-	
-	ctsk.dsname[0] = 'n';
-	ctsk.dsname[1] = 'e';
-	ctsk.dsname[2] = 't';
-	ctsk.dsname[3] = 0x30 + netd++;
-	ctsk.dsname[4] = '\0';
 
 	tskid = er = tk_cre_tsk(&ctsk);
 	if (er >= E_OK) {

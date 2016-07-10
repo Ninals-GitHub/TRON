@@ -45,6 +45,7 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/uio.h>
 
 /*
 ==================================================================================
@@ -131,12 +132,13 @@ struct file_owner {
 */
 struct file {
 	struct path			f_path;
-	struct vnode			*f_inode;
+	struct vnode			*f_vnode;
 	const struct file_operations	*f_fops;
 	atomic_long_t			f_count;
 	unsigned int			f_flags;
 	loff_t				f_pos;
 	struct file_owner		f_owner;
+	void				*f_private;
 };
 
 /*
@@ -154,6 +156,7 @@ struct fdtable {
 	unsigned long			*close_on_exec;
 	unsigned long			*open_fds;
 };
+
 
 /*
 ==================================================================================
@@ -262,6 +265,62 @@ IMPORT void free_file(struct process *proc, int fd);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_open_file
+ Input		:int fd
+ 		 < open file descriptor >
+ Output		:void
+ Return		:struct file*
+ 		 < open file object >
+ Description	:get opened file from a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct file* get_open_file(int fd);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_dirfd_path
+ Input		:int dirfd
+ 		 < open directory file descriptor >
+ 		 struct path **dir_path
+ 		 < directory path >
+ Output		:struct path **dir_path
+ 		 < directory path >
+ Return		:int
+ 		 < result >
+ Description	:get directory path from directory file descriptor
+ 		 Before calling the function, must be set NULL to *dir_path
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int get_dirfd_path(int dirfd, struct path **dir_path);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_open_file
+ Input		:int fd
+ 		 < open file descriptor to be checked >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether fd is a opened file descriptor or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int is_open_file(int fd);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_open_dir
+ Input		:int dirfd
+ 		 < open directory file descriptor to be checked >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether fd is a opened directory file descriptor or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int is_open_dir(int fd);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:has_fdtable
  Input		:struct process *proc
  		 < process to test whether it has already a fd table >
@@ -273,6 +332,84 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int has_fdtable(struct process *proc);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open_exe_file
+ Input		:const char *filename
+ 		 < a file to open >
+ Output		:void
+ Return		:int
+ 		 < result or fd >
+ Description	:open a executable file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int open_exe_file(const char *filename);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open_vdso_file
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result or fd >
+ Description	:open a vdso file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int open_vdso_file(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kwrite
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const void *buf
+ 		 < buffer to write >
+ 		 size_t count
+ 		 < size of buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < result >
+ Description	:write data to a file in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ssize_t kwrite(int fd, const void *buf, size_t count);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kpread
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 void *buf
+ 		 < buffer to output >
+ 		 size_t count
+ 		 < read length >
+ 		 loff_t offset
+ 		 < file offset >
+ Output		:void *buf
+ 		 < buffer to output >
+ Return		:ssize_t
+ 		 < result >
+ Description	:read data from a file at offset in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT ssize_t kpread(int fd, void *buf, size_t count, loff_t offset);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kopen
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:open a file in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int kopen(const char *pathname, int flags, mode_t mode);
 
 /*
 ----------------------------------------------------------------------------------
@@ -296,6 +433,26 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL ssize_t read(int fd, void *buf, size_t count);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:pread
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 void *buf
+ 		 < buffer to output >
+ 		 size_t count
+ 		 < read length >
+ 		 loff_t offset
+ 		 < file offset >
+ Output		:void *buf
+ 		 < buffer to output >
+ Return		:ssize_t
+ 		 < result >
+ Description	:read data from a file at offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t pread(int fd, void *buf, size_t count, loff_t offset);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -330,6 +487,53 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int open(const char *pathname, int flags, mode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:writev
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const struct iovec *iov
+ 		 < io vector to write >
+ 		 int iovcnt
+ 		 < number of io buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < size of written bytes > 
+ Description	:write buffers to an open file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:close
+ Input		:int fd
+ 		 < open file descriptor to close >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:close a file descriptor
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int close(int fd);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:lseek64
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 loff_t offset64
+ 		 < file offset >
+ 		 int whence
+ 		 < seek operation >
+ Output		:void
+ Return		:loff_t
+ 		 < offset after seeking >
+ Description	:seek a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL loff_t lseek64(int fd, loff_t offset64, int whence);
 
 /*
 ----------------------------------------------------------------------------------
@@ -393,5 +597,25 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int vfs_open(struct vnode *vnode, struct file *filp);
+
+/*
+----------------------------------------------------------------------------------
+	generic file operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:generic_open
+ Input		:struct vnode *vnode
+ 		 < vnode to open >
+ 		 struct file *filp
+ 		 < open file object >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:generic file open
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int generic_open(struct vnode *vnode, struct file *filp);
 
 #endif	// __BK_FS_FILE_H__

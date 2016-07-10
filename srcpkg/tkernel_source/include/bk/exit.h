@@ -50,6 +50,7 @@
 
 ==================================================================================
 */
+struct rusage;
 
 /*
 ==================================================================================
@@ -75,6 +76,66 @@
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:wait4
+ Input		:pid_t pid
+ 		 < pid of a process to wait for changing its status >
+ 		 int *status
+ 		 < wait status >
+ 		 int options
+ 		 < wait options >
+ 		 struct rusage *rusage
+ 		 < resource usage information >
+ Output		:void
+ Return		:pid_t
+ 		 < pid of a process of which state is changed >
+ Description	:wait for process to change state
+ 		 this system call issues tk_slp_tsk
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL pid_t wait4(pid_t pid, int *status, int options, struct rusage *rusage);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:waitpid
+ Input		:pid_t pid
+ 		 < pid of a process to wait for changing its status >
+ 		 int *status
+ 		 < wait status >
+ 		 int options
+ 		 < wait options >
+ Output		:void
+ Return		:pid_t
+ 		 < pid of a process of which state is changed >
+ Description	:wait for process to change state
+ 		 this system call issues tk_slp_tsk
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL pid_t waitpid(pid_t pid, int *status, int options);
+
+/*
+----------------------------------------------------------------------------------
+	kernel internal operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:wakeup4
+ Input		:struct process *child
+ 		 < child process about to exit >
+ Output		:void
+ Return		:void
+ Description	:wake up slept parent by wait4
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void wakeup4(struct process *child);
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:exit_wait4_list

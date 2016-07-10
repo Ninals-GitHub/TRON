@@ -46,6 +46,9 @@
 #include <bk/memory/vm.h>
 #include <bk/memory/page.h>
 #include <bk/memory/slab.h>
+#include <bk/memory/page_fault.h>
+#include <bk/memory/prot.h>
+#include <bk/fs/vfs.h>
 #include <bk/uapi/berrno.h>
 
 /*
@@ -57,8 +60,10 @@
 */
 LOCAL INLINE void _free_vm(struct process *proc);
 LOCAL INLINE void __free_vm(struct vm *vm);
+LOCAL int insert_vm_list(struct vm *new, struct process *proc);
 LOCAL void copy_vm_contents(struct vm *to, struct vm *from);
 LOCAL int verify_vm_contents(struct vm *dest, struct vm *with);
+LOCAL int vm_file_map(struct vm *vm, unsigned long addr);
 
 /*
 ==================================================================================
@@ -218,6 +223,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void free_vm_all(struct process *proc)
 {
+	//printf("%s\n", __func__);
 	/* -------------------------------------------------------------------- */
 	/* free virtual memory for a user space					*/
 	/* -------------------------------------------------------------------- */
@@ -228,8 +234,7 @@ EXPORT void free_vm_all(struct process *proc)
 	/* -------------------------------------------------------------------- */
 	free_user_pagetables(proc->mspace->pde);
 	
-	free_pagedir(proc->mspace->pde);
-
+	//free_pagedir(proc->mspace->pde);
 }
 
 /*
@@ -244,6 +249,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void free_vm(struct process *proc)
 {
+	//printf("%s\n", __func__);
+	//show_vm_list(proc);
 	/* -------------------------------------------------------------------- */
 	/* free user space page tables						*/
 	/* -------------------------------------------------------------------- */
@@ -287,65 +294,19 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void free_vm_pages(struct vm *vm)
 {
+	int i;
+	
+	for (i = 0;i < vm->nr_pages;i++) {
+		if (vm->pages[i]) {
+			free_page(vm->pages[i]);
+		}
+	}
+	
 	vm->nr_pages = 0;
 	
 	kfree((void*)vm->pages);
 }
 
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:insert_vm_list
- Input		:struct vm *new
- 		 < an insertee >
- 		 struct process *proc
- 		 < a process to be inserted a vm >
- Output		:void
- Return		:int
- 		 < result >
- Description	:insert vm to a vm space of a process
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int insert_vm_list(struct vm *new, struct process *proc)
-{
-	struct list *pos;
-	struct vm *proc_vm;
-	struct vm *proc_vm_next;
-	struct vm *proc_vm_prev;
-	
-	if (UNLIKELY(is_empty_list(&proc->mspace->list_vm))) {
-		add_list(&new->link_vm, &proc->mspace->list_vm);
-		return(0);
-	}
-	
-	list_for_each(pos, &proc->mspace->list_vm) {
-		proc_vm = get_entry(pos, struct vm, link_vm);
-		
-		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
-			if (new->end <= proc_vm->start) {
-				add_list(&new->link_vm, pos->prev);
-			} else {
-				add_list(&new->link_vm, pos);
-			}
-			return(0);
-		}
-		
-		proc_vm_next = get_entry(pos->next, struct vm, link_vm);
-		proc_vm_prev = get_entry(pos->prev, struct vm, link_vm);
-		
-		if ((proc_vm_prev->end <= new->start) &&
-				(new->end <= proc_vm->start)) {
-			add_list(&new->link_vm, pos->prev);
-		}
-		
-		if ((proc_vm->end <= new->start) &&
-			(new->end <= proc_vm_next->start)) {
-			add_list(&new->link_vm, pos);
-			return(0);
-		}
-	}
-	
-	return(-1);
-}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -368,7 +329,7 @@ get_address_vm(struct process *proc, unsigned long start, unsigned long end)
 	struct vm *vm;
 	
 	list_for_each_entry(vm, &proc->mspace->list_vm, link_vm) {
-		if (vm->start <= start && end <= vm->end) {
+		if (vm->start <= start && end < vm->end) {
 			return(vm);
 		}
 	}
@@ -392,11 +353,34 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 {
 	int err;
 	pde_t *new_pde;
+	struct memory_space *ms_to = to->mspace;
+	struct memory_space *ms_from = from->mspace;
 	
 	if (UNLIKELY(!to->mspace)) {
 		printf("copy_mm:error:unexpected memory space\n");
 		return(-ENOMEM);
 	}
+	
+	/* -------------------------------------------------------------------- */
+	/* update memory space information					*/
+	/* -------------------------------------------------------------------- */
+	ms_to->process_size = ms_from->process_size;
+	ms_to->count = 1;
+	ms_to->shared_vm = ms_from->shared_vm;
+	ms_to->exec_vm = ms_from->exec_vm;
+	ms_to->stack_vm = ms_from->stack_vm;
+	ms_to->start_code = ms_from->start_code;
+	ms_to->end_code = ms_from->end_code;
+	ms_to->start_data = ms_from->start_data;
+	ms_to->end_data = ms_from->end_data;
+	ms_to->start_brk = ms_from->start_brk;
+	ms_to->end_brk = ms_from->end_brk;
+	ms_to->start_stack = ms_from->start_stack;
+	ms_to->end_stack = ms_from->end_stack;
+	ms_to->start_arg = ms_from->end_arg;
+	ms_to->end_arg = ms_from->end_arg;
+	ms_to->start_env = ms_from->end_env;
+	ms_to->exe_fd = ms_from->exe_fd;
 	
 	/* -------------------------------------------------------------------- */
 	/* allocate page directory						*/
@@ -421,8 +405,19 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 		goto err_copy_kernel_pagetalbes;
 	}
 #endif
+
 	/* -------------------------------------------------------------------- */
-	/* copy user vm and user page tables					*/
+	/* copy user page tables						*/
+	/* -------------------------------------------------------------------- */
+	err = copy_user_pagetable(from, to, 0, PROCESS_SIZE, PAGE_COW_COPY);
+	
+	if (UNLIKELY(err)) {
+		printf("copy_mm:copy_vm_failed\n");
+		goto copy_vm_failed;
+	}
+
+	/* -------------------------------------------------------------------- */
+	/* copy user vm								*/
 	/* -------------------------------------------------------------------- */
 	err = copy_vm(from, to);
 	
@@ -432,15 +427,13 @@ EXPORT int copy_mm(struct process *from, struct process *to)
 	}
 	
 	return(0);
-	
+
 copy_vm_failed:
+	printf("unexpected error at %s [free_pagedir_tables_all]\n", __func__);
 	free_pagedir_tables_all(to->mspace->pde);
-//copy_pagetable_failed:
 	free_memory_space(to->mspace);
 	return(err);
 
-err_copy_kernel_pagetalbes:
-	free_pagedir(new_pde);
 err_alloc_pagedir:
 	return(err);
 }
@@ -460,57 +453,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT int copy_vm(struct process *from, struct process *to)
 {
-	struct memory_space *ms_from;
-	struct memory_space *ms_to;
 	struct vm *vm_from;
 	struct vm *vm_to;
-	unsigned long size;
-	void *addr;
+	
 	int err;
 	
-	ms_from = from->mspace;
-	ms_to = to->mspace;
-	
 	/* -------------------------------------------------------------------- */
-	/* copy text's vms							*/
-	/* -------------------------------------------------------------------- */
-	vm_from = get_address_vm(from, ms_from->start_code, ms_from->end_code);
-	
-	if (UNLIKELY(!vm_from)) {
-		err = -ENOMEM;
-		goto failed_get_address_vm_from;
-	}
-	
-	vm_to = alloc_vm();
-
-	if (UNLIKELY(!vm_to)) {
-		err = -ENOMEM;
-		goto failed_alloc_vm;
-	}
-	vm_to->start = vm_from->start;
-	vm_to->end = vm_from->end;
-	/* -------------------------------------------------------------------- */
-	/* copy page link information						*/
-	/* -------------------------------------------------------------------- */
-	err = copy_vm_pages(vm_from, vm_to);
-	
-	if (UNLIKELY(err)) {
-		__free_vm(vm_to);
-		goto failed_copy_vm_pages;
-	}
-	vm_to->prot = vm_from->prot;
-	vm_to->mmap_flags = vm_from->mmap_flags;
-	vm_to->mspace = ms_to;
-	/* -------------------------------------------------------------------- */
-	/* add it to process							*/
-	/* -------------------------------------------------------------------- */
-	add_list_tail(&vm_to->link_vm, &to->mspace->list_vm);
-#if 0
-	/* -------------------------------------------------------------------- */
-	/* first of all, copy all vms						*/
+	/* copy other vms							*/
 	/* -------------------------------------------------------------------- */
 	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
-		struct vm *vm_to = alloc_vm();
+		
+		vm_to = alloc_vm();
 		
 		if (UNLIKELY(!vm_to)) {
 			err = -ENOMEM;
@@ -519,179 +472,37 @@ EXPORT int copy_vm(struct process *from, struct process *to)
 		
 		vm_to->start = vm_from->start;
 		vm_to->end = vm_from->end;
-		/* ------------------------------------------------------------ */
-		/* if write prot						*/
-		/* ------------------------------------------------------------ */
-		if (vm_from->prot & VM_WRITE) {
-			vm_from->prot &= ~VM_WRITE;
-			vm_from->prot |= VM_COW;
-		}
 		vm_to->prot = vm_from->prot;
+		vm_to->mmap_flags = vm_from->mmap_flags;
+		vm_to->nr_pages = vm_from->nr_pages;
+		vm_to->mspace = to->mspace;
+		vm_to->vnode = vm_from->vnode;
+		vm_to->offset = vm_from->offset;
+		vm_to->length = vm_from->length;
 		
-		/* ------------------------------------------------------------ */
-		/* copy page link information					*/
-		/* ------------------------------------------------------------ */
 		err = copy_vm_pages(vm_from, vm_to);
 		
 		if (UNLIKELY(err)) {
-			__free_vm(vm_to);
 			goto failed_copy_vm_pages;
 		}
-		/* ------------------------------------------------------------ */
-		/* add it to process						*/
-		/* ------------------------------------------------------------ */
-		add_list_tail(&vm_to->link_vm, &to->mspace->list_vm);
-	}
-#endif
-	
-	/* -------------------------------------------------------------------- */
-	/* copy text pages							*/
-	/* -------------------------------------------------------------------- */
-	err = copy_user_pagetable(from, to,
-				ms_from->start_code, ms_from->end_code);
-	
-	if (UNLIKELY(err)) {
-		printf("copy_vm:error:copy_user_pagetable:text");
-		goto failed_copy_user_pagetable;
-	}
-	
-	//show_pagetables(to, ms_from->start_code, ms_from->start_code + 0x4000);
-	
-	/* -------------------------------------------------------------------- */
-	/* copy data pages							*/
-	/* -------------------------------------------------------------------- */
-	err = copy_user_pagetable(from, to,
-				ms_from->start_data, ms_from->end_data);
-	
-	if (UNLIKELY(err)) {
-		printf("copy_vm:error:copy_user_pagetable:data");
-		goto failed_copy_user_pagetable;
-	}
-	
-	/* -------------------------------------------------------------------- */
-	/* copy other vms							*/
-	/* -------------------------------------------------------------------- */
-	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
-		unsigned long start;
-		struct vm *vm_to;
 		
-#if 0
-		if ((vm_from->start == ms_from->start_code) ||
-			(vm_from->start == ms_from->start_data)) {
-#else
-		if (UNLIKELY(vm_from->start == ms_from->start_code)) {
-#endif
-			continue;
-		}
+		err = insert_vm_list(vm_to, to);
 		
-		if (UNLIKELY(vm_from->start == ms_from->start_stack)) {
-			start = PROC_STACK_START;
-			size = PROC_STACK_SIZE;
-		} else {
-			start = vm_from->start;
-			size = vm_from->end - vm_from->start;
-		}
-		
-		addr = xmmap(to, (void*)start, size,
-				vm_from->prot, vm_from->mmap_flags,
-				-1, 0);
-		
-		if (UNLIKELY(addr == MAP_FAILED)) {
-			err = -ENOMEM;
-			goto failed_mmap_bss;
-		}
-		
-		vm_to = get_address_vm(to, (unsigned long)addr,
-						(unsigned long)addr + size);
-		
-		if (UNLIKELY(!vm_to)) {
-			err = -ENOMEM;
-			goto failed_get_address_vm_to;
-		}
-		
-		copy_vm_contents(vm_to, vm_from);
-	}
-	
-#if 0
-	/* -------------------------------------------------------------------- */
-	/* copy vm contents							*/
-	/* -------------------------------------------------------------------- */
-	list_for_each_entry(vm_from, &from->mspace->list_vm, link_vm) {
-		unsigned long start;
-		struct vm *vm_to;
-		int valid;
-		
-		if ((vm_from->start == ms_from->start_code) ||
-			(vm_from->start == ms_from->start_data))
-		{
-			continue;
-		}
-		
-		if (UNLIKELY(!vm_to)) {
-			err = -ENOMEM;
-			printf("errrrrrrrrr!\n");
-			for(;;);
-		}
-		vm_to = get_address_vm(to, vm_from->start, vm_from->end);
-		
-		valid = verify_vm_contents(vm_to, vm_from);
-		
-		if (valid) {
-			printf("invalid contents\n");
-			for(;;);
+		if (UNLIKELY(err)) {
+			goto failed_insert_vm;
 		}
 	}
-#endif
 	
-	/* -------------------------------------------------------------------- */
-	/* update memory space information					*/
-	/* -------------------------------------------------------------------- */
-	ms_to->process_size = ms_from->process_size;
-	ms_to->count = 1;
-	ms_to->shared_vm = ms_from->shared_vm;
-	ms_to->exec_vm = ms_from->exec_vm;
-	ms_to->stack_vm = ms_from->stack_vm;
-	ms_to->start_code = ms_from->start_code;
-	ms_to->end_code = ms_from->end_code;
-	ms_to->start_data = ms_from->start_data;
-	ms_to->end_data = ms_from->end_data;
-	ms_to->start_brk = ms_from->start_brk;
-	ms_to->end_brk = ms_from->end_brk;
-	ms_to->start_stack = ms_from->start_stack;
-	ms_to->end_stack = ms_from->end_stack;
-	ms_to->start_arg = ms_from->end_arg;
-	ms_to->end_arg = ms_from->end_arg;
-	ms_to->start_env = ms_from->end_env;
-	ms_to->exe_fd = ms_from->exe_fd;
-	
-	//show_pagetables(to, ms_from->start_code, ms_from->start_code + 0x4000);
 	//show_vm_list(to);
+	//show_vm_list(from);
 	
 	return(0);
 
-failed_copy_user_pagetable:
-failed_get_address_vm_to:
-failed_get_address_vm_from:
+failed_insert_vm:
 failed_copy_vm_pages:
-failed_mmap_bss:
 failed_alloc_vm:
-	free_vm(to);
+	free_vm_all(to);
 	return(err);
-
-#if 0
-failed_copy_vm_pages_data:
-	__free_vm(vm_to);
-failed_mmap_bss:
-failed_get_address_vm_from_data:
-	free_vm(to);
-	return(err);
-
-failed_copy_vm_pages_text:
-failed_get_address_vm_from:
-	__free_vm(vm_to);
-failed_alloc_vm_to:
-	return(err);
-#endif
 }
 
 /*
@@ -717,14 +528,24 @@ EXPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to)
 		return(-ENOMEM);
 	}
 	
-#if 0
-	printf("vm_from->start:0x%08X ", vm_from->start);
-	printf("vm_from->end:0x%08X ", vm_from->end);
-	printf("vm_from->nr_pages:%d\n", vm_from->nr_pages);
-#endif
 	for (i = 0;i < vm_from->nr_pages;i++) {
+		if ((pages)[i]) {
+			printf("unexpected error at %s pages[%d]:0x%08X\n", __func__, i, pages[i]);
+			for(;;);
+		}
+		if (vm_from->pages[i] && vm_from->pages[i] < (struct page*)KERNEL_BASE_ADDR) {
+			printf("unexpected error at %s vm_from->pages[%d]:0x%08X\n", __func__, i, vm_from->pages[i]);
+			printf("start:0x%08X end:0x%08X\n", vm_from->start, vm_from->end);
+			for(;;);
+		}
+		
 		(pages)[i] = (vm_from->pages)[i];
-		(vm_from->pages)[i]->count++;
+		if (pages[i]) {
+			(vm_from->pages)[i]->count++;
+			if (vm_from->prot & PROT_WRITE) {
+				pages[i]->flags |= PAGE_COW;
+			}
+		}
 	}
 	
 	vm_to->pages = pages;
@@ -741,10 +562,16 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < start address of user space >
  		 unsigned long mmap_end
  		 < end address of user space >
+ 		 size_t lenght
+ 		 < length of a memory map >
  		 unsigned int prot
  		 < permission >
  		 unsigned int mmap_flags
  		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor to map >
+ 		 off_t offset
+ 		 < offset in a file >
  Output		:void
  Return		:int
  		 < result >
@@ -755,11 +582,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT int map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
-			unsigned int prot, unsigned int mmap_flags)
+			size_t length, unsigned int prot,
+			unsigned int mmap_flags, int fd, loff_t offset)
 {
 	int err;
-	int i, err_i;
 	struct vm *vm = alloc_vm();
+	struct file *filp;
 	
 	if (UNLIKELY(!vm)) {
 		printf("map_vm failed:1\n");
@@ -768,13 +596,29 @@ EXPORT int map_vm(struct process *proc,
 	
 	if (UNLIKELY(mmap_end <= mmap_start)) {
 		printf("map_vm failed:2\n");
-		return(-EINVAL);
+		err = -EINVAL;
+		goto failed_invalid_space;
 	}
 	
 	vm->start = mmap_start & PAGE_MASK;
 	vm->end = RoundPage(mmap_end);
 	vm->nr_pages = PageCount(mmap_end - mmap_start);
+	vm->length = length;
 	
+	if (0 <= fd) {
+		filp = get_open_file(fd);
+		
+		if (UNLIKELY(!filp)) {
+			printf("map_vm failed:get_open_file\n");
+			err = -EACCES;
+			goto failed_open_file;
+		}
+		
+		vm->vnode = filp->f_vnode;
+	} else {
+		vm->vnode = NULL;
+	}
+	vm->offset = offset;
 	vm->pages = alloc_vm_pages(vm->nr_pages);
 	
 	if (UNLIKELY(!vm->pages)) {
@@ -787,18 +631,9 @@ EXPORT int map_vm(struct process *proc,
 	vm->mmap_flags = mmap_flags;
 	vm->mspace = proc->mspace;
 	
-	for (i = 0;i < vm->nr_pages;i++) {
-			vm->pages[i] = alloc_zeroed_page();
-			
-		if (UNLIKELY(!vm->pages[i])) {
-			err_i = i;
-			err = -ENOMEM;
-			printf("map_vm failed:4\n");
-			goto failed_alloc_page;
-		}
+	if (mmap_flags & MAP_SHARED) {
+		panic("not implemented MAP_SHARED at %s\n", __func__);
 	}
-	
-	err_i = i;
 	
 	err = map_pages_to_vm(proc, vm);
 	
@@ -821,16 +656,14 @@ failed_insert_vm:
 failed_map_pages_to_vm:
 	_free_pagetables(proc->mspace->pde, mmap_start, mmap_end);
 	free_vm_pages(vm);
+//	printf("__free_vm[1:%s]\n",__func__);
 	__free_vm(vm);
 	return(err);
-	
-failed_alloc_page:
-	for (i = 0;i < err_i;i++) {
-		free_page(vm->pages[i]);
-	}
-	free_vm_pages(vm);
-failed_alloc_vm_pages:
 
+failed_open_file:
+failed_invalid_space:
+failed_alloc_vm_pages:
+//	printf("__free_vm[2:%s]\n",__func__);
 	__free_vm(vm);
 	
 	return(err);
@@ -873,6 +706,9 @@ EXPORT int unmap_vm(struct process *proc,
 	//printf("mmap_start:0x%08X ", mmap_start);
 	//printf("mmap_end:0x%08X\n", mmap_end);
 	
+	prev = next = NULL;
+	
+#if 1
 	list_for_each_entry_safe(vm, temp, &proc->mspace->list_vm, link_vm) {
 		//printf("vm->start:0x%08X ", vm->start);
 		//printf("vm->end:0x%08X\n", vm->end);
@@ -884,14 +720,15 @@ EXPORT int unmap_vm(struct process *proc,
 			if (vm->nr_pages && vm->pages) {
 				free_vm_pages(vm);
 			}
+			//printf("__free_vm[1:%s]\n",__func__);
 			__free_vm(vm);
 			return(err);
 		} else if (vm->start <= mmap_start && mmap_end <= vm->end) {
 		/* ------------------------------------------------------------ */
 		/* split vm area						*/
 		/* ------------------------------------------------------------ */
-			unsigned long nr_prev;
-			unsigned long nr_next;
+			unsigned long nr_prev = 0;
+			unsigned long nr_next = 0;
 			unsigned long nr_del;
 			unsigned long i;
 			unsigned long index;
@@ -902,48 +739,96 @@ EXPORT int unmap_vm(struct process *proc,
 			printf("unmap:mmap_start[0x%08X] ", mmap_start);
 			printf("unmap:mmap_end[0x%08X]\n", mmap_end);
 #endif
-			prev = alloc_vm();
 			
-			if (UNLIKELY(!prev)) {
-				return(-ENOMEM);
+			/* ---------------------------------------------------- */
+			/* make prev						*/
+			/* ---------------------------------------------------- */
+			if (vm->start != mmap_start) {
+				prev = alloc_vm();
+				
+				if (UNLIKELY(!prev)) {
+					return(-ENOMEM);
+				}
+				
+				prev->start = vm->start;
+				prev->end = mmap_start;
+				nr_prev = PageCount(prev->end - prev->start);
+				
+				prev->pages = alloc_vm_pages(nr_prev);
+				
+				if (UNLIKELY(!prev->pages)) {
+					err = -ENOMEM;
+					goto failed_prev;
+				}
+				
+				prev->prot = vm->prot;
+				prev->mspace = vm->mspace;
+				prev->vnode = vm->vnode;
+				if (prev->vnode) {
+					prev->offset = vm->offset;
+				}
+				prev->length = prev->end - prev->start;
+				if (UNLIKELY(vm->length < prev->length)) {
+					prev->length = vm->length;
+				}
+			} else {
+				prev = NULL;
 			}
 			
-			next = alloc_vm();
-			
-			if (UNLIKELY(!next)) {
-				err = -ENOMEM;
-				goto failed_alloc_vm_next;
+			if (vm->end != mmap_end) {
+				next = alloc_vm();
+				
+				if (UNLIKELY(!next)) {
+					err = -ENOMEM;
+					goto failed_alloc_vm_next;
+				}
+				
+				next->start = mmap_end;
+				next->end = vm->end;
+				nr_next = PageCount(next->end - next->start);
+				
+				next->pages = alloc_vm_pages(nr_next);
+				
+				if (UNLIKELY(!next->pages)) {
+					err = -ENOMEM;
+					goto failed_next;
+				}
+				
+				next->prot = vm->prot;
+				next->mspace = vm->mspace;
+				next->vnode = vm->vnode;
+				if (next->vnode) {
+					next->offset = next->start - vm->start + vm->offset;
+				}
+				next->length = next->end - next->start;
+				if (UNLIKELY(vm->length < next->length)) {
+					next->length = vm->length;
+				}
+			} else {
+				next = NULL;
 			}
 			
-			prev->start = vm->start;
-			prev->end = mmap_start;
-			next->start = mmap_end;
-			next->end = vm->end;
-			
-			nr_prev = PageCount(prev->end - prev->start);
-			nr_next = PageCount(next->end - next->start);
-			nr_del = PageCount(next->start - prev->end);
-			
-			prev->pages = alloc_vm_pages(nr_prev);
-			
-			if (UNLIKELY(!prev)) {
-				err = -ENOMEM;
-				goto failed_prev;
+			if (prev && next) {
+				nr_del = PageCount(next->start - prev->end);
+			} else if (prev && !next) {
+				nr_del = PageCount(vm->end - prev->end);
+			} else /* if(!prev && next) */{
+				nr_del = PageCount(next->end - next->start);
 			}
-			
-			next->pages = alloc_vm_pages(nr_next);
-			
-			if (UNLIKELY(!next)) {
-				err = -ENOMEM;
-				goto failed_next;
-			}
-			
 			
 			/* ---------------------------------------------------- */
 			/* copy pages to prev area				*/
 			/* ---------------------------------------------------- */
-			for (i = 0;i < nr_prev;i++) {
-				prev->pages[i] = vm->pages[i];
+			if (prev) {
+				for (i = 0;i < nr_prev;i++) {
+					prev->pages[i] = vm->pages[i];
+				}
+				
+				if (vm->nr_pages < i) {
+					printf("unexpected error at %s[1] i:%d vm->nr_pages:%d\n", i, vm->nr_pages);
+				}
+			} else {
+				i = 0;
 			}
 			
 			index = i;
@@ -952,35 +837,60 @@ EXPORT int unmap_vm(struct process *proc,
 			/* ---------------------------------------------------- */
 			_free_pagetables(proc->mspace->pde, mmap_start, mmap_end);
 			
-			index = index + nr_del;
 			/* ---------------------------------------------------- */
 			/* copy pages to next area				*/
 			/* ---------------------------------------------------- */
-			for (;i < index + nr_next;i++) {
-				next->pages[i - index] = vm->pages[i];
+			if (next) {
+				for (i = index + nr_del;i < (index + nr_del + nr_next);i++) {
+					next->pages[i - (index + nr_del)] = vm->pages[i];
+				}
+				
+				if (vm->nr_pages < i) {
+					printf("unexpected error at %s[2] i:%d vm->nr_pages:%d\n", i, vm->nr_pages);
+				}
+
 			}
 			
-			add_list_element(&prev->link_vm,
-					vm->link_vm.prev, &vm->link_vm);
+			if (prev) {
+				add_list_element(&prev->link_vm,
+						vm->link_vm.prev, &vm->link_vm);
+			}
 			
-			add_list(&next->link_vm, &vm->link_vm);
+			if (next) {
+				add_list(&next->link_vm, &vm->link_vm);
+			}
+			
+#if 0
+			if (prev) {
+				printf("prev->start:0x%08X prev->end:0x%08X\n", prev->start, prev->end);
+			}
+			printf("vm->start:0x%08X vm->end:0x%08X\n", vm->start, vm->end);
+			if (next) {
+				printf("next->start:0x%08X next->end:0x%08X\n", next->start, next->end);
+			}
+#endif
 			
 			del_list(&vm->link_vm);
 			
 			if (vm->nr_pages && vm->pages) {
 				free_vm_pages(vm);
 			}
+			
 			__free_vm(vm);
 		}
 	}
+#endif
+
 	
 	return(err);
 	
 failed_next:
 	free_vm_pages(prev);
 failed_prev:
+//	printf("__free_vm[3:%s]\n",__func__);
 	__free_vm(next);
 failed_alloc_vm_next:
+//	printf("__free_vm[4:%s]\n",__func__);
 	__free_vm(prev);
 	return(err);
 }
@@ -1023,7 +933,10 @@ EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
 	candidate.start = MMAP_START + offset;
 	candidate.end = candidate.start + length;
 	
+	//printf("candidate:start=0x%08X, end=0x%08X\n", candidate.start, candidate.end);
+	
 	if (UNLIKELY(proc->mspace->start_stack <= candidate.end)) {
+		printf("start_stack[0x%08X] <= candidate.end[0x%08X]\n", proc->mspace->start_stack, candidate.end);
 		return(MAP_FAILED);
 	}
 	
@@ -1033,34 +946,66 @@ EXPORT void* search_mmap_candidate(struct process *proc, size_t length,
 			continue;
 		}
 		
+		//printf("vm:start=0x%08X, end=0x%08X\n", vm->start, vm->end);
+		
 		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
 			if (vm->end < candidate.start) {
 				return((void*)candidate.start);
 			}
+			
+			vm_next = NULL;
+		} else {
+			vm_next = get_entry(pos->next, struct vm, link_vm);
 		}
 		
+		/* ------------------------------------------------------------ */
+		/* vm_prev							*/
+		/* ------------------------------------------------------------ */
 		if (UNLIKELY(pos->prev == &proc->mspace->list_vm)) {
 			if ((candidate.start <= vm->start) &&
 				(candidate.end <= vm->start)) {
 				return((void*)candidate.start);
+			} else {
+				vm_next = NULL;
+			}
+		} else {
+			vm_prev = get_entry(pos->prev, struct vm, link_vm);
+			
+			if ((vm_prev->end <= candidate.start) &&
+					(candidate.end <= vm->start))
+			{
+				return((void*)candidate.start);
 			}
 		}
-		vm_next = get_entry(pos->next, struct vm, link_vm);
-		vm_prev = get_entry(pos->prev, struct vm, link_vm);
 		
-		if ((vm_prev->end <= candidate.start) &&
-				(candidate.end <= vm->start))
-		{
-			return((void*)candidate.start);
+		/* ------------------------------------------------------------ */
+		/* vm_next							*/
+		/* ------------------------------------------------------------ */
+		if (vm_next) {
+			if ((vm->end <= candidate.start) &&
+				(candidate.end <= vm_next->start)) {
+				return((void*)candidate.start);
+			}
+		} else {
+			if (vm->end <= candidate.start) {
+				return((void*)candidate.start);
+			} else {
+				//printf("candidate.start=0x%08X vm->end=0x%08X\n", candidate.start, vm->end);
+				candidate.start = (unsigned long)
+					PageAlignU((const void*)(vm->end));
+				if (proc->mspace->start_stack <= candidate.end) {
+					return(MAP_FAILED);
+				}
+				return((void*)candidate.start);
+			}
 		}
 		
-		if ((vm->end <= candidate.start) &&
-			(candidate.end <= vm_next->start)) {
-			return((void*)candidate.start);
-		}
 		
+		/* ------------------------------------------------------------ */
+		/* go to next vm						*/
+		/* ------------------------------------------------------------ */
 		candidate.start = (unsigned long)
-				PageAlignU((const void*)(vm->end + 1));
+				PageAlignU((const void*)(vm->end));
 		candidate.end = candidate.start + length;
 		
 		if (proc->mspace->start_stack <= candidate.end) {
@@ -1096,6 +1041,15 @@ EXPORT void switch_ms(struct process *from, struct process *to)
 	//show_pagetables(to, to->mspace->start_code, to->mspace->start_code + 0x4000);
 	
 	loadPdbr((unsigned long)to->mspace->pde - KERNEL_BASE_ADDR);
+	
+	if (UNLIKELY(!from->state)) {
+		free_pagetable((pte_t*)from->mspace->pde);
+	}
+	
+	ASM (
+	"jmp	flush_tlb_after_load_pdbr	\n\t"
+	"flush_tlb_after_load_pdbr:"
+	);
 }
 
 /*
@@ -1134,7 +1088,7 @@ EXPORT void* vm_extend_brk(struct process *proc, unsigned long new_brk)
 		goto new_brk_out;
 	}
 	
-	vm_brk = get_address_vm(proc, mspace->start_brk, mspace->end_brk);
+	vm_brk = get_address_vm(proc, mspace->start_brk, mspace->start_brk);
 	
 	//printf("vm_brk->start:0x%08X ", vm_brk->start);
 	//printf("vm_brk->end:0x%08X\n", vm_brk->end);
@@ -1213,7 +1167,7 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 	int i;
 	int err;
 	
-	vm_stack = get_address_vm(proc, mspace->start_stack, mspace->end_stack);
+	vm_stack = get_address_vm(proc, mspace->start_stack, mspace->start_stack);
 	
 	printf("vm_stack->start:0x%08X ", vm_stack->start);
 	printf("vm_statck->end:0x%08X\n", vm_stack->end);
@@ -1261,8 +1215,276 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 	vm_stack->nr_pages = nr_ex_pages;
 	
 	mspace->start_stack = vm_stack->start;
-	printf("new vm_stack->start:0x%08X ", vm_stack->start);
-	printf("new vm_statck->end:0x%08X\n", vm_stack->end);
+	vd_printf("new vm_stack->start:0x%08X ", vm_stack->start);
+	vd_printf("new vm_statck->end:0x%08X\n", vm_stack->end);
+	
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_initial_stack
+ Input		:struct process *proc
+ 		 < process to map its initial stack >
+ 		 int nr_pages
+ 		 < number of pages for stack >
+ 		 struct page **pages
+ 		 < pages of initial stack >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:map initial stack page to vm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int
+vm_initial_stack(struct process *proc, int nr_pages, struct page **pages)
+{
+	struct vm *vm = alloc_vm();
+	int err;
+	int nr;
+	
+	if (UNLIKELY(!vm)) {
+		return(-ENOMEM);
+	}
+	
+	vm->start = PAGE_ALIGN(PROC_STACK_START);
+	vm->end = vm->start + PROC_STACK_SIZE;
+	vm->nr_pages = nr_pages;
+	vm->vnode = NULL;
+	vm->offset = 0;
+	vm->pages = alloc_vm_pages(vm->nr_pages);
+	
+	if (UNLIKELY(!vm->pages)) {
+		err = -ENOMEM;
+		printf("map_vm failed:3\n");
+		goto failed_alloc_vm_pages;
+	}
+	
+	//printf("stack vm:");
+	for (nr = 0;nr < vm->nr_pages;nr++) {
+		vm->pages[nr] = pages[nr];
+	//	printf("0x%08X " ,page_to_paddr(pages[nr]));
+	}
+	//printf("\n");
+	
+	vm->prot = PROT_READ | PROT_WRITE | PROT_GROWSUP;
+	vm->mmap_flags = MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS;
+	vm->mspace = proc->mspace;
+	
+	err = map_pages_to_vm(proc, vm);
+	
+	if (UNLIKELY(err)) {
+		err = -ENOMEM;
+		goto failed_map_pages_to_vm;
+	}
+	
+	err = insert_vm_list(vm, proc);
+	
+	if (UNLIKELY(err)) {
+		err = -EINVAL;
+		goto failed_insert_vm;
+	}
+	
+	//flush_tlb();
+	
+	//printf("initial stack is made!!!!!1\n");
+	
+	return(0);
+	
+failed_insert_vm:
+failed_map_pages_to_vm:
+	_free_pagetables(proc->mspace->pde, vm->start, vm->end);
+	free_vm_pages(vm);
+failed_alloc_vm_pages:
+	__free_vm(vm);
+	printf("failed %s\n", __func__);
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:activate_vm_page
+ Input		:struct process *proc
+ 		 < process to activate is page >
+ 		 struct vm *vm
+ 		 < virtual memory to activate its page >
+ 		 unsigned int la
+ 		 < virtual address which vm includes >
+ 		 unsigned int error_code
+ 		 < error code of a page fault >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:activate a paged whic is already mapped to vm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int activate_vm_page(struct process *proc, struct vm *vm,
+				unsigned long la, unsigned int error_code)
+{
+	pde_t *pde = proc->mspace->pde;
+	unsigned long index;
+	struct page *page;
+	int err;
+	
+	index = (la - vm->start) / PAGESIZE;
+	
+	/* -------------------------------------------------------------------- */
+	/* activate memory map of a file					*/
+	/* -------------------------------------------------------------------- */
+	if (vm->vnode && !vm->pages[index]) {
+		int findex = vm_file_map(vm, la);
+		
+		if (UNLIKELY(findex < 0)) {
+			panic("0:unexpected error at %s[0x%08X]\n", __func__, la);
+			return(findex);
+		}
+		page = vm->pages[findex];
+		
+		if (vm->pages[index]->flags & PAGE_COW) {
+			//printf("COW!!!!!![2]0x%08X 0x%08X\n", vm->vnode, la);
+			vm->pages[index]->flags &= ~PAGE_COW;
+		}
+		goto activate_page;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* activate a non-exist page						*/
+	/* -------------------------------------------------------------------- */
+	if (!vm->pages[index]) {
+		page = alloc_zeroed_page();
+		if (UNLIKELY(!page)) {
+			panic("1-3:unexpected error at %s[0x%08X]\n", __func__, la);
+			return(-EFAULT);
+		}
+		
+		vm->pages[index] = page;
+		//printf("COW!!!!!![3]0x%08X 0x%08X\n", page_to_address(page), la);
+		
+		goto activate_page;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* activate a cow page							*/
+	/* -------------------------------------------------------------------- */
+	if ((vm->pages[index]->flags & PAGE_COW) &&
+			(vm->pages[index]->count != 1)) {
+		page = alloc_page();
+		
+		if (UNLIKELY(!page)) {
+			panic("1-1:unexpected error at %s[0x%08X]\n", __func__, la);
+			return(-EFAULT);
+		}
+		
+		if (UNLIKELY(!vm->pages[index])) {
+			panic("1-2::unexpected error at %s[0x%08X]\n", __func__, la);
+		}
+		
+		copy_page_contents(page, vm->pages[index]);
+		
+		page->flags = vm->pages[index]->flags & ~PAGE_COW;
+		
+		free_page(vm->pages[index]);
+		
+		vm->pages[index] = page;
+	}
+	
+	if (vm->pages[index]->flags & PAGE_COW) {
+		//printf("COW!!!!!![2]0x%08X 0x%08X\n", vm->vnode, la);
+		vm->pages[index]->flags &= ~PAGE_COW;
+		//return(0);
+	}
+	
+	page = vm->pages[index];
+	
+activate_page:
+	if (UNLIKELY(!page && !vm->pages[index])) {
+		panic("2:unexpected error at %s[index=%d, addr=0x%08X]\n", __func__, index, la);
+	}
+	
+	if (vm->vnode) {
+		if (!vm->pages[index]->count)
+		printf("acti[la:0x%08X vm->pages[index]->count:%d\n", la, vm->pages[index]->count);
+	}
+	
+	err = activate_page(pde, page, vm, la);
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_check_access
+ Input		:void *user_addr
+ 		 < user space address >
+ 		 size_t size
+ 		 < memory size to check >
+ 		 int prot
+ 		 < memory protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check user memory permission
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int vm_check_access(void *user_addr, size_t size, int prot)
+{
+	unsigned long addr = (unsigned long)user_addr;
+	struct vm *vm;
+	int rng;
+	
+	rng = (get_current_task()->tskatr & TA_RNG3) >> 8;
+	
+	if (UNLIKELY(!rng)) {
+		return(0);
+	}
+	
+	if (PROCESS_SIZE < addr) {
+		//for(;;);
+		return(-EACCES);
+	}
+	
+	vm = get_address_vm(get_current(), addr, addr + size);
+	
+	if (UNLIKELY(!vm)) {
+		return(-EACCES);
+	}
+	
+	if ((vm->prot & prot) == prot) {
+		return(0);
+	}
+	
+	return(-EACCES);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_mprotect
+ Input		:void *addr
+ 		 < start address of a memory region to set memory protectoin >
+ 		 size_t len
+ 		 < size of a memory region >
+ 		 int prot
+ 		 < protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set protection on a region of memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int vm_mprotect(void *addr, size_t len, int prot)
+{
+	struct vm *vm;
+	
+	vm = get_address_vm(get_current(), (unsigned long)addr, (size_t)addr + len);
+	
+	if (UNLIKELY(!vm)) {
+		return(-ENOMEM);
+	}
+	
+#if 0
+	printf("prot=0x%02X\n", vm->prot);
+#endif
+	vm->prot |= prot;
 	
 	return(0);
 }
@@ -1291,6 +1513,7 @@ EXPORT void show_vm_list(struct process *proc)
 		return;
 	}
 	
+#if 0
 	printf("start_code =0x%08X, end_code =0x%08X\n",
 		mspace->start_code, mspace->end_code);
 	printf("start_data =0x%08X, end_data =0x%08X\n",
@@ -1299,13 +1522,40 @@ EXPORT void show_vm_list(struct process *proc)
 		mspace->start_brk, mspace->end_brk);
 	printf("start_stack=0x%08X, end_stack=0x%08X\n",
 		mspace->start_stack, mspace->end_stack);
-	
+#endif
 	list_for_each_entry_safe(vm, temp, &proc->mspace->list_vm, link_vm) {
-		printf("[%d]:vm->start=0x%08X, vm->end=0x%08X\n",
-				index++, vm->start, vm->end);
+		//if (0x40000000 <= vm->start)
+		printf("[%d]:vm->start=0x%08X, vm->end=0x%08X 0x%08X 0x%04X\n",
+				index++, vm->start, vm->end, vm->vnode, vm->prot);
 	}
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_vm_cow
+ Input		:unsigned long addr
+ 		 < address to check whether its page is cow >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether address is in cow page
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int is_vm_cow(unsigned long addr)
+{
+	struct vm *vm;
+	int index;
+	
+	vm = get_address_vm(get_current(), addr, addr);
+	
+	if (UNLIKELY(!vm)) {
+		return(0);
+	}
+	
+	index = (addr - vm->start) / PAGESIZE;
+	
+	return((vm->pages[index]->flags & PAGE_COW) == PAGE_COW);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -1365,10 +1615,77 @@ LOCAL INLINE void _free_vm(struct process *proc)
 */
 LOCAL INLINE void __free_vm(struct vm *vm)
 {
+//	printf("__free_vm!!!!!!!!!!!!!\n");
 	del_list(&vm->link_vm);
 	kmem_cache_free(vm_cache, (void*)vm);
 }
 
+
+/*
+==================================================================================
+ Funtion	:insert_vm_list
+ Input		:struct vm *new
+ 		 < an insertee >
+ 		 struct process *proc
+ 		 < a process to be inserted a vm >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:insert vm to a vm space of a process
+==================================================================================
+*/
+LOCAL int insert_vm_list(struct vm *new, struct process *proc)
+{
+	struct list *pos;
+	struct vm *proc_vm;
+	struct vm *proc_vm_next;
+	struct vm *proc_vm_prev;
+	
+	if (UNLIKELY(is_empty_list(&proc->mspace->list_vm))) {
+		add_list(&new->link_vm, &proc->mspace->list_vm);
+		return(0);
+	}
+	
+	list_for_each(pos, &proc->mspace->list_vm) {
+		proc_vm = get_entry(pos, struct vm, link_vm);
+		
+		if (UNLIKELY(pos->next == &proc->mspace->list_vm)) {
+			if (new->end <= proc_vm->start) {
+				add_list(&new->link_vm, pos->prev);
+			} else {
+				add_list(&new->link_vm, pos);
+			}
+			return(0);
+		}
+		
+		proc_vm_next = get_entry(pos->next, struct vm, link_vm);
+		
+		if (UNLIKELY(pos->prev == &proc->mspace->list_vm)) {
+			if (new->end <= proc_vm->start) {
+				add_list(&new->link_vm, pos->prev);
+				return(0);
+			}
+			
+			continue;
+		}
+		
+		proc_vm_prev = get_entry(pos->prev, struct vm, link_vm);
+		
+		if ((proc_vm_prev->end <= new->start) &&
+				(new->end <= proc_vm->start)) {
+			add_list(&new->link_vm, pos->prev);
+			return(0);
+		}
+		
+		if ((proc_vm->end <= new->start) &&
+			(new->end <= proc_vm_next->start)) {
+			add_list(&new->link_vm, pos);
+			return(0);
+		}
+	}
+	
+	return(-1);
+}
 
 /*
 ==================================================================================
@@ -1435,6 +1752,99 @@ LOCAL int verify_vm_contents(struct vm *dest, struct vm *with)
 	}
 	
 	return(0);
+}
+
+
+/*
+==================================================================================
+ Funtion	:vm_file_map
+ Input		:struct vm *vm
+ 		 < vm to map a file >
+ 		 unsigned long addr
+ 		 < file mapped virtual address >
+ Output		:struct vm *vm
+ 		 < vm to map a file >
+ Return		:int
+ 		 < result >
+ Description	:map a page cache to vm
+==================================================================================
+*/
+LOCAL int vm_file_map(struct vm *vm, unsigned long addr)
+{
+	struct vnode *vnode;
+	struct page *page;
+	struct page *page_cache;
+	loff_t pos;
+	loff_t index;
+	unsigned long len = addr - vm->start;
+	
+	if (UNLIKELY(!vm->vnode)) {
+		panic("0:unexpected error at %s[vm->vnode is NULL]\n", __func__);
+		return(-EACCES);
+	}
+	
+	vnode = vm->vnode;
+	
+	index = len / PAGESIZE;
+	pos = (len + vm->offset) / PAGESIZE;
+	
+	page_cache = get_vm_page_cache(vnode, pos);
+	
+	page = page_cache;
+	
+#if 0
+	/* -------------------------------------------------------------------- */
+	/* last index ?								*/
+	/* -------------------------------------------------------------------- */
+	if (UNLIKELY(index == (vm->nr_pages - 1))) {
+		unsigned long poff = vm->length & PAGE_UMASK;
+		printf("new 0x%08X\n", vm->length);
+		if (poff) {
+			char *last_page;
+			page = alloc_page();
+			
+			printf("new page assign!\n");
+			
+			if (UNLIKELY(!page)) {
+				panic("0:unexpected error at %s\n", __func__);
+				return(-ENOMEM);
+			}
+			
+			copy_page_contents(page, page_cache);
+			
+			last_page = (char*)page_to_address(page);
+			
+			memset((void*)(last_page + poff), 0x00, PAGESIZE - poff);
+		}
+	}
+#endif
+	
+	//printf("get_vm_page_cache 0x%08X 0x%08X 0x%08X 0x%08X\n", page, addr, pos, vm->offset);
+	
+	if (!page) {
+		panic("1:unexpected error at %s\n", __func__);
+		return(-ENOMEM);
+	}
+
+	if ((vm->mmap_flags & MAP_PRIVATE) && (vm->prot & PROT_WRITE)) {
+		struct page *private;
+		
+		private = alloc_page();
+		
+		if (UNLIKELY(!private)) {
+			panic("2:unexpected error at %s\n", __func__);
+		}
+		
+		copy_page_contents(private, page);
+		
+		vm->pages[index] = private;
+		
+		free_page(page);
+	} else {
+		vm->pages[index] = page;
+	}
+	
+	return(index);
 }
 
 /*

@@ -72,16 +72,16 @@
 	_SVC_ENTRY restart_syscall 		/* 0000 *//* restart_syscall	*/
 	_SVC_ENTRY exit		 		/* 0001 *//* exit		*/
 	_SVC_ENTRY syscall_test 		/* 0002 *//* fork		*/
-	_SVC_ENTRY syscall_test 		/* 0003 *//* read		*/
+	_SVC_ENTRY read				/* 0003 *//* read		*/
 	_SVC_ENTRY write	 		/* 0004 *//* write		*/
 	_SVC_ENTRY open		 		/* 0005 *//* open		*/
-	_SVC_ENTRY syscall_test 		/* 0006 *//* close		*/
-	_SVC_ENTRY syscall_test 		/* 0007 *//* waitpid		*/
+	_SVC_ENTRY close	 		/* 0006 *//* close		*/
+	_SVC_ENTRY waitpid	 		/* 0007 *//* waitpid		*/
 	_SVC_ENTRY syscall_test 		/* 0008 *//* creat		*/
 	_SVC_ENTRY syscall_test 		/* 0009 *//* link		*/
 	_SVC_ENTRY syscall_test 		/* 0010 *//* unlink		*/
-	_SVC_ENTRY syscall_test 		/* 0011 *//* execve		*/
-	_SVC_ENTRY syscall_test 		/* 0012 *//* chdir		*/
+	_SVC_ENTRY execve	 		/* 0011 *//* execve		*/
+	_SVC_ENTRY chdir	 		/* 0012 *//* chdir		*/
 	_SVC_ENTRY syscall_test 		/* 0013 *//* time		*/
 	_SVC_ENTRY syscall_test 		/* 0014 *//* mknod		*/
 	_SVC_ENTRY syscall_test 		/* 0015 *//* chmod		*/
@@ -102,13 +102,13 @@
 	_SVC_ENTRY syscall_test 		/* 0030 *//* utime		*/
 	_SVC_ENTRY syscall_test 		/* 0031 *//* stty		*/
 	_SVC_ENTRY syscall_test 		/* 0032 *//* gtty		*/
-	_SVC_ENTRY syscall_test 		/* 0033 *//* access		*/
+	_SVC_ENTRY access	 		/* 0033 *//* access		*/
 	_SVC_ENTRY syscall_test 		/* 0034 *//* nice		*/
 	_SVC_ENTRY syscall_test 		/* 0035 *//* ftime		*/
 	_SVC_ENTRY syscall_test 		/* 0036 *//* sync		*/
 	_SVC_ENTRY syscall_test 		/* 0037 *//* kill		*/
 	_SVC_ENTRY syscall_test 		/* 0038 *//* rename		*/
-	_SVC_ENTRY syscall_test 		/* 0039 *//* mkdir		*/
+	_SVC_ENTRY mkdir	 		/* 0039 *//* mkdir		*/
 	_SVC_ENTRY syscall_test 		/* 0040 *//* rmdir		*/
 	_SVC_ENTRY syscall_test 		/* 0041 *//* dup		*/
 	_SVC_ENTRY syscall_test 		/* 0042 *//* pipe		*/
@@ -123,12 +123,13 @@
 	_SVC_ENTRY syscall_test 		/* 0051 *//* acct		*/
 	_SVC_ENTRY syscall_test 		/* 0052 *//* umount2		*/
 	_SVC_ENTRY syscall_test 		/* 0053 *//* lock		*/
-	_SVC_ENTRY syscall_test 		/* 0054 *//* ioctl		*/
+	_SVC_ENTRY ioctl	 		/* 0054 *//* ioctl		*/
 	_SVC_ENTRY syscall_test 		/* 0055 *//* fcntl		*/
 	_SVC_ENTRY syscall_test 		/* 0056 *//* mpx		*/
 	_SVC_ENTRY syscall_test 		/* 0057 *//* setpgid		*/
 	_SVC_ENTRY syscall_test 		/* 0058 *//* ulimit		*/
-	_SVC_ENTRY oldolduname			/* 0059 *//* oldolduname	*/
+//	_SVC_ENTRY oldolduname			/* 0059 *//* oldolduname	*/
+	_SVC_ENTRY syscall_test		/* 0059 *//* oldolduname	*/
 	_SVC_ENTRY syscall_test 		/* 0060 *//* umask		*/
 	_SVC_ENTRY syscall_test 		/* 0061 *//* chroot		*/
 	_SVC_ENTRY syscall_test 		/* 0062 *//* ustat		*/
@@ -154,12 +155,14 @@
 	_SVC_ENTRY syscall_test 		/* 0082 *//* select		*/
 	_SVC_ENTRY syscall_test 		/* 0083 *//* symlink		*/
 	_SVC_ENTRY syscall_test 		/* 0084 *//* oldlstat		*/
-	_SVC_ENTRY readlink	 		/* 0085 *//* readlink		*/
+//	_SVC_ENTRY readlink	 		/* 0085 *//* readlink		*/
+	_SVC_ENTRY syscall_test	 		/* 0085 *//* readlink		*/
 	_SVC_ENTRY syscall_test 		/* 0086 *//* uselib		*/
 	_SVC_ENTRY syscall_test 		/* 0087 *//* swapon		*/
 	_SVC_ENTRY syscall_test 		/* 0088 *//* reboot		*/
 	_SVC_ENTRY syscall_test 		/* 0089 *//* readdir		*/
-	_SVC_ENTRY mmap		 		/* 0090 *//* mmap		*/
+//	_SVC_ENTRY mmap		 		/* 0090 *//* mmap		*/
+	_SVC_ENTRY syscall_test		 		/* 0090 *//* mmap		*/
 	_SVC_ENTRY munmap	 		/* 0091 *//* munmap		*/
 	_SVC_ENTRY syscall_test 		/* 0092 *//* truncate		*/
 	_SVC_ENTRY syscall_test 		/* 0093 *//* ftruncate		*/
@@ -178,12 +181,14 @@
 	_SVC_ENTRY syscall_test 		/* 0106 *//* stat		*/
 	_SVC_ENTRY syscall_test 		/* 0107 *//* lstat		*/
 	_SVC_ENTRY syscall_test 		/* 0108 *//* fstat		*/
-	_SVC_ENTRY olduname			/* 0109 *//* olduname		*/
+//	_SVC_ENTRY olduname		/* 0109 *//* olduname		*/
+	_SVC_ENTRY syscall_test			/* 0109 *//* olduname		*/
 	_SVC_ENTRY syscall_test			/* 0110 *//* iopl		*/
 	_SVC_ENTRY syscall_test			/* 0111 *//* vhangup		*/
 	_SVC_ENTRY syscall_test			/* 0112 *//* idle		*/
 	_SVC_ENTRY syscall_test			/* 0113 *//* vm86old		*/
-	_SVC_ENTRY wait4			/* 0114 *//* wait4		*/
+//	_SVC_ENTRY wait4			/* 0114 *//* wait4		*/
+	_SVC_ENTRY syscall_test		/* 0114 *//* wait4		*/
 	_SVC_ENTRY syscall_test			/* 0115 *//* swapoff		*/
 	_SVC_ENTRY syscall_test			/* 0116 *//* sysinfo		*/
 	_SVC_ENTRY syscall_test			/* 0117 *//* ipc		*/
@@ -194,7 +199,7 @@
 	_SVC_ENTRY uname			/* 0122 *//* uname		*/
 	_SVC_ENTRY syscall_test			/* 0123 *//* modify_ldt		*/
 	_SVC_ENTRY syscall_test			/* 0124 *//* adjtimex		*/
-	_SVC_ENTRY syscall_test			/* 0125 *//* mprotect		*/
+	_SVC_ENTRY mprotect			/* 0125 *//* mprotect		*/
 	_SVC_ENTRY syscall_test			/* 0126 *//* sigprocmask	*/
 	_SVC_ENTRY syscall_test			/* 0127 *//* create_module	*/
 	_SVC_ENTRY syscall_test			/* 0128 *//* init_module	*/
@@ -231,20 +236,21 @@
 	_SVC_ENTRY syscall_test			/* 0159 *//* sched_get_priority_max	*/
 	_SVC_ENTRY syscall_test			/* 0160 *//* sched_get_priority_min	*/
 	_SVC_ENTRY syscall_test			/* 0161 *//* sched_rr_get_interval	*/
-	_SVC_ENTRY syscall_test			/* 0162 *//* nanosleep		*/
+	_SVC_ENTRY nanosleep			/* 0162 *//* nanosleep		*/
 	_SVC_ENTRY syscall_test			/* 0163 *//* mremap		*/
 	_SVC_ENTRY syscall_test			/* 0164 *//* setresuid		*/
 	_SVC_ENTRY syscall_test			/* 0165 *//* getresuid		*/
 	_SVC_ENTRY syscall_test			/* 0166 *//* vm86		*/
 	_SVC_ENTRY syscall_test			/* 0167 *//* query_module	*/
-	_SVC_ENTRY syscall_test			/* 0168 *//* poll		*/
+	_SVC_ENTRY poll				/* 0168 *//* poll		*/
 	_SVC_ENTRY syscall_test			/* 0169 *//* nfsservctl		*/
 	_SVC_ENTRY syscall_test			/* 0170 *//* setresgid		*/
 	_SVC_ENTRY syscall_test			/* 0171 *//* getresgid		*/
 	_SVC_ENTRY syscall_test			/* 0172 *//* prctl		*/
 	_SVC_ENTRY syscall_test			/* 0173 *//* rt_sigreturn	*/
 	_SVC_ENTRY rt_sigaction			/* 0174 *//* rt_sigaction	*/
-	_SVC_ENTRY rt_sigprocmask		/* 0175 *//* rt_sigprocmask	*/
+//	_SVC_ENTRY rt_sigprocmask		/* 0175 *//* rt_sigprocmask	*/
+	_SVC_ENTRY syscall_test		/* 0175 *//* rt_sigprocmask	*/
 	_SVC_ENTRY syscall_test			/* 0176 *//* rt_sigpending	*/
 	_SVC_ENTRY syscall_test			/* 0177 *//* rt_sigtimedwait	*/
 	_SVC_ENTRY syscall_test			/* 0178 *//* rt_sigqueueinfo	*/
@@ -252,7 +258,7 @@
 	_SVC_ENTRY syscall_test			/* 0180 *//* pread64		*/
 	_SVC_ENTRY syscall_test			/* 0181 *//* pwrite64		*/
 	_SVC_ENTRY syscall_test			/* 0182 *//* chown		*/
-	_SVC_ENTRY syscall_test			/* 0183 *//* getcwd		*/
+	_SVC_ENTRY getcwd			/* 0183 *//* getcwd		*/
 	_SVC_ENTRY syscall_test			/* 0184 *//* capget		*/
 	_SVC_ENTRY syscall_test			/* 0185 *//* capset		*/
 	_SVC_ENTRY syscall_test			/* 0186 *//* sigaltstack	*/
@@ -264,14 +270,15 @@
 	_SVC_ENTRY mmap2			/* 0192 *//* mmap2		*/
 	_SVC_ENTRY syscall_test			/* 0193 *//* truncate64		*/
 	_SVC_ENTRY syscall_test			/* 0194 *//* ftruncate64	*/
-	_SVC_ENTRY syscall_test			/* 0195 *//* stat64		*/
-	_SVC_ENTRY syscall_test			/* 0196 *//* lstat64		*/
+	_SVC_ENTRY stat64			/* 0195 *//* stat64		*/
+	_SVC_ENTRY lstat64			/* 0196 *//* lstat64		*/
 	_SVC_ENTRY fstat64			/* 0197 *//* fstat64		*/
 	_SVC_ENTRY syscall_test			/* 0198 *//* lchown32		*/
 	_SVC_ENTRY getuid32			/* 0199 *//* getuid32		*/
 	_SVC_ENTRY getgid32			/* 0200 *//* getgid32		*/
 	_SVC_ENTRY geteuid32			/* 0201 *//* geteuid32		*/
-	_SVC_ENTRY getegid32			/* 0202 *//* getegid32		*/
+//	_SVC_ENTRY getegid32			/* 0202 *//* getegid32		*/
+	_SVC_ENTRY syscall_test			/* 0202 *//* getegid32		*/
 	_SVC_ENTRY syscall_test			/* 0203 *//* setreuid32		*/
 	_SVC_ENTRY syscall_test			/* 0204 *//* setregid32		*/
 	_SVC_ENTRY syscall_test			/* 0205 *//* getgroups32	*/
@@ -282,18 +289,19 @@
 	_SVC_ENTRY syscall_test			/* 0210 *//* setresgid32	*/
 	_SVC_ENTRY syscall_test			/* 0211 *//* getresgid32	*/
 	_SVC_ENTRY syscall_test			/* 0212 *//* chown32		*/
-	_SVC_ENTRY syscall_test			/* 0213 *//* setuid32		*/
-	_SVC_ENTRY syscall_test			/* 0214 *//* setgid32		*/
+	_SVC_ENTRY setuid32			/* 0213 *//* setuid32		*/
+	_SVC_ENTRY setgid32			/* 0214 *//* setgid32		*/
 	_SVC_ENTRY syscall_test			/* 0215 *//* setfsuid32		*/
 	_SVC_ENTRY syscall_test			/* 0216 *//* setfsgid32		*/
 	_SVC_ENTRY syscall_test			/* 0217 *//* pivot_root		*/
 	_SVC_ENTRY syscall_test			/* 0218 *//* mincore		*/
 	_SVC_ENTRY syscall_test			/* 0219 *//* madvise		*/
-	_SVC_ENTRY syscall_test			/* 0220 *//* getdents64		*/
+	_SVC_ENTRY getdents64			/* 0220 *//* getdents64		*/
 	_SVC_ENTRY syscall_test			/* 0221 *//* fcntl64		*/
 	_SVC_ENTRY syscall_test			/* 0222 *//* reserved		*/
 	_SVC_ENTRY syscall_test			/* 0223 *//* reserved		*/
-	_SVC_ENTRY gettid			/* 0224 *//* gettid		*/
+//	_SVC_ENTRY gettid			/* 0224 *//* gettid		*/
+	_SVC_ENTRY syscall_test		/* 0224 *//* gettid		*/
 	_SVC_ENTRY syscall_test			/* 0225 *//* readahead		*/
 	_SVC_ENTRY syscall_test			/* 0226 *//* setxattr		*/
 	_SVC_ENTRY syscall_test			/* 0227 *//* lsetxattr		*/
@@ -313,7 +321,8 @@
 	_SVC_ENTRY syscall_test			/* 0241 *//* sched_setaffinity	*/
 	_SVC_ENTRY syscall_test			/* 0242 *//* sched_getaffinity	*/
 	_SVC_ENTRY set_thread_area		/* 0243 *//* set_thread_area	*/
-	_SVC_ENTRY get_thread_area		/* 0244 *//* get_thread_area	*/
+//	_SVC_ENTRY get_thread_area		/* 0244 *//* get_thread_area	*/
+	_SVC_ENTRY syscall_test		/* 0244 *//* get_thread_area	*/
 	_SVC_ENTRY syscall_test			/* 0245 *//* io_setup		*/
 	_SVC_ENTRY syscall_test			/* 0246 *//* io_destroy		*/
 	_SVC_ENTRY syscall_test			/* 0247 *//* io_getevents	*/
@@ -321,7 +330,8 @@
 	_SVC_ENTRY syscall_test			/* 0249 *//* io_cancel		*/
 	_SVC_ENTRY syscall_test			/* 0250 *//* fadvise64		*/
 	_SVC_ENTRY syscall_test			/* 0251 *//* reserved		*/
-	_SVC_ENTRY exit_group			/* 0252 *//* exit_group		*/
+//	_SVC_ENTRY exit_group			/* 0252 *//* exit_group		*/
+	_SVC_ENTRY exit_group		/* 0252 *//* exit_group		*/
 	_SVC_ENTRY syscall_test			/* 0253 *//* lookup_dcookie	*/
 	_SVC_ENTRY syscall_test			/* 0254 *//* epoll_create	*/
 	_SVC_ENTRY syscall_test			/* 0255 *//* epoll_ctl		*/
@@ -339,7 +349,8 @@
 	_SVC_ENTRY syscall_test			/* 0267 *//* clock_nanosleep	*/
 	_SVC_ENTRY syscall_test			/* 0268 *//* statfs64		*/
 	_SVC_ENTRY syscall_test			/* 0269 *//* fstatfs64		*/
-	_SVC_ENTRY tgkill			/* 0270 *//* tgkill		*/
+//	_SVC_ENTRY tgkill			/* 0270 *//* tgkill		*/
+	_SVC_ENTRY syscall_test			/* 0270 *//* tgkill		*/
 	_SVC_ENTRY syscall_test			/* 0271 *//* utimes		*/
 	_SVC_ENTRY syscall_test			/* 0272 *//* fadvise64_64	*/
 	_SVC_ENTRY syscall_test			/* 0273 *//* vserver		*/
@@ -364,7 +375,7 @@
 	_SVC_ENTRY syscall_test			/* 0292 *//* inotify_add_watch	*/
 	_SVC_ENTRY syscall_test			/* 0293 *//* inotify_rm_watch	*/
 	_SVC_ENTRY syscall_test			/* 0294 *//* migrate_pages	*/
-	_SVC_ENTRY syscall_test			/* 0295 *//* openat		*/
+	_SVC_ENTRY openat			/* 0295 *//* openat		*/
 	_SVC_ENTRY syscall_test			/* 0296 *//* mkdirat		*/
 	_SVC_ENTRY syscall_test			/* 0297 *//* mknodat		*/
 	_SVC_ENTRY syscall_test			/* 0298 *//* fchownat		*/

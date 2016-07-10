@@ -25,14 +25,14 @@
  */
 EXPORT ER kpSendPseudoMsg( T_MSG *msg )
 {
-	ER	ercd;
-
+#if 0
+	//ER	ercd;
 	//ercd = tk_snd_mbx(kpMgrInfo.dataMbx, msg);
 	if ( ercd != E_OK ) {
 		DEBUG_PRINT(("kpSendPseudoMsg err = %d\n", ercd));
 		return ercd;
 	}
-
+#endif
 	return E_OK;
 }
 
@@ -355,10 +355,12 @@ EXPORT BOOL kpExecStateMachine( InnerEvent *evt, ReceiveData *msg )
  */
 EXPORT ER kpKeyAndButtonForceUp( void )
 {
-	static KeyInput	keymsg;
-	static PdInput	pdmsg;
-	ER		err, error = E_OK;
+	//static KeyInput	keymsg;
+	//static PdInput	pdmsg;
+	//ER		err, error = E_OK;
+	ER		error = E_OK;
 
+#if 0
         /* key up request */
 	keymsg.stat.read = 0;
 	keymsg.stat.cmd  = INP_KEY;
@@ -372,6 +374,7 @@ EXPORT ER kpKeyAndButtonForceUp( void )
 	pdmsg.stat.err  = DEV_RESET;
 	//err = kpSendPseudoMsg((T_MSG*)&pdmsg);
 	if ( err < E_OK ) error = err;
+#endif
 
 DO_DEBUG(
 	if ( error < E_OK )

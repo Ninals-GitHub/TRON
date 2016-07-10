@@ -124,14 +124,14 @@ LOCAL ID pmLoadProg( const struct pm* prog, UINT attr, FP* entry )
 		/* ELF format */
 		source.elf_ehdr = &hdr.elf;
 		er = elf_load(pginfo, &source, attr, &(hdr.elf));
-	     	printf("pmLoadProg 04\n");
+	     	//printf("pmLoadProg 04\n");
 	}
 	else {
 		/* Unsupported format */
 		er = EX_NOEXEC;
 		goto err_ret2;
 	}
-	if ( er < E_OK ) {printf("pmLoadProg 06\n");goto err_ret2;}
+	if ( er < E_OK ) {goto err_ret2;}
 
 	source.close(&source);
 

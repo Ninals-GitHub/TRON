@@ -79,14 +79,31 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:fork_set_clear_child_tid
- Input		:struct task *task
- 		 < task to set or clear child tid >
+ Funtion	:fork
+ Input		:void *child_regs
+ 		 < child regs >
  Output		:void
- Return		:void
- Description	:set or clear child tid on execute forked process
+ Return		:pid_t
+		 < child process id
+		   parent : return pid of a child process if sucessed
+		   child  : return 0 if scucessed
+		   error  : if failed >
+ Description	:create a child process
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void fork_set_clear_child_tid(struct task *task);
+SYSCALL pid_t fork(void *syscall_args);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:clone
+ Input		:void *syscall_args
+ 		 < for child regs information >
+ Output		:void
+ Return		:long
+ 		 < process id >
+ Description	:create a child process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL long clone(void *syscall_args);
 
 #endif	// __BK_FORK_H__

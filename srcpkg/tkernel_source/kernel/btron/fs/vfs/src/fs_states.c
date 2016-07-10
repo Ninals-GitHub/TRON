@@ -42,6 +42,10 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/memory/vm.h>
+#include <bk/uapi/sys/stat.h>
+
+#include <t2ex/limits.h>
 
 /*
 ==================================================================================
@@ -144,8 +148,102 @@ EXPORT void copy_fs_states(struct process *to, struct process *from)
 }
 
 /*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
+*/
+/*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_cwd
+ Funtion	:getcwd
+ Input		:char *buf
+ 		 < user space buffer to put cwd >
+ 		 unsigned long size
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < user space buffer to put cwd >
+ Return		:long
+ 		 < result >
+ Description	:get current working directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL long getcwd(char *buf, unsigned long size)
+{
+	struct path *cwd;
+	int err;
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	err = vm_check_access((void*)buf, size, PROT_WRITE);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!size)) {
+		*buf = '\0';
+		return(0);
+	}
+	
+#if 0
+	if (UNLIKELY(PATH_MAX < size)) {
+		return(-ERANGE);
+	}
+#endif
+	//printf("getcwd:size=%d\n", size);
+	
+	cwd = vfs_get_cwd(get_current());
+	
+	return(vfs_absolute_path(cwd->dentry, buf, size));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:chdir
+ Input		:const char *path
+ 		 < path name >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:change working directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int chdir(const char *path)
+{
+	struct file_name *fname;
+	struct vfsmount *mnt;
+	struct vnode *dir;
+	struct dentry *dentry;
+	int err;
+	
+	if (UNLIKELY(vm_check_accessR((void*)path, PATH_MAX))) {
+		return(-EFAULT);
+	}
+	
+	err = vfs_lookup(path, &fname, LOOKUP_ENTRY);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	dir = fname->dentry->d_vnode;
+	dentry = fname->dentry;
+	mnt = fname->mnt;
+	
+	put_file_name(fname);
+	
+	return(vfs_chdir(mnt, dentry, dir));
+}
+
+/*
+----------------------------------------------------------------------------------
+	vfs operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_get_cwd
  Input		:struct proces *proc
  		 < process to get its cwd >
  Output		:void
@@ -154,11 +252,10 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:get current working directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct path* get_cwd(struct process *proc)
+EXPORT struct path* vfs_get_cwd(struct process *proc)
 {
 	return(&proc->fs.cwd);
 }
-
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -175,7 +272,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT void
-set_cwd(struct process *proc, struct vfsmount *mnt_cwd, struct dentry *d_cwd)
+vfs_set_cwd(struct process *proc, struct vfsmount *mnt_cwd, struct dentry *d_cwd)
 {
 	/* future work:implementing lock for fs_states				*/
 	
@@ -196,7 +293,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:get root directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct path* get_root(struct process *proc)
+EXPORT struct path* vfs_get_root(struct process *proc)
 {
 	return(&proc->fs.root);
 }
@@ -215,8 +312,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:set root directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void
-set_root(struct process *proc, struct vfsmount *mnt_root, struct dentry *d_root)
+EXPORT void vfs_set_root(struct process *proc,
+				struct vfsmount *mnt_root, struct dentry *d_root)
 {
 	/* future work:implementing lock for fs_states				*/
 	
@@ -224,6 +321,114 @@ set_root(struct process *proc, struct vfsmount *mnt_root, struct dentry *d_root)
 	
 	root->mnt = mnt_root;
 	root->dentry = d_root;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_absolute_path
+ Input		:struct dentry *dentry
+ 		 < dentry to get its absolute path >
+ 		 char *buf
+ 		 < buffer to store resolved absolute path >
+ 		 unsigned long size
+ 		 < the maximum size of the buffer >
+ Output		:void
+ Return		:long
+ 		 < result or the number of characters stored in buf on success >
+ Description	:get absolute path
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT long
+vfs_absolute_path(struct dentry *dentry, char *buf, unsigned long size)
+{
+	char *buf_rev = buf + size - 1;
+	long len = 0;
+	
+	/* -------------------------------------------------------------------- */
+	/* copy reverselly							*/
+	/* -------------------------------------------------------------------- */
+	while (1) {
+		long write_len = dentry->d_name.len;
+		
+		if (UNLIKELY(size < (len + write_len))) {
+			return(-ERANGE);
+		}
+		
+		
+		buf_rev -= write_len;
+		
+		memcpy((void*)buf_rev, dentry_name(dentry), write_len);
+		
+		len += write_len;
+		
+		if (UNLIKELY(size < (len + 1))) {
+			return(-ERANGE);
+		}
+		
+		//printf("%s \n", dentry_name(dentry));
+		
+		/* ------------------------------------------------------------ */
+		/* reach root directory						*/
+		/* ------------------------------------------------------------ */
+		if (dentry->d_parent == dentry) {
+			goto reached_root;
+		} else {
+			*(buf_rev--) = '/';
+			
+			len += 1;
+		}
+		
+		dentry = dentry->d_parent;
+	}
+	
+reached_root:
+	
+	if (UNLIKELY((size - len) == 1)) {
+		*buf = *(buf + 1);
+	} else {
+		memcpy((void*)buf, (void*)buf_rev, len);
+	}
+	
+	*(buf + len) = '\0';
+	
+	//printf("buf:%s\n", buf);
+	
+	return(len);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_chdir
+ Input		:struct vfsmount *mnt
+ 		 < vfs mount information >
+ 		 struct dentry *dentry
+ 		 < directory dentry >
+ 		 struct vnode *dir
+ 		 < directory vnode >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:vfs change current directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int
+vfs_chdir(struct vfsmount *mnt, struct dentry *dentry, struct vnode *dir)
+{
+	int err;
+	
+	if (UNLIKELY(!S_ISDIR(dir->v_mode))) {
+		return(-ENOTDIR);
+	}
+	
+	err = vfs_accessX(dir);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	vfs_set_cwd(get_current(), mnt, dentry);
+	
+	return(0);
 }
 
 /*

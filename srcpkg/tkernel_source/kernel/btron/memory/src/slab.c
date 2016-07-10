@@ -257,8 +257,9 @@ EXPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags)
 	/* -------------------------------------------------------------------- */
 	if (!is_empty_list(&cache->list_partial)) {
 		slab = get_partial_slab(cache);
+		//if (cache->name[0] == 'p')vd_printf("slab1-3:kmem_cache_alloc[%s]\n", cache->name);
 		allocated = alloc_free_object(cache, slab);
-		
+		//if (cache->name[0] == 'p')vd_printf("slab2:kmem_cache_alloc[%s]\n", cache->name);
 		if (allocated) {
 			if (cache->obj_num <= slab->count) {
 				/* -------------------------------------------- */
@@ -270,7 +271,6 @@ EXPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags)
 			
 			return(allocated);
 		}
-		
 		if (!allocated) {
 			/* ---------------------------------------------------- */
 			/* delete an entry from partial list and move to	*/
@@ -278,7 +278,7 @@ EXPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags)
 			/* ---------------------------------------------------- */
 			move_list(&slab->list_slab, &cache->list_full);
 		}
-	} 
+	}
 	err = 0;
 	/* -------------------------------------------------------------------- */
 	/* check free list							*/
@@ -1118,10 +1118,17 @@ LOCAL void* alloc_free_object(struct kmem_cache *cache, struct slab *slab)
 		/* ------------------------------------------------------------ */
 		kmem_bufctl = get_kmem_bufctl(slab);
 		free = slab->free;
+		//if (cache->name[0] == 'p'){
+		//	vd_printf("slab2-3:kmem_cache_alloc[%s]\n", cache->name);
+		//	vd_printf("current:0x%08X 0x%08X", slab->free, slab);
+		//}
 		slab->free = kmem_bufctl[slab->free];
+		//if (cache->name[0] == 'p'){
+		//	vd_printf(" next:0x%08X 0x%08X\n", slab->free, slab);
+		//	vd_printf("slab2-4:kmem_cache_alloc[%s]\n", cache->name);
+		//}
 		kmem_bufctl[free] = SLAB_KMEM_BUFCTL_ALLOCATED;
 		slab->count++;
-		
 		return(get_object(cache, slab, free));
 	}
 	
@@ -1287,7 +1294,7 @@ LOCAL int kmem_cache_grow(struct kmem_cache *cache, unsigned int flags)
 	/* initialize page infromation						*/
 	/* -------------------------------------------------------------------- */
 	for (i = 0;i < nr_pages;i++) {
-		page[i].s_mem = s_mem;
+		//page[i].s_mem = s_mem;
 		page[i].slab_page = slab;
 		page[i].slab_cache = cache;
 	}

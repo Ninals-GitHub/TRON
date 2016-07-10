@@ -44,6 +44,7 @@
 #define	__BK_UAPI_STAT_H__
 
 #include <basic.h>
+#include <stdint.h>
 #include <tk/typedef.h>
 #include <sys/types.h>
 
@@ -89,19 +90,60 @@ struct stat {
 ----------------------------------------------------------------------------------
 */
 struct stat64 {
-	dev_t	st_dev;		/* inode's device */
-	ino_t	st_ino;		/* inode's number */
-	mode_t	st_mode;	/* inode protection mode */
-	nlink_t	st_nlink;	/* number of hard links */
-	uid_t	st_uid;		/* user ID of the file's owner */
-	gid_t	st_gid;		/* group ID of the file's group */
-	dev_t	st_rdev;	/* Device ID */
-	off64_t	st_size;	/* file size, in bytes */
-	time_t	st_atime;	/* time of last access (sec) */
-	time_t	st_mtime;	/* time of last data modification (sec) */
-	time_t	st_ctime;	/* time of last file status change (sec) */
-	blksize_t st_blksize;	/* I/O block size */
-	blkcnt_t  st_blocks;	/* Number of blocks allocated */
+	dev_t	st_dev;		/* inode's device				*/
+	ino_t	st_ino;		/* inode's number				*/
+	mode_t	st_mode;	/* inode protection mode			*/
+	nlink_t	st_nlink;	/* number of hard links				*/
+	uid_t	st_uid;		/* user ID of the file's owner			*/
+	gid_t	st_gid;		/* group ID of the file's group			*/
+	dev_t	st_rdev;	/* Device ID					*/
+	off64_t	st_size;	/* file size, in bytes				*/
+	blksize_t st_blksize;	/* I/O block size				*/
+	blkcnt_t  st_blocks;	/* Number of blocks allocated			*/
+	time_t	st_atime;	/* time of last access (sec)			*/
+	time_t	st_mtime;	/* time of last data modification (sec)		*/
+	time_t	st_ctime;	/* time of last file status change (sec)	*/
+
+};
+
+/*
+----------------------------------------------------------------------------------
+	stat64 for long file size (for i386)
+----------------------------------------------------------------------------------
+*/
+struct stat64_i386 {
+#if 1
+	uint64_t	st_dev;		/* inode's device			*/
+	char		_pad0[4];	/* padding for glibc			*/
+	uint32_t	_st_ino;	/* inode's number			*/
+	mode_t		st_mode;	/* inode protection mode		*/
+	nlink_t		st_nlink;	/* number of hard links			*/
+	uid_t		st_uid;		/* user ID of the file's owner		*/
+	gid_t		st_gid;		/* group ID of the file's group		*/
+	uint64_t	st_rdev;	/* Device ID				*/
+	char		_pad1[4];	/* padding for glibc			*/
+	off64_t		st_size;	/* file size, in bytes			*/
+	uint32_t	st_blksize;	/* I/O block size			*/
+	uint64_t	st_blocks;	/* Number of blocks allocated		*/
+	time_t		st_atime;	/* time of last access (sec)		*/
+	time_t		st_atime_nsec;	/* time of last access (nano sec)	*/
+	time_t		st_mtime;	/* time of last data modification (sec)	*/
+	time_t		st_mtime_nsec;	/* time of last data modification (nano)*/
+	time_t		st_ctime;	/* time of last file status change (sec)*/
+	time_t		st_ctime_nsec;	/* time of last file status change (nano)*/
+	uint64_t	st_ino;	/* inode's number			*/
+#else
+	mode_t		st_mode;
+	uint64_t	st_ino;
+	dev_t		st_dev;
+	nlink_t		st_nlink;
+	uid_t		st_uid;
+	gid_t		st_gid;
+	off64_t		st_size;
+	time_t		st_atime;
+	time_t		st_mtime;
+	time_t		st_ctime;
+#endif
 };
 
 #define	S_BLKSIZE	512	/* Block size (number of bytes)
@@ -115,10 +157,14 @@ struct stat64 {
 #define	S_IWUSR		0x0080U	/* 0000200 Owner W write enable */
 #define	S_IXUSR		0x0040U	/* 0000100 Owner X execution enable */
 
+#define	S_IUSR_SHIFT	6
+
 #define	S_IRWXG		0x0038U	/* 0000070 Group RWX mask */
 #define	S_IRGRP		0x0020U	/* 0000040 Group R read enable */
 #define	S_IWGRP		0x0010U	/* 0000020 Group W write enable */
 #define	S_IXGRP		0x0008U	/* 0000010 Group X execution enable */
+
+#define	S_IGRP_SHIFT	3
 
 #define	S_IRWXO		0x0007U	/* 0000007 Other RWX mask */
 #define	S_IROTH		0x0004U	/* 0000004 Other R read enable */
@@ -137,6 +183,8 @@ struct stat64 {
 #define	S_IFREG		0x8000U	/* 0100000 Normal file */
 #define	S_IFLNK		0xA000U	/* 0120000 Symbolic link */
 #define	S_IFSOCK	0xC000U	/* 0140000 Socket */
+
+#define	S_IF_SHIFT	12
 
 #define	S_ISFIFO(m)	( ((m) & S_IFMT) == S_IFIFO )
 #define	S_ISCHR(m)	( ((m) & S_IFMT) == S_IFCHR )

@@ -73,6 +73,7 @@ asin(double x)
 	int32_t hx,ix;
 	GET_HIGH_WORD(hx,x);
 	ix = hx&0x7fffffff;
+	t = 0;
 	if(ix>= 0x3ff00000) {		/* |x|>= 1 */
 	    u_int32_t lx;
 	    GET_LOW_WORD(lx,x);

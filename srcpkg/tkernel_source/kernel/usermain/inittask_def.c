@@ -34,5 +34,6 @@ EXPORT const T_CTSK c_init_task = {
 	(void*)INITTASK_UATB,	/* uatb */
 	INITTASK_LSID,		/* lsid */
 //	INITTASK_RESID		/* resid */
+	0,
 	"init"
 };

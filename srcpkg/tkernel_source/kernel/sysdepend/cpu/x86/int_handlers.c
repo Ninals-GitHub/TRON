@@ -236,8 +236,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 INTHANDLER int
 syscall_test(int ebx, int ecx, int edx, int esi, int edi, int ebp, int eax)
 {
-	printf("\nsyscall!!!!!!!!!!!\n");
-	printf("int number = %d\n", eax);
 	printf("[argument]");
 	printf("1:0x%08X ", ebx);
 	printf("2:0x%08X ", ecx);
@@ -245,6 +243,8 @@ syscall_test(int ebx, int ecx, int edx, int esi, int edi, int ebp, int eax)
 	printf("4:0x%08X ", esi);
 	printf("5:0x%08X ", edi);
 	printf("6:0x%08X ", ebp);
+	printf("\nsyscall!!!!!!!!!!!\n");
+	printf("int number = %d\n", eax);
 	for(;;);
 }
 

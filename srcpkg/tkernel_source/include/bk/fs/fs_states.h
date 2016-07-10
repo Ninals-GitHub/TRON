@@ -136,16 +136,68 @@ IMPORT void copy_fs_states(struct process *to, struct process *from);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_cwd
+ Funtion	:get_root_sb
+ Input		:struct process *proc
+ 		 < process to get its root directory >
+ Output		:void
+ Return		:struct super_block*
+ 		 < super block of root >
+ Description	:get root super block
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define get_root_sb(proc)	(vfs_get_root(proc)->dentry->d_sb)
+
+/*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:getcwd
+ Input		:char *buf
+ 		 < user space buffer to put cwd >
+ 		 unsigned long size
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < user space buffer to put cwd >
+ Return		:long
+ 		 < result >
+ Description	:get current working directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL long getcwd(char *buf, unsigned long size);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:chdir
+ Input		:const char *path
+ 		 < path name >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:change working directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int chdir(const char *path);
+
+/*
+----------------------------------------------------------------------------------
+	vfs operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_get_cwd
  Input		:struct proces *proc
  		 < process to get its cwd >
  Output		:void
  Return		:struct path*
  		 < path of cwd >
- Description	:get current working directory
+ Description	:get current working directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT struct path* get_cwd(struct process *proc);
+IMPORT struct path* vfs_get_cwd(struct process *proc);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -158,11 +210,11 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < directory entry object of cwd >
  Output		:void
  Return		:void
- Description	:set current working directory
+ Description	:set current working directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void
-set_cwd(struct process *proc, struct vfsmount *mnt_cwd, struct dentry *d_cwd);
+vfs_set_cwd(struct process *proc, struct vfsmount *mnt_cwd, struct dentry *d_cwd);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -175,7 +227,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:get root directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT struct path* get_root(struct process *proc);
+IMPORT struct path* vfs_get_root(struct process *proc);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -191,8 +243,43 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:set root directory path
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void
-set_root(struct process *proc, struct vfsmount *mnt_root, struct dentry *d_root);
+IMPORT void vfs_set_root(struct process *proc,
+				struct vfsmount *mnt_root, struct dentry *d_root);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_absolute_path
+ Input		:struct dentry *dentry
+ 		 < dentry to get its absolute path >
+ 		 char *buf
+ 		 < buffer to store resolved absolute path >
+ 		 unsigned long size
+ 		 < the maximum size of the buffer >
+ Output		:void
+ Return		:long
+ 		 < result or the number of characters stored in buf on success >
+ Description	:get absolute path
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT long
+vfs_absolute_path(struct dentry *dentry, char *buf, unsigned long size);
 
-#endif	// __FORMAT_H__
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_chdir
+ Input		:struct vfsmount *mnt
+ 		 < vfs mount information >
+ 		 struct dentry *dentry
+ 		 < directory dentry >
+ 		 struct vnode *dir
+ 		 < directory vnode >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:vfs change current directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+vfs_chdir(struct vfsmount *mnt, struct dentry *dentry, struct vnode *dir);
+
+#endif	// __BK_FS_STATES_H__

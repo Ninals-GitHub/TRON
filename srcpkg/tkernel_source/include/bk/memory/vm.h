@@ -80,6 +80,7 @@
 
 ==================================================================================
 */
+struct vnode;
 
 /*
 ==================================================================================
@@ -99,11 +100,14 @@ struct vm {
 	struct list		link_vm;	// list node of list_vm
 	unsigned long		start;		// start address of a memory
 	unsigned long		end;		// end address of a memory
+	size_t			length;		// length of memory map
 	unsigned int		prot;		// vm protection flags
 	unsigned int		mmap_flags;	// mmap flags
 	struct page		**pages;	// vm pages
 	unsigned int		nr_pages;	// number of pages
 	struct memory_space	*mspace;
+	struct vnode		*vnode;		// associated file
+	loff_t			offset;		// file offset
 };
 
 struct memory_space {
@@ -262,21 +266,6 @@ IMPORT void free_vm_pages(struct vm *vm);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:insert_vm_list
- Input		:struct vm *new
- 		 < an insertee >
- 		 struct process *proc
- 		 < a process to be inserted a vm >
- Output		:void
- Return		:int
- 		 < result >
- Description	:insert vm to a vm space of a process
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT int insert_vm_list(struct vm *new, struct process *proc);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_address_vm
  Input		:struct process *proc
  		 < get vm from the process >
@@ -338,6 +327,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int copy_vm_pages(struct vm *vm_from, struct vm *vm_to);
 
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:map_vm
@@ -347,10 +337,16 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < start address of user space >
  		 unsigned long mmap_end
  		 < end address of user space >
+ 		 size_t lenght
+ 		 < length of a memory map >
  		 unsigned int prot
  		 < permission >
  		 unsigned int mmap_flags
  		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor to map >
+ 		 off_t offset
+ 		 < offset in a file >
  Output		:void
  Return		:int
  		 < result >
@@ -361,7 +357,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int map_vm(struct process *proc,
 			unsigned long mmap_start, unsigned long mmap_end,
-			unsigned int prot, unsigned int mmap_flags);
+			size_t length, unsigned int prot,
+			unsigned int mmap_flags, int fd, loff_t offset);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -451,6 +448,78 @@ IMPORT int vm_extend_stack(struct process *proc, unsigned long new_extend);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_initial_stack
+ Input		:struct process *proc
+ 		 < process to map its initial stack >
+ 		 int nr_pages
+ 		 < number of pages for stack >
+ 		 struct page **pages
+ 		 < pages of initial stack >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:map initial stack page to vm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+vm_initial_stack(struct process *proc, int nr_pages, struct page **pages);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:activate_vm_page
+ Input		:struct process *proc
+ 		 < process to activate is page >
+ 		 struct vm *vm
+ 		 < virtual memory to activate its page >
+ 		 unsigned int la
+ 		 < virtual address which vm includes >
+ 		 unsigned int error_code
+ 		 < error code of a page fault >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:activate a paged whic is already mapped to vm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int activate_vm_page(struct process *proc, struct vm *vm,
+				unsigned long la, unsigned int error_code);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_check_access
+ Input		:void *user_addr
+ 		 < user space address >
+ 		 size_t size
+ 		 < memory size to check >
+ 		 int prot
+ 		 < memory protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check user memory permission
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vm_check_access(void *user_addr, size_t size, int prot);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_mprotect
+ Input		:void *addr
+ 		 < start address of a memory region to set memory protectoin >
+ 		 size_t len
+ 		 < size of a memory region >
+ 		 int prot
+ 		 < protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set protection on a region of memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vm_mprotect(void *addr, size_t len, int prot);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:show_vm_list
  Input		:struct process *proc
  		 < show its vms >
@@ -460,5 +529,18 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void show_vm_list(struct process *proc);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_vm_cow
+ Input		:unsigned long addr
+ 		 < address to check whether its page is cow >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether address is in cow page
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int is_vm_cow(unsigned long addr);
 
 #endif	// __BK_VM_H__

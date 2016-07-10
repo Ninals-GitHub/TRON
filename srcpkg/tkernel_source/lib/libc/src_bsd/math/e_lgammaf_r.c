@@ -137,6 +137,8 @@ lgammaf_r(float x, int *signgamp)
 {
 	float t,y,z,nadj,p,p1,p2,p3,q,r,w;
 	int i,hx,ix;
+	
+	nadj = 0;
 
 	GET_FLOAT_WORD(hx,x);
 

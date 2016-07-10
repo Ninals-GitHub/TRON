@@ -66,6 +66,7 @@ OBJ += ../../fs/$(BUILD_PATH)/fs.o
 OBJ += ../../kernel.o
 OBJ += ../../drivers/$(BUILD_PATH)/drivers.o
 
+
 # ----------------------------------------------------------------------------
 
 .PHONY: all clean install source clean_source clean_install ready_for_rebuild
@@ -80,6 +81,9 @@ $(OBJ):
 	( cd ../../fs/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../drivers/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../ ; $(MAKE) )
+
+$(VDSO_SO):
+	( cd ../../sysdepend/$(BUILD_PATH) ; $(MAKE) )
 
 ready_for_rebuild:
 	( cd ../../memory/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )

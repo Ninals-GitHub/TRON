@@ -701,6 +701,7 @@ IMPORT INT __data_start;
 IMPORT INT _end;
 IMPORT INT __data_usr_start;
 IMPORT INT _end_usr;
+IMPORT INT _end_bss;
 
 /*
  * Initialize logical address space

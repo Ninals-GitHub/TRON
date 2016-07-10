@@ -50,6 +50,7 @@
 
 #include <bk/bk.h>
 #include <bk/bprocess.h>
+#include <bk/panic.h>
 #include <bk/typedef.h>
 #include <bk/signal.h>
 #include <bk/memory/access.h>

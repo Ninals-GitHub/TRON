@@ -47,6 +47,7 @@
 #include <bk/tls.h>
 #include <bk/uapi/berrno.h>
 #include <bk/uapi/sched.h>
+#include <bk/memory/vm.h>
 #include <tk/sysmgr.h>
 #include <tstdlib/round.h>
 #include <cpu.h>
@@ -66,7 +67,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 			unsigned long tls,
 			struct pt_regs *child_regs);
 
-IMPORT unsigned long int_syscall_return;
+LOCAL int fork_set_tid(struct task *task, int flags, int *tidptr, int tskid);
 
 
 /*
@@ -94,6 +95,11 @@ IMPORT unsigned long int_syscall_return;
 	< Open Functions >
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*/
+/*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -163,7 +169,7 @@ SYSCALL long clone(void *syscall_args)
 	child_tidptr = (int*)child_regs->si;
 	tls = (unsigned long)child_regs->di;
 	stack_size = 0;
-#elif defined(CONFIG_CLONE_BACKWARDS3)
+#elif defined(CONFIG_CLONE_BACKWARDS3)	// current
 	clone_flags = (unsigned long)child_regs->bx;
 	newsp = (unsigned long)child_regs->cx;
 	stack_size = (int)child_regs->dx;
@@ -190,34 +196,9 @@ SYSCALL long clone(void *syscall_args)
 	child_pid = xfork(clone_flags, newsp, parent_tidptr, child_tidptr,
 				stack_size, tls, child_regs);
 
+
 	return(child_pid);
 }
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:fork_set_clear_child_tid
- Input		:struct task *task
- 		 < task to set or clear child tid >
- Output		:void
- Return		:void
- Description	:set or clear child tid on execute forked process
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT void fork_set_clear_child_tid(struct task *task)
-{
-	if (task->set_child_tid) {
-		copy_to_user((void*)task->set_child_tid,
-				(const void*)&task->tskid, sizeof(int));
-	}
-	
-	if (task->clear_child_tid) {
-		int clear = 0;
-		
-		copy_to_user((void*)task->clear_child_tid,
-				(const void*)&clear, sizeof(int));
-	}
-}
-
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -329,10 +310,12 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	pid_t pid;
 	int err;
 	
+	//printf("tss_esp0:0x%08X\n", getEsp());
+	
 	/* -------------------------------------------------------------------- */
 	/* cannot call from kernel task						*/
 	/* -------------------------------------------------------------------- */
-	if (!rng) {
+	if (UNLIKELY(!rng)) {
 		return(-ENOSYS);
 	}
 	
@@ -341,7 +324,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	/* -------------------------------------------------------------------- */
 	pid = alloc_pid();
 	
-	if (pid < 0) {
+	if (UNLIKELY(pid < 0)) {
 		return(-EAGAIN);
 	}
 	
@@ -350,7 +333,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	/* -------------------------------------------------------------------- */
 	new_proc = alloc_process(pid);
 	
-	if (!new_proc) {
+	if (UNLIKELY(!new_proc)) {
 		goto failed_alloc_process;
 	}
 	
@@ -359,7 +342,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	/* -------------------------------------------------------------------- */
 	new_task = alloc_task();
 	
-	if (!new_task) {
+	if (UNLIKELY(!new_task)) {
 		goto failed_alloc_task;
 	}
 	
@@ -380,7 +363,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	/* -------------------------------------------------------------------- */
 	err = copy_process(new_proc);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		printf("fork:failed copy_process\n");
 		goto failed_copy_process;
 	}
@@ -389,10 +372,9 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	/* -------------------------------------------------------------------- */
 	/* start new process							*/
 	/* -------------------------------------------------------------------- */
-	//printf("fork:start _tk_sta_tsk\n");
 	err = _tk_sta_tsk(new_task->tskid, 0);
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		goto failed_start_task;
 	}
 	
@@ -402,7 +384,7 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 	setup_fork_user_context(new_task, child_regs);
 	
 	/* -------------------------------------------------------------------- */
-	/* set tid								*/
+	/* save set and clear tid pointer					*/
 	/* -------------------------------------------------------------------- */
 	if (flags & CLONE_CHILD_SETTID) {
 		new_task->set_child_tid = child_tidptr;
@@ -416,20 +398,49 @@ LOCAL long xfork(unsigned long flags, unsigned long child_newsp,
 		new_task->clear_child_tid = NULL;
 	}
 	
-	fork_set_clear_child_tid(new_task);
+	/* -------------------------------------------------------------------- */
+	/* set a child tid							*/
+	/* -------------------------------------------------------------------- */
+	if (flags & CLONE_CHILD_SETTID) {
+		err = fork_set_tid(new_task, flags,
+					child_tidptr, new_task->tskid);
+		
+		//printf("child_tidptr:0x%08X\n", child_tidptr);
+		
+		if (UNLIKELY(err)) {
+			panic("failed fork_set_tid[CLONE_CHILD_SETTID]\n");
+			goto failed_set_tid;
+		}
+		
+		*child_tidptr = get_current_task()->tskid;
+	}
 	
+	/* -------------------------------------------------------------------- */
+	/* set a parent tid							*/
+	/* -------------------------------------------------------------------- */
 	if (flags & CLONE_PARENT_SETTID) {
-		copy_to_user((void*)parent_tidptr,
-				(const void*)&current_task->tskid,
-				sizeof(int));
+		err = fork_set_tid(new_task, flags,
+					parent_tidptr, new_task->tskid);
+		
+		if (UNLIKELY(err)) {
+			panic("failed fork_set_tid[CLONE_PARENT_SETTID] for child\n");
+			goto failed_set_tid;
+		}
+		
+		*parent_tidptr = (int)new_task->tskid;
 	}
 	
 	if (flags & CLONE_SETTLS) {
 		set_thread_area((struct user_desc *)tls);
 	}
 	
+	//printf("new_stack:0x%08X\n", new_task->tskctxb.ssp);
+	
+	new_proc->state = P_READY;
+	
 	return(pid);
 	
+failed_set_tid:
 failed_start_task:
 failed_copy_process:
 failed_alloc_task:
@@ -439,6 +450,107 @@ failed_alloc_process:
 	pid = -ENOMEM;
 	
 	return(pid);
+}
+
+/*
+==================================================================================
+ Funtion	:fork_set_tid
+ Input		:struct task *task
+ 		 < task to set child tid >
+ 		 int *tidptr
+ 		 < a pointer to thread id >
+ 		 int tskid
+ 		 < tsk id to set >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set tid on execute forked process
+==================================================================================
+*/
+LOCAL int fork_set_tid(struct task *task, int flags, int *tidptr, int tskid)
+{
+	struct vm *vm;
+	struct process *proc = task->proc;
+	unsigned long tid = (unsigned long)tidptr;
+	unsigned long addr_to;
+	int index;
+	
+	/* -------------------------------------------------------------------- */
+	/* get vm								*/
+	/* -------------------------------------------------------------------- */
+	vm = get_address_vm(proc, tid, tid);
+	
+	if (UNLIKELY(!vm)) {
+		return(-ENOMEM);
+	}
+	
+	index = (tid - vm->start) / PAGESIZE;
+	
+	/* -------------------------------------------------------------------- */
+	/* if there is no allocated page for vm					*/
+	/* -------------------------------------------------------------------- */
+	if (!vm->pages[index]) {
+		struct page *page;
+		
+		page = alloc_zeroed_page();
+		
+		if (UNLIKELY(!page)) {
+			return(-ENOMEM);
+		}
+		vm->pages[index] = page;
+		
+		addr_to = page_to_address(page);
+	} else {
+		/* ------------------------------------------------------------ */
+		/* a page of vm is a cow shared page				*/
+		/* ------------------------------------------------------------ */
+		if (vm->pages[index]->flags & PAGE_COW) {
+			unsigned long addr_from;
+			struct page *page;
+			pde_t *pde = proc->mspace->pde;
+			int err;
+			
+			page = alloc_page();
+			
+			if (UNLIKELY(!page)) {
+				return(-ENOMEM);
+			}
+			
+			vm->pages[index]->flags &= ~PAGE_COW;
+			
+			addr_to = page_to_address(page);
+			addr_from = page_to_address(vm->pages[index]);
+			
+			memcpy((void*)addr_to, (void*)addr_from, PAGESIZE);
+			
+			page->flags = vm->pages[index]->flags;
+			
+			err = activate_page(pde, page, vm, tid);
+			
+			if (UNLIKELY(err)) {
+				free_page(page);
+				return(-ENOMEM);
+			}
+			
+			free_page(vm->pages[index]);
+			
+			vm->pages[index] = page;
+		} else {
+		/* ------------------------------------------------------------ */
+		/* a page of vm is exclusive page				*/
+		/* ------------------------------------------------------------ */
+			addr_to = page_to_address(vm->pages[index]);
+		}
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* set tid								*/
+	/* -------------------------------------------------------------------- */
+	addr_to += (tid - vm->start) & PAGE_UMASK;
+	
+	*((int*)addr_to) = (int)tskid;
+	
+	return(0);
 }
 
 /*

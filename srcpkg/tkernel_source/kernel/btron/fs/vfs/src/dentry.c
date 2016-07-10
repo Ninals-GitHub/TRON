@@ -43,6 +43,8 @@
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
 #include <bk/memory/slab.h>
+#include <bk/memory/vm.h>
+#include <bk/uapi/sys/stat.h>
 
 #include <libstr.h>
 
@@ -168,9 +170,9 @@ vfs_alloc_dentry(struct vnode *vnode, struct dentry *parent, struct qstr *name)
 	}
 	dentry->d_vnode = vnode;
 	
-	if (LIKELY(parent)) {
-		add_list(&parent->d_subdirs, &dentry->d_child);
-	}
+	//if (LIKELY(parent)) {
+	//	add_list(&parent->d_subdirs, &dentry->d_child);
+	//}
 	
 	return(dentry);
 }
@@ -227,6 +229,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < dentry of directory to lookup in >
  		 const struct qstr *name
  		 < name to lookup >
+ 		 unsigned int flags
+ 		 < look up flags >
  Output		:void
  Return		:struct dentry*
  		 < found result >
@@ -234,7 +238,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT struct dentry*
-lookup_dentry_children(struct dentry *dir, const struct qstr *name)
+lookup_dentry_children(struct dentry *dir, const struct qstr *name,
+						unsigned int flags)
 {
 	struct dentry *dentry;
 	struct dentry *temp;
@@ -244,9 +249,24 @@ lookup_dentry_children(struct dentry *dir, const struct qstr *name)
 		return(NULL);
 	}
 	
+	if (UNLIKELY(is_lookup_test(flags))) {
+		show_subdirs(dir);
+	}
+	
 	list_for_each_entry_safe(dentry, temp, &dir->d_subdirs, d_child) {
 		result = compare_dentry_name(name, dentry);
 		
+#if 0
+		if (UNLIKELY(is_lookup_test(flags))) {
+			char *d_name;
+			if (dentry->d_name.name) {
+				d_name = dentry->d_name.name;
+			} else {
+				d_name = dentry->d_iname;
+			}
+			vd_printf("name:%s dentry:%s result:%d\n", name->name, d_name, result);
+		}
+#endif
 		if (result == 0) {
 			/* found						*/
 			return(dentry);
@@ -293,6 +313,30 @@ EXPORT void dentry_add_dir(struct dentry *dir, struct dentry *dentry)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_subdirs
+ Input		:struct dentry *dir
+ 		 < directory to show its children >
+ Output		:void
+ Return		:void
+ Description	:show subdirectories
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void show_subdirs(struct dentry *dir)
+{
+	struct dentry *dentry;
+	
+	vd_printf("dir[%s] list: ", dentry_name(dir));
+	
+	list_for_each_entry(dentry, &dir->d_subdirs, d_child) {
+		vd_printf("%s ", dentry_name(dentry));
+	}
+	vd_printf("\n");
+}
+
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -309,7 +353,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
-
 /*
 ==================================================================================
  Funtion	:dentry_cache_alloc
@@ -397,6 +440,7 @@ LOCAL void dentry_cache_free(struct dentry *dentry)
 LOCAL int compare_dentry_name(const struct qstr *name, struct dentry *dentry)
 {
 	int result;
+	int len;
 	char *cmp_name;
 	
 	if (dentry->d_name.name) {
@@ -405,16 +449,22 @@ LOCAL int compare_dentry_name(const struct qstr *name, struct dentry *dentry)
 		cmp_name = dentry->d_iname;
 	}
 	
+	if (dentry->d_name.len < name->len) {
+		len = name->len;
+	} else {
+		len = dentry->d_name.len;
+	}
+	
 	if (dentry->d_op && dentry->d_op->d_compare) {
 		result = dentry->d_op->d_compare(dentry->d_parent,
 							dentry,
-							dentry->d_name.len,
+							len,
 							cmp_name,
 							name);
 		return(result);
 	}
 	
-	return(strncmp(name->name, cmp_name, name->len));
+	return(strncmp(name->name, cmp_name, len));
 }
 
 /*

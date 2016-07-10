@@ -27,8 +27,8 @@
 #endif
 
 #define	SPIMAX		3
-LOCAL	FastLock	SPILock[SPIMAX];
-LOCAL	ID		SPITskID[SPIMAX];
+//LOCAL	FastLock	SPILock[SPIMAX];
+//LOCAL	ID		SPITskID[SPIMAX];
 LOCAL	const UW	SPIBase[SPIMAX] = {0xc0120000, 0xc0130000, 0x40130000};
 LOCAL	const UW	SPIVec[SPIMAX] = {IV_IRQ(24), IV_IRQ(25), IV_IRQ(42)};
 LOCAL	const UW	SPIPol[SPIMAX] = {0x009a, 0x0000, 0x0003};
@@ -49,6 +49,7 @@ LOCAL	const UW	SPIMode[SPIMAX] = {0x2700, 0x0700, 0x2700};
 
 #define	TIMEOUT			10	// msec
 
+#if 0
 /* interrupt handler */
 LOCAL	void	spi_inthdr(INTVEC vec)
 {
@@ -72,6 +73,7 @@ LOCAL	void	spi_cs(W ch, W cs, BOOL enable)
 {
 	return;
 }
+#endif
 
 /* SPI send/receive */
 EXPORT	ER	SPIXfer(W ch_cs, UB *xmit, UB *recv, W len)

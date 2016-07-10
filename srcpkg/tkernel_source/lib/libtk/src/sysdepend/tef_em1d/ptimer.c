@@ -151,6 +151,7 @@ LOCAL INT CHK_PTMRNO( UINT ptmrno )
 /*
  * Timer interrupt handler
  */
+#if 0
 LOCAL void timer_inthdr( UINT dintno, void *sp )
 {
 	struct timerlist *tp;
@@ -177,6 +178,7 @@ LOCAL void timer_inthdr( UINT dintno, void *sp )
 		(*tp->hdr)(tp->exinf);
 	}
 }
+#endif
 
 /*
  * Start physical timer

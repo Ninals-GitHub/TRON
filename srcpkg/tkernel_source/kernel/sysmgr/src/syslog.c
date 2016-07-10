@@ -123,7 +123,6 @@ LOCAL void log_task( INT logtask_port )
 	log_msg_maxmsz = MBF_LOG_MAXMSZ;
 
 	for ( ;; ) {
-		vd_printf("log:%s\n", logtask_buf);
 		ercd = tk_rcv_mbf(log_mbfid, logtask_buf, TMO_FEVR);
 		if ( ercd < E_OK ) {
 			break;

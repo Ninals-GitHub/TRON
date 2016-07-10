@@ -434,7 +434,6 @@ add_char_device(struct char_device *cdev, dev_t dev, unsigned int count)
 	unsigned int major = get_major(dev);
 	unsigned int minor = get_minor(dev);
 	struct char_dev_list *list = cdev_list[major - 1];
-	int i;
 	
 	if (UNLIKELY(!list)) {
 		return(-ENXIO);
@@ -478,7 +477,7 @@ EXPORT int unregister_char_device(unsigned int major, const char *name)
 		return(-ENXIO);
 	}
 	
-	if (strncmp(list->name, name, MAX_CHAR_DEV_NAME)) {
+	if (strncmp(list->name, name, MAX_CHAR_DEV_NAME) == 0) {
 		return(-ENXIO);
 	}
 	

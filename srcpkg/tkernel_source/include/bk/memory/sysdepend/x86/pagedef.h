@@ -54,7 +54,8 @@
 
 #define	PAGE_SHIFT	12
 #define	PAGESIZE	(1UL << PAGE_SHIFT)	/* page size (in bytes) */
-#define	PAGE_MASK	(~(PAGESIZE - 1))
+#define	PAGE_UMASK	(PAGESIZE - 1)
+#define	PAGE_MASK	(~(PAGE_UMASK))
 #define	PAGE_ALIGN(p)	((unsigned long)(p) & PAGE_MASK)
 #define	PT_ENTRIES	(PAGESIZE / sizeof(unsigned long))
 

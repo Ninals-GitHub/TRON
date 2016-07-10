@@ -204,7 +204,6 @@ EXPORT	ER	ScreenDrv(INT ac, UB *av[])
 		if (Vinf.attr & NEED_FINPROC) (*(Vinf.fn_setmode))(-1);
 		return E_OK;
 	}
-
         /* initialization */
 	suspended = FALSE;
 

@@ -32,7 +32,7 @@ VPATH = $(S) $(S)/sysdepend/$(MACHINE)
 HEADER += $(S) $(S)/sysdepend/$(MACHINE)
 
 # source files
-SRC +=	string.c
+SRC +=	string.c vd_stdarg.c
 
 OBJ	= $(addsuffix .o, $(basename $(notdir $(SRC))))
 

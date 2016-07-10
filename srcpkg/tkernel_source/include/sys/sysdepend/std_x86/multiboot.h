@@ -472,7 +472,8 @@ struct multiboot_tag_apm {
 
 =================================================================================
 */
-#define	MULTIBOOT_INITRAMFS	0
+#define	MULTIBOOT_VDSO		0
+#define	MULTIBOOT_INITRAMFS	1
 
 // MULTIBOOT1
 struct multiboot_mod_list
@@ -584,7 +585,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 LOCAL __inline__ int isInitramfs(void)
 {
-	return(getBootInfo()->mods_count);
+	return(MULTIBOOT_INITRAMFS < getBootInfo()->mods_count);
 }
 
 /*
@@ -632,9 +633,55 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 LOCAL __inline__ void setInitramfsAddress(uint32_t start, uint32_t size)
 {
+	getBootInfo()->mod_list[MULTIBOOT_INITRAMFS].mod_start = start;
 	getBootInfo()->mod_list[MULTIBOOT_INITRAMFS].mod_end = 
 		getBootInfo()->mod_list[MULTIBOOT_INITRAMFS].mod_start + size;
-	getBootInfo()->mod_list[MULTIBOOT_INITRAMFS].mod_start = start;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:isVdso
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < 0:not exist >
+ Description	:is there vdso?
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL __inline__ int isVdso(void)
+{
+	return(MULTIBOOT_INITRAMFS < getBootInfo()->mods_count);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:getVdsoAddress
+ Input		:void
+ Output		:void
+ Return		:uint32_t
+ 		 < start address of vdso >
+ Description	:get start address of vdso
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL __inline__ uint32_t getVdsoAddress(void)
+{
+	return(getBootInfo()->mod_list[MULTIBOOT_VDSO].mod_start);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:getVdsoSize
+ Input		:void
+ Output		:void
+ Return		:uint32_t
+ 		 < size of vdso >
+ Description	:get size of vdso
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL __inline__ uint32_t getVdsoSize(void)
+{
+	return(getBootInfo()->mod_list[MULTIBOOT_VDSO].mod_end - 
+		getBootInfo()->mod_list[MULTIBOOT_VDSO].mod_start);
 }
 
 /*

@@ -214,6 +214,8 @@ struct flock {
 
 #ifndef _KERNEL
 __BEGIN_DECLS
+
+#ifndef _BTRON_
 #ifdef	_T2EX
 int	fs_open(const char *path, int oflag, ... /* mode_t mode */ );
 int	fs_fcntl(int fd, int cmd, ... /* arg */ );
@@ -223,6 +225,13 @@ int	fs_fcntl(int fd, int cmd, ... /* arg */ );
 int	__libc_open(const char *, int, ...);
 int	__libc_fcntl(int, int, ...);
 #endif	/* _T2EX */
+#endif	/* _BTRON_ */
+#ifdef	_BTRON_
+int	open(const char *, int, ...);
+int	fcntl(int, int, ...);
+#define	__libc_open	fs_open
+#define	__libc_fcntl	fs_fcntl
+#endif	/* _BTRON_ */
 int	creat(const char *, mode_t);
 
 #if __BSD_VISIBLE

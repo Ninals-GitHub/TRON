@@ -47,6 +47,7 @@
 
 #include <bk/typedef.h>
 #include <bk/kernel.h>
+#include <bk/unistd.h>
 #include <bk/uapi/sys/time.h>
 
 /*
@@ -67,6 +68,8 @@ struct iattr;
 struct stat;
 struct fiemap_extent_info;
 struct file;
+struct stat64;
+struct stat64_i386;
 
 /*
 ==================================================================================
@@ -151,7 +154,6 @@ struct vnode {
 	struct timespec		v_mtime;	/* file modification time	*/
 	struct timespec		v_ctime;	/* vnode modification time	*/
 	atomic_t		v_count;	/* usage counter		*/
-	//struct address_space	v_data;
 	/* -------------------------------------------------------------------- */
 	/* fs specific								*/
 	/* -------------------------------------------------------------------- */
@@ -172,6 +174,7 @@ struct vnode {
 	struct list		v_devices;
 	struct list		v_sb_list;
 	struct list		v_lru;
+	struct list		v_cache;	/* page cache list		*/
 	struct super_block	*v_sb;
 	const struct inode_operations	*v_op;
 	const struct file_operations	*v_fops;
@@ -255,6 +258,24 @@ IMPORT void INIT_VNODE(struct vnode *vnode);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setup_vnode
+ Input		:struct vnode *dir
+ 		 < directory vnode >
+ 		 struct dentry *dentry
+ 		 < dentry of a file >
+ 		 struct vnode *vnode
+ 		 < vnode to set up >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set up a vnode. before calling this function, must be set v_mode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+setup_vnode(struct vnode *dir, struct dentry *dentry, struct vnode *vnode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:init_special_vnode
  Input		:struct vnode *vnode
  		 < special vnode >
@@ -268,6 +289,38 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void init_special_vnode(struct vnode *vnode, umode_t mode, dev_t dev);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kmknod
+ Input		:const char *pathname
+ 		 < pathname to create a special file >
+ 		 mode_t mode
+ 		 < file creation mode >
+ 		 dev_t dev
+ 		 < device number of a special file >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:create a special file in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int kmknod(const char *pathname, mode_t mode, dev_t dev);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kmkdir
+ Input		:const char *pathname
+ 		 < path name for new directory >
+ 		 mode_t mode
+ 		 < file creation mode >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new directory in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int kmkdir(const char *pathname, mode_t mode);
 
 /*
 ----------------------------------------------------------------------------------
@@ -292,10 +345,144 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL int mknod(const char *pathname, mode_t mode, dev_t dev);
 
 /*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mkdir
+ Input		:const char *pathname
+ 		 < path name for new directory >
+ 		 mode_t mode
+ 		 < file creation mode >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int mkdir(const char *pathname, mode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:symlink
+ Input		:const char *target
+ 		 < target name >
+ 		 const char *linkpath
+ 		 < link path name >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a symbolic link. linkpath is a symbolic link which has
+ 		 a contents of a target path.
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int symlink(const char *target, const char *linkpath);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:stat64
+ Input		:const char *path
+ 		 < file path to get its status >
+ 		 struct stat64_i386 *buf
+ 		 < stat structure >
+ Output		:struct stat64_i386 *buf
+ 		 < stat structure >
+ Return		:int
+ 		 < result >
+ Description	:get file status
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int stat64(const char *path, struct stat64_i386 *buf);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:lstat64
+ Input		:const char *path
+ 		 < file path to get its status >
+ 		 struct stat64_i386 *buf
+ 		 < stat structure >
+ Output		:struct stat64_i386 *buf
+ 		 < stat structure >
+ Return		:int
+ 		 < result >
+ Description	:get file status
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int lstat64(const char *path, struct stat64_i386 *buf);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:fstat64
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 struct stat64_i386 *buf
+ 		 < stat structure >
+ Output		:struct stat64 *buf
+ 		 < stat structure >
+ Return		:int
+ 		 < result >
+ Description	:get file status
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int fstat64(int fd, struct stat64_i386 *buf);
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:access
+ Input		:const char *pathname
+ 		 < file path name to check permissions >
+ 		 int mode
+ 		 < permission >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check real user's permissions for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int access(const char *pathname, int mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:fcntl
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 int cmd
+ 		 < file control command >
+ 		 ...
+ 		 < arguments >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:file control
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int fcntl(int fd, int cmd, ...);
+
+/*
 ----------------------------------------------------------------------------------
 	vfs vnode operations
 ----------------------------------------------------------------------------------
 */
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_lookup_at
+ Input		:struct path *dir_path
+ 		 < directory path >
+ 		 const char *pathname
+ 		 < path name to look up >
+ 		 struct file_name **found
+ 		 < looked up dentry result >
+ 		 unsigned int flags
+ 		 < lookup flags >
+ Output		:struct file_name **found
+ 		 < looked up dentry result >
+ Return		:int
+ 		 < result >
+ Description	:lookup dentry relative to a directory vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+vfs_lookup_at(struct path *dir_path, const char *pathname,
+			struct file_name **found, unsigned int flags);
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:vfs_lookup
@@ -314,6 +501,25 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int
 vfs_lookup(const char *pathname, struct file_name **found, unsigned int flags);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:follow_link
+ Input		:const char *symname
+ 		 < content of a symbolic link >
+ 		 struct file_name **found
+ 		 < looked up dentry result >
+ 		 unsigned int flags
+ 		 < lookup flags >
+ Output		:struct file_name **found
+ 		 < looked up dentry result >
+ Return		:int
+ 		 < result >
+ Description	:follow a link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int
+follow_link(const char *symname, struct file_name **found, unsigned int flags);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -371,5 +577,93 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int vfs_mkdir(struct vnode *dir, struct dentry *dentry, umode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_symlink
+ Input		:struct vnode *dir
+ 		 < directory inode of a symbolic link >
+ 		 struct dentry *dentry
+ 		 < symbolic link dentry >
+ 		 const char *symname
+ 		 < target name >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:create a symbolic link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+vfs_symlink(struct vnode *dir, struct dentry *dentry, const char *symname);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_stat64
+ Input		:struct vnode *vnode
+ 		 < vnode to get its file status >
+ 		 struct stat64_i386 *buf
+ 		 < file status buffer to outpu >
+ Output		:struct stat64_i386 *buf
+ 		 < file status buffer to outpu >
+ Return		:int
+ 		 < result >
+ Description	:get file status
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vfs_stat64(struct vnode *vnode, struct stat64_i386 *buf);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_access
+ Input		:struct vnode *vnode
+ 		 < a vnode for checking permissions >
+ 		 int mode
+ 		 < check permission >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check real user's permissions for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vfs_access(struct vnode *vnode, int mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_accessR
+ Input		:struct vnode *vnode
+ 		 < a vnode for checking permissions >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check real user's read permissions for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define vfs_accessR(vnode)	vfs_access(vnode, R_OK)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_accessR
+ Input		:struct vnode *vnode
+ 		 < a vnode for checking permissions >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check real user's write permissions for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define vfs_accessW(vnode)	vfs_access(vnode, W_OK)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_accessR
+ Input		:struct vnode *vnode
+ 		 < a vnode for checking permissions >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check real user's execution permissions for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+#define vfs_accessX(vnode)	vfs_access(vnode, X_OK)
 
 #endif	// __BK_FS_INODE_H__

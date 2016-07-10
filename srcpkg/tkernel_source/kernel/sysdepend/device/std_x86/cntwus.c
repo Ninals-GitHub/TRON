@@ -26,11 +26,13 @@
  *	disable the inline expansion caused by compiler optimization to obtain accurate
  *      measurement.
  */
+#if 0
 __attribute__ ((noinline))
 LOCAL void WaitLoop( UW count )
 {
 	return;
 }
+#endif
 
 /*
  * WaitUsec()  calculate the loop count for a given time (in microseconds)

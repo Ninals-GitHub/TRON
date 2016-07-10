@@ -110,6 +110,9 @@ exp(double x)	/* default IEEE double exp */
 	GET_HIGH_WORD(hx,x);
 	xsb = (hx>>31)&1;		/* sign bit of x */
 	hx &= 0x7fffffff;		/* high word of |x| */
+	k = 0;
+	lo = 0;
+	hi = 0;
 
     /* filter out non-finite argument */
 	if(hx >= 0x40862E42) {			/* if |x|>=709.78... */

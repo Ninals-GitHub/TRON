@@ -43,6 +43,7 @@
 
 #include <cpu.h>
 #include <bk/bprocess.h>
+#include <bk/memory/vm.h>
 #include <bk/memory/page.h>
 #include <bk/memory/access.h>
 #include <tk/sysdef.h>
@@ -89,12 +90,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 size_t size
  		 < size of copy >
  Output		:void
- Return		:size_t
+ Return		:ssize_t
  		 < copied length >
  Description	:copy kernel memory to user memory
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT size_t
+EXPORT ssize_t
 copy_to_user(void *to_user, const void *from_kernel, size_t size)
 {
 	int err;
@@ -102,11 +103,10 @@ copy_to_user(void *to_user, const void *from_kernel, size_t size)
 	char *to;
 	char *from;
 	
-	//err = _ChkSpace(to_user, size, MA_READ|MA_WRITE, TMF_PPL(USER_RPL));
-	err = ChkUsrSpaceRW(to_user, size);
+	err = vm_check_access(to_user, size, PROT_WRITE);
 	
 	if (UNLIKELY(err)) {
-		return(0);
+		return(err);
 	}
 	
 	to = (char*)to_user;
@@ -121,7 +121,7 @@ copy_to_user(void *to_user, const void *from_kernel, size_t size)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copy_form_user
+ Funtion	:copy_from_user
  Input		:void *to_kernel
  		 < kernel address to which copy from user memory >
  		 const void *from_user
@@ -129,24 +129,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 size_t size
  		 < size of copy >
  Output		:void
- Return		:size_t
+ Return		:ssize_t
  		 < copied length >
  Description	:copy user memory to kernel memory
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT size_t
-copy_form_user(void *to_kernel, const void *from_user, size_t size)
+EXPORT ssize_t
+copy_from_user(void *to_kernel, const void *from_user, size_t size)
 {
 	int err;
 	size_t n;
 	char *to;
 	char *from;
 	
-	//err = _ChkSpace(from_user, size, MA_READ, TMF_PPL(USER_RPL));
-	err = ChkUsrSpaceR(from_user, size);
+	err = vm_check_access((void*)from_user, size, PROT_READ);
 	
 	if (UNLIKELY(err)) {
-		return(0);
+		return(err);
 	}
 	
 	to = (char*)to_kernel;
@@ -169,12 +168,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 size_t max
  		 < max length to copy >
  Output		:void
- Return		:size_t
+ Return		:ssize_t
  		 < copied length or result >
  Description	:copy string resides on user memory to kernel buffer
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT size_t
+EXPORT ssize_t
 strncpy_from_user(char *to_kernel, const char *from_user, size_t max)
 {
 	unsigned long uaddr = (unsigned long)from_user;
@@ -205,11 +204,11 @@ strncpy_from_user(char *to_kernel, const char *from_user, size_t max)
 			}
 		}
 		
-		err = ChkUsrSpaceR((void*)uaddr, copy_len);
+		err = vm_check_access((void*)uaddr, copy_len, PROT_READ);
 		
 		if (UNLIKELY(err)) {
 			vd_printf("strncpy_from_user:check space is failed\n");
-			return(0);
+			return(-EFAULT);
 		}
 		
 		to = (char*)kaddr;
@@ -244,7 +243,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Output		:void
  Return		:ER
  		 < result >
- Description	:check read permission of user address space
+ Description	:check read permission of real pte of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER ChkUsrSpaceR( const void *addr, size_t len )
@@ -268,7 +267,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Output		:void
  Return		:ER
  		 < result >
- Description	:check write permisstion of user address space
+ Description	:check write permisstion of read pte of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER ChkUsrSpaceRW( const void *addr, size_t len )
@@ -292,7 +291,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Output		:void
  Return		:ER
  		 < result >
- Description	:check execution permisstion of user address space
+ Description	:check execution permisstion of real pte of user address space
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER ChkUsrSpaceRE( const void *addr, size_t len )

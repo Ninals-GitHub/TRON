@@ -882,11 +882,11 @@ exit0:
  */
 LOCAL	ER	fatMapRead(MapInfo *map, D *offset, UB **sp, UW *len, UB **ep)
 {
-	FATFS	*fs;
+	//FATFS	*fs;
 	UW	bufofs, sz;
 	ER	err;
 
-	fs = map->m_fs;
+	//fs = map->m_fs;
 	err = fatMapGetCache(map, *offset, &bufofs, TRUE);
 	if (err < E_OK) goto exit0;
 
@@ -1660,10 +1660,11 @@ LOCAL	ER	fatCountFreeCluster(FATFS *fs, UW *freecl)
 	MapInfo	*map;
 	D	offset;
 	UW	free, totalcl, len, rem, dt;
-	ER	err;
+	ER	err = E_OK;
 	UB	*ep;
 	GPTR	dp;
 
+	dt = 0;
 	/* FAT map */
 	map = &fs->ff_fatmap;
 
@@ -1793,7 +1794,7 @@ LOCAL	ER	fatUnchainCluster(FATFS *fs, UW clno, BOOL next, VW info)
 	UW	clofs, ncl;
 	W	cnt;
 	VW	oldinfo;
-	ER	err;
+	ER	err = E_OK;
 
 	/* Save map info (used for update) */
 	map = &fs->ff_fatmap;
@@ -1838,7 +1839,7 @@ LOCAL	ER	fatExtendClusterList(FATFS *fs, CLAD *clad, FATNODE *inode)
 {
 	UW	clno;
 	CLAD	*clbuf, *clp;
-	ER	err;
+	ER	err = E_OK;
 
 	clbuf = inode->fino_c.ino_info;
 	clp = NULL;
@@ -5637,7 +5638,7 @@ LOCAL	ER	fatfs_chdir(FS *fs, fimp_t *req)
 LOCAL	ER	fatfs_fchdir(FS *fs, fimp_t *req)
 {
 	FD	*fd;
-	ER	err;
+	ER	err = E_OK;
 
 	err = fatSearchFileDesc(fs, &fd, (W)req->r_fchdir.fid);
 	if (err >= E_OK) {
@@ -6326,10 +6327,10 @@ LOCAL	ER	fatfs_detachfn(coninf_t *coninf)
  */
 LOCAL	ER	fatfs_breakfn(coninf_t *coninf, ID tskid, BOOL set)
 {
-	FATFS	*fs;
+	//FATFS	*fs;
 	TaskSts	*tsksts;
 
-	fs = (FATFS *)coninf->consd;
+	//fs = (FATFS *)coninf->consd;
 	tsksts = &tskStsTab[tskid];
 
 	/* Disable dispatch to ensure atomic operations

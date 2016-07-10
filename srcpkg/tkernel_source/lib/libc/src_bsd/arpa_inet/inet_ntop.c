@@ -106,6 +106,9 @@ inet_ntop6(const u_char *src, char *dst, size_t size)
 	u_int words[IN6ADDRSZ / INT16SZ];
 	int i;
 	int advance;
+	
+	best.len = 0;
+	cur.len = 0;
 
 	/*
 	 * Preprocess:

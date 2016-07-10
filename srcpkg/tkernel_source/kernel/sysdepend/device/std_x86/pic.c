@@ -243,16 +243,14 @@ EXPORT uint16_t reqEnableIrq(uint8_t irq_num)
 {
 	uint16_t old_mask = 0;
 	
-	uint8_t temp;
-	
 	if (irq_num < INT_IRQ0 || INT_IRQ15 < irq_num) {
 		if (irq_num != PIC_INT_IRQ_ALL) {
 			return(old_mask);
 		}
 	}
 	
-	temp = recvIrqMaskMaster();
-
+	//temp = recvIrqMaskMaster();
+	
 	if (irq_num <= INT_IRQ7) {
 		/* ------------------------------------------------------------ */
 		/* mask irq 0 - irq 7 for a master				*/
@@ -276,7 +274,7 @@ EXPORT uint16_t reqEnableIrq(uint8_t irq_num)
 		sendIrqMaskMaster(irqmask);
 		sendIrqMaskSlave(irqmask);
 	}
-	temp = recvIrqMaskMaster();
+	//temp = recvIrqMaskMaster();
 
 	return(old_mask);
 }

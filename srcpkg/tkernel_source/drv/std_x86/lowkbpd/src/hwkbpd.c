@@ -458,7 +458,7 @@ LOCAL	void	sw_inthdr(INTVEC vec)
 LOCAL	void	swscan(void)
 {
 	InMsg	msg;
-	UW	sw;
+	UW	sw = 0;
 
         /* read SW status */
 //	sw = in_w(GIO_I(GIO_L));
@@ -586,7 +586,7 @@ EXPORT	void	hwImode(W inpmd)
 /* device initialization processing(cmd: DC_OPEN/DC_SUSPEND/DC_RESUME) */
 EXPORT	ER	hwInit(W cmd)
 {
-	ER	er;
+	ER	er = E_OK;
 	T_CFLG	cflg;
 
 	switch (cmd) {

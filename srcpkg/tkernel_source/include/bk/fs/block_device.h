@@ -158,4 +158,48 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int setup_block_device(struct vnode *vnode);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:register_block_device
+ Input		:unsigned int major
+ 		 < major number to register >
+ 		 const char *name
+ 		 < name of the block device driver >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:register a block device
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int register_block_device(unsigned int major, const char *name);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unregister_block_device
+ Input		:unsigned int major
+ 		 < major number of the block device to unregister >
+ 		 const char *name
+ 		 < name of the block device to unregister >
+ Output		:void
+ Return		:void
+ Description	:unregister a block device
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void unregister_block_device(unsigned int major, const char *name);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:add_block_device_minor
+ Input		:unsigned int major
+ 		 < a major number of a block device >
+ 		 unsigned int minor
+ 		 < a minor number to add >
+ Output		:void
+ Return		:int
+ 		 < minor number >
+ Description	:add a minor number
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int add_block_device_minor(unsigned int major, unsigned int minor);
+
 #endif	// __BK_FS_BLOCK_DEVICE_H__

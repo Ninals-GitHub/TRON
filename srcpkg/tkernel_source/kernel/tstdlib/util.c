@@ -42,6 +42,8 @@
 
 #include <compiler.h>
 #include <t2ex/string.h>
+#include <bk/kernel.h>
+#include <bk/memory/slab.h>
 
 /*
 ==================================================================================
@@ -136,7 +138,7 @@ EXPORT void* kmemdup(const void *src, size_t len, int gfp)
 		return(NULL);
 	}
 	
-	dup = kmalloc(len, gfp);
+	dup = (void*)kmalloc(len, gfp);
 	
 	if (UNLIKELY(!dup)) {
 		return(dup);
@@ -145,6 +147,39 @@ EXPORT void* kmemdup(const void *src, size_t len, int gfp)
 	memcpy(dup, src, len);
 	
 	return(dup);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kstrncpy_len
+ Input		:char *dest
+ 		 < a copy destination string >
+ 		 char *source
+ 		 < a string to copy >
+ 		 size_t n
+ 		 < max size of a string length >
+ 		 int gfp
+ 		 < gfp flags >
+ Output		:void
+ Return		:ssize_t
+ 		 < copied string length >
+ Description	:copy a string and return its length
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ssize_t kstrncpy_len(char *dest, const char *source, size_t n, int gfp)
+{
+	size_t len;
+	
+	if (UNLIKELY(!source)) {
+		return(-EFAULT);
+	}
+	
+	len = strnlen(source, n);
+	
+	memcpy((void*)dest, (void*)source, len);
+	dest[len] = '\0';
+	
+	return(len);
 }
 
 

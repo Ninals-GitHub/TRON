@@ -71,7 +71,7 @@ EXPORT	void	MemFree(void *ptr)
 */
 EXPORT	ER	kpSendMsg(RawEvt *msg)
 {
-	ER	er;
+	ER	er = E_OK;
 	W	i;
 
 	if (evtbuf_init == 0) {	/* initialization */

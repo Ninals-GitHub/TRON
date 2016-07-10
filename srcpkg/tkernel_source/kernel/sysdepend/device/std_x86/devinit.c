@@ -31,7 +31,7 @@
 #include <debug/vdebug.h>
 
 EXPORT	UB	*BootDeviceName;	/* Boot device name */
-LOCAL	UB	bootdevnm[L_DEVNM + 1];
+//LOCAL	UB	bootdevnm[L_DEVNM + 1];
 
 /* Saved data of system common information */
 EXPORT	SysCommonInfo	SaveSCInfo;
@@ -66,10 +66,12 @@ EXPORT ER before_startup( void )
 /*
  * Set stack by exception mode
  */
+#if 0
 LOCAL void setExcStack( UW mode, UW stack )
 {
 	return;
 }
+#endif
 
 /*
  * Initialization before T-Kernel starts

@@ -69,19 +69,63 @@
 
 ==================================================================================
 */
+/*
+----------------------------------------------------------------------------------
+	time unit conversion
+----------------------------------------------------------------------------------
+*/
 #define	TIME_SEC_TO_MS(sec)		(sec * 1000)
 #define	TIME_MS_TO_US(ms)		(ms * 1000)
 #define	TIME_SEC_TO_US(sec)		(TIME_MS_TO_US(TIME_SEC_TO_MS(sec)))
 
+/*
+----------------------------------------------------------------------------------
+	time structs
+----------------------------------------------------------------------------------
+*/
 struct timeval {
-	long	tv_sec;		/* Second */
-	long	tv_usec;	/* Microsecond */
+	long	tv_sec;		/* Second					*/
+	long	tv_usec;	/* Microsecond					*/
 };
 
 struct timespec {
-	time_t	tv_sec;		/* Second */
-	long	tv_nsec;	/* Nanosecond */
+	time_t	tv_sec;		/* Second					*/
+	long	tv_nsec;	/* Nanosecond					*/
 };
+
+/*
+----------------------------------------------------------------------------------
+	time zone
+----------------------------------------------------------------------------------
+*/
+struct timezone {
+	int	tz_minuteswest;	/* minutes west of Greenwich			*/
+	int	tz_dsttime;	/* type of dst correction			*/
+};
+
+/*
+----------------------------------------------------------------------------------
+	clock ids
+----------------------------------------------------------------------------------
+*/
+typedef int	clockid_t;
+
+#define	CLOCK_REALTIME			0
+#define	CLOCK_MONOTONIC			1
+#define	CLOCK_PROCESS_CPUTIME_ID	2
+#define	CLOCK_THREAD_CPUTIME_ID		3
+#define	CLOCK_MONOTONIC_RAW		4
+#define	CLOCK_REALTIME_COARSE		5
+#define	CLOCK_MONOTONIC_COARSE		6
+#define	CLOCK_BOOTTIME			7
+#define	CLOCK_REALTIME_ALARM		8
+#define	CLOCK_BOOTTIME_ALARM		9
+#define	CLOCK_SGI_CYCLE			10
+#define	CLOCK_TAI			11
+
+#define	MAX_CLOCK			16
+#define	CLOCK_MASK			(CLOCK_REALTIME | CLOCK_MONOTONIC)
+#define	CLOCK_MONO			CLOCK_MONOTONIC
 
 /*
 ==================================================================================

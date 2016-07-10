@@ -42,6 +42,7 @@ LOCAL INLINE unsigned long stack_up(unsigned long stack, unsigned long value);
 #define	ON_EXE_EDX		0
 #define	ON_EXE_EDI		0
 #define	ON_EXE_ESI		0
+#define	ON_EXE_EBP		0
 
 #define	INIT_TASK_EBX		0
 #define	INIT_TASK_ECX		0
@@ -87,20 +88,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:start_task
  Input		:unsigned long start_text
  		 < start address >
+ 		 unsigned long stack_top
+ 		 < stack top address >
  Output		:void
  Return		:int
  		 < result >
  Description	:execute new user process forcibly
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT int start_task(unsigned long start_text)
+EXPORT int start_task(unsigned long start_text, unsigned long stack_top)
 {
-	struct process *current = get_current();
+	//struct process *current = get_current();
 	struct task *current_task = get_current_task();
 	struct task_context_block *current_ctxb = get_current_ctxb();
 
 	
 	if (KERNEL_BASE_ADDR <= start_text) {
+		printf("error:%s:invalid start:0x%08X\n", start_text);
 		return(-EINVAL);
 	}
 	
@@ -121,11 +125,12 @@ EXPORT int start_task(unsigned long start_text)
 	current_ctxb->fs = SEG_USER_DS;
 	current_ctxb->sysenter_cs = SEG_USER_CS;
 
-	current_ctxb->sp = current->mspace->end_stack;
+	//current_ctxb->sp = current->mspace->end_stack;
+	current_ctxb->sp = stack_top;
 	
 	dispatch_disabled = DDS_ENABLE;
 	
-	update_tss_esp0(getEsp());
+	//update_tss_esp0(current_ctxb->ssp);
 	
 	/* -------------------------------------------------------------------- */
 	/* execute in user space						*/
@@ -147,6 +152,7 @@ EXPORT int start_task(unsigned long start_text)
 		"movl %[init_edx], %%edx	\n\t"	// rtdl_fini
 		"movl %[init_edi], %%edi	\n\t"
 		"movl %[init_esi], %%esi	\n\t"
+		"movl %[init_ebp], %%ebp	\n\t"
 		"cld				\n\t"
 		"iret				\n\t"
 		:
@@ -155,9 +161,10 @@ EXPORT int start_task(unsigned long start_text)
 		 [cs]"m"(current_ctxb->sysenter_cs), [esp]"m"(current_ctxb->sp),
 		 [start_func]"m"(current_ctxb->ip),
 		 [eflags]"i"(EFLAGS_ID | EFLAGS_IF | EFLAGS_IOPL),
-		 [init_eax]"i"(ON_EXE_EAX), [init_ebx]"i"(ON_EXE_EBX),
+		 [init_eax]"i"(ON_EXE_EAX), [init_ebx]"i"(10),
 		 [init_ecx]"i"(ON_EXE_ECX), [init_edx]"i"(ON_EXE_EDX),
-		 [init_edi]"i"(ON_EXE_EDI), [init_esi]"i"(ON_EXE_ESI)
+		 [init_edi]"i"(ON_EXE_EDI), [init_esi]"i"(ON_EXE_ESI),
+		 [init_ebp]"i"(ON_EXE_EBP)
 		 :"memory"
 	);
 	
@@ -181,8 +188,8 @@ EXPORT void force_dispatch(void)
 	W rng;
 	CTXB *next_ctxb = &schedtsk->tskctxb;
 	CTXB *current_ctxb = NULL;
+	struct process *next_proc = schedtsk->proc;
 	struct pt_regs *regs;
-	unsigned long *img;
 	
 	rng = (schedtsk->tskatr & TA_RNG3) >> 8;
 	
@@ -215,7 +222,8 @@ EXPORT void force_dispatch(void)
 	ctxtsk = schedtsk;
 	dispatch_disabled = DDS_ENABLE;
 	regs = next_ctxb->pt_regs;
-	
+		
+	//update_tss_esp0(getEsp());
 	/* -------------------------------------------------------------------- */
 	/* forcibly dispatch							*/
 	/* -------------------------------------------------------------------- */
@@ -223,13 +231,20 @@ EXPORT void force_dispatch(void)
 		if (next_ctxb->forked) {
 			next_ctxb->forked = FALSE;
 			//printf("forked[pid=%d, ", schedtsk->proc->pid);
+#if 0
 			if (schedtsk->set_child_tid) {
 				copy_to_user((void*)schedtsk->set_child_tid,
 						(const void*)&schedtsk->tskid,
 						sizeof(int));
 			}
+#endif
 		}
-		update_tss_esp0(getEsp());
+		
+		if (UNLIKELY(next_proc->state != P_RUN)) {
+			next_proc->state = P_RUN;
+		}
+		
+		
 		ASM(
 			"pushl	%[reg_ss]		\n\t"
 			"pushl	%[reg_sp]		\n\t"
@@ -358,7 +373,6 @@ EXPORT void dispatch(void)
 	CTXB	*current_ctxb;
 	CTXB	*next_ctxb;
 	
-	
 	//vd_printf("dispatch current %s ->", ctxtsk->name);
 #if 0
 	vd_printf("%s ->", ctxtsk->name);
@@ -401,26 +415,28 @@ wake_up_from_low_power:
 		}
 		
 		if (UNLIKELY(next_ctxb->need_iret)) {
-			unsigned long *esp0 = (unsigned long*)get_tss_esp0();
-			//vd_printf("iret next : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
+			/* ---------------------------------------------------- */
+			/* update tss						*/
+			/* ---------------------------------------------------- */
+			update_tss_esp0((uint32_t)next_ctxb->ssp);
+			
+			//printf("iret next : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
 			ASM (
 			"pushfl					\n\t"
 			"pushl	%%ebp				\n\t"
 			"movl	%%esp, %[current_sp]		\n\t"
+			"movl	%[next_sp], %%esp		\n\t"
 			"movl	$2f, %[current_ip]		\n\t"
 			"jmp force_dispatch			\n\t"
 		"2:						\t"
-			"movl	%%esp, %[ssp0]			\n"
 			"popl	%%ebp				\n\t"
 			"popfl					\n\t"
 			:[current_sp]"=m"(current_ctxb->ssp),
-			 [current_ip]"=m"(current_ctxb->ip),
-			 [ssp0]"=m"(esp0)
+			 [current_ip]"=m"(current_ctxb->ip)
+			:[next_sp]"m"(next_ctxb->ssp)
 			);
-			/* ---------------------------------------------------- */
-			/* update tss						*/
-			/* ---------------------------------------------------- */
-			update_tss_esp0(getEsp());
+			//printf("2iret return : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
+			
 					if (!schedtsk)vd_printf("next2 schedtsk is null!!\n" );
 			ctxtsk = schedtsk;
 			dispatch_disabled = DDS_ENABLE;
@@ -428,30 +444,22 @@ wake_up_from_low_power:
 			//vd_printf("enter next2 %s cur_esp:0x%08X\n", ctxtsk->name, ctxtsk->tskctxb.ssp);
 			return;
 		}
-#if 0
-		if (schedtsk->name[0] == '0') {
-			vd_printf("before disp c:0x%08X to ", ctxtsk );
-			vd_printf("s:0x%08X ", schedtsk);
-			vd_printf("sp:0x%08X\n", current_ctxb->ssp);
-			vd_printf("next ip:0x%08X", next_ctxb->ip);
-			vd_printf(" sp;0x%08X\n", next_ctxb->ssp);
-		}
-#endif
-		BARRIER();
-		/* ------------------------------------------------------------ */
-		/* as for now switch memory context is not implemented		*/
-		/* ------------------------------------------------------------ */
 		
+		BARRIER();
 		/* ------------------------------------------------------------ */
 		/* switch sp context and prepare to switch ip context		*/
 		/* ------------------------------------------------------------ */
+		//update_tss_esp0((uint32_t)ctxtsk->tskctxb.ssp);
+		//update_tss_esp0((uint32_t)schedtsk->tskctxb.ssp);
+		
 		ASM (
 		"pushfl					\n\t"
 		"pushl	%%ebp				\n\t"
 		"movl	%%esp, %[current_sp]		\n\t"
 		"movl	%[next_sp], %%esp		\n\t"
 		"movl	$1f, %[current_ip]		\n\t"
-		"pushl	%[next_ip]			\n\t"
+//		"pushl	%[next_ip]			\n\t"
+		"pushl	%[current_ip]			\n\t"
 		"jmp next_to				\n"
 "1:							\t"
 		"popl	%%ebp				\n\t"
@@ -461,21 +469,11 @@ wake_up_from_low_power:
 		:[next_sp]"m"(schedtsk->tskctxb.ssp), [next_ip]"m"(schedtsk->tskctxb.ip)
 		:"esp", "memory"
 		);
+		update_tss_esp0((uint32_t)ctxtsk->tskctxb.ssp);
+		
+		ctxtsk = schedtsk;
 		
 		dispatch_disabled = DDS_ENABLE;
-		//if (schedtsk->name[0] == '0') {
-			//vd_printf("before disp c:0x%08X to ", ctxtsk );
-			//vd_printf("s:0x%08X ", schedtsk);
-			//vd_printf("sp:0x%08X\n", schedtsk->tskctxb.ssp);
-			//vd_printf("next ip:0x%08X", next_ctxb->ip);
-			//vd_printf(" sp;0x%08X\n", next_ctxb->ssp);
-		//}
-		ctxtsk = schedtsk;
-		//if (ctxtsk->name[0] == '0')
-		//		vd_printf("enter next1 %s cur_esp:0x%08X\n", ctxtsk->name, getEsp());
-
-		
-
 	} //ENABLE_INTERRUPT;
 }
 
@@ -607,6 +605,7 @@ EXPORT int copy_task_context(struct task *from, struct task *new)
 	new_ctx->io_bitmap_max = 0;
 	
 	new_ctx->need_iret = TRUE;
+	//new_ctx->need_iret = FALSE;
 	
 	new_ctx->ssp = (void*)new_ctx->sp0;
 	
@@ -682,11 +681,6 @@ EXPORT void next_to(void)
 	/* -------------------------------------------------------------------- */
 	/* as for now switch fpu is not implemented 				*/
 	/* -------------------------------------------------------------------- */
-	
-	/* -------------------------------------------------------------------- */
-	/* update esp0 of tss by this esp					*/
-	/* -------------------------------------------------------------------- */
-	update_tss_esp0(getEsp());
 	
 	/* -------------------------------------------------------------------- */
 	/* switch fs and gs context						*/

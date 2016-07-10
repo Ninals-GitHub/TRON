@@ -42,6 +42,9 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/fs/ramfs/initramfs.h>
+#include <bk/uapi/sys/stat.h>
+#include <tstdlib/round.h>
 
 /*
 ==================================================================================
@@ -50,11 +53,12 @@
 
 ==================================================================================
 */
-EXPORT struct dentry_operations ramfs_d_op;
+IMPORT struct dentry_operations ramfs_d_op;
 LOCAL struct dentry* ramfs_mount(struct file_system_type *fs_type, int flags,
 					const char *dev_name, void *data);
 LOCAL void ramfs_kill_sb(struct super_block *sb);
 LOCAL int ramfs_fill_super(struct super_block *sb, void *data, int silent);
+LOCAL void setup_root_vnode(struct super_block *sb, struct vnode *v_root);
 
 /*
 ==================================================================================
@@ -73,6 +77,8 @@ LOCAL int ramfs_fill_super(struct super_block *sb, void *data, int silent);
 
 ==================================================================================
 */
+LOCAL struct super_block *root_sb;
+
 /*
 ----------------------------------------------------------------------------------
 	ramfs file sytem types
@@ -151,6 +157,22 @@ EXPORT int _INIT_ init_ramfs(void)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_rootfs_sb
+ Input		:void
+ Output		:void
+ Return		:struct super_block*
+ 		 < super block of root fs >
+ Description	:get super block of root fs
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct super_block* get_rootfs_sb(void)
+{
+	return(root_sb);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -187,7 +209,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 LOCAL struct dentry* ramfs_mount(struct file_system_type *fs_type, int flags,
 					const char *dev_name, void *data)
 {
-	struct super_block *root_sb;
 	int err;
 	
 	root_sb = sb_cache_alloc(fs_type, 0);
@@ -250,12 +271,15 @@ LOCAL int ramfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_count = 1;
 	atomic_inc(&sb->s_active);
 	sb->s_op = &ramfs_super_ops;
+	sb->s_dev = 1;
 	
 	root_vnode = vfs_alloc_vnode(sb);
 	
 	if (UNLIKELY(!root_vnode)) {
 		return(-ENOMEM);
 	}
+	
+	setup_root_vnode(sb, root_vnode);
 	
 	root = alloc_root_dentry(root_vnode);
 	
@@ -267,6 +291,37 @@ LOCAL int ramfs_fill_super(struct super_block *sb, void *data, int silent)
 	sb->s_root = root;
 	
 	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:setup_root_vnode
+ Input		:struct super_block *sb
+ 		 < this super block >
+ 		 struct vnode *v_root
+ 		 < root vnode to set up >
+ Output		:void
+ Return		:void
+ Description	:set up root vnode
+==================================================================================
+*/
+LOCAL void setup_root_vnode(struct super_block *sb, struct vnode *v_root)
+{
+	v_root->v_size = PAGESIZE;
+	v_root->v_blocks = DIV_ROUNDUP(v_root->v_size, RAMFS_BLOCK_SIZE);
+	v_root->v_mode = S_IRUSR | S_IWUSR | S_IXUSR |
+				S_IRGRP | S_IXGRP |
+				S_IRWXO | S_IXOTH;
+	v_root->v_mode |= S_IFDIR;
+	v_root->v_uid = 0;
+	v_root->v_gid = 0;
+	v_root->v_opflags = 0;
+	v_root->v_bytes = 0;
+	v_root->v_blkbits = sb->s_blocksize_bits;
+	v_root->v_nlink = 2;
+	atomic_init(&v_root->v_count, 1);
+	//v_root->v_op = 
+	v_root->v_fops = &ramfs_dir_file_ope;
 }
 
 /*

@@ -76,7 +76,9 @@ struct path {
 struct file_name {
 	struct dentry	*parent;
 	struct dentry	*dentry;
+	struct vfsmount	*mnt;
 	struct qstr	*filename;
+	int		follow_count;
 };
 
 /*
@@ -84,8 +86,11 @@ struct file_name {
 	lookup flags
 ----------------------------------------------------------------------------------
 */
-#define	LOOKUP_ENTRY	0x00000000
-#define	LOOKUP_CREATE	0x00000001
+#define	LOOKUP_ENTRY		0x00000000
+#define	LOOKUP_CREATE		0x00000001
+#define	LOOKUP_FOLLOW_LINK	0x00000002
+
+#define	LOOKUP_TEST		0x80000000
 
 /*
 ==================================================================================
@@ -143,8 +148,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:parse_path
  Input		:cnost struct *qstr
  		 < path name to parse >
- 		 struct dentry *dir
- 		 < directory to start to look up >
+ 		 struct path *dir_path
+ 		 < directory path to start to look up >
  		 unsigned int flags
  		 < lookup flags >
  Output		:void
@@ -153,7 +158,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT struct file_name*
-parse_path(const struct qstr *path, struct dentry *dir, unsigned int flags);
+parse_path(const struct qstr *path, struct path *dir_path, unsigned int flags);
 
 
 /*
@@ -180,6 +185,54 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void put_file_name(struct file_name *fname);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_lookup_create
+ Input		:unsigned int flags
+ 		 < look up flags >
+ Output		:void
+ Return		:int
+ 		 < bool result >
+ Description	:is a create flag set
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE int is_lookup_create(unsigned int flags)
+{
+	return(flags & LOOKUP_CREATE);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_lookup_followlink
+ Input		:unsigned int flags
+ 		 < look up flags >
+ Output		:void
+ Return		:int
+ 		 < bool result >
+ Description	:is a follow link flag set
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE int is_lookup_followlink(unsigned int flags)
+{
+	return(flags & LOOKUP_FOLLOW_LINK);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_lookup_test
+ Input		:unsigned int flags
+ 		 < look up flags >
+ Output		:void
+ Return		:int
+ 		 < bool result >
+ Description	:is a follow link flag set
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE int is_lookup_test(unsigned int flags)
+{
+	return(flags & LOOKUP_TEST);
+}
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

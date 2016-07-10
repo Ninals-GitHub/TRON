@@ -501,7 +501,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER initKeyboard(void)
 {
-	volatile int wait;
 	ER err;
 	
 	memset((void*)&kbd_queue, 0x00, sizeof(struct keyboard_queue));
@@ -553,7 +552,14 @@ EXPORT ER kbd_in(B *buf, UW len)
 	int read_len = 0;
 	
 	/* Check the address */
-	if (ChkSpaceRW((void*)buf, len)) return 0;
+#if 0
+	/* check is done at read system call */
+	if (ChkSpaceRW((void*)buf, len)) {
+		return 0;
+	}
+#endif
+	//return(read_one_byte());
+	
 	
 	for (i = 0;i < len;i++) {
 		err = read_one_byte();
@@ -569,12 +575,16 @@ EXPORT ER kbd_in(B *buf, UW len)
 		if (0 <= err) {
 			*(buf + i) = (B)err;
 			read_len++;
+			
 		} else {
 			return(err);
 		}
+		if (!get_kbd_queue_size()) {
+			return(read_len);
+		}
 	}
 	
-	vd_printf("%s\n", buf);
+	//vd_printf("%s\n", buf);
 	
 	return(read_len);
 }
@@ -745,7 +755,6 @@ LOCAL ER read_one_byte(void)
 			TWF_ANDW | TWF_BITCLR, &flgptn, TMO_FEVR);
 	
 	if (err) {
-		printf("%s:err:%d", __func__, err);
 		return(err);
 	}
 	

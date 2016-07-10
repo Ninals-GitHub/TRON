@@ -28,8 +28,8 @@
 #endif
 
 #define	IICMAX		2
-LOCAL	FastLock	IICLock[IICMAX];
-LOCAL	ID		IICTskID[IICMAX];
+//LOCAL	FastLock	IICLock[IICMAX];
+//LOCAL	ID		IICTskID[IICMAX];
 LOCAL	const UW	IICBase[IICMAX] = {0x50040000, 0x50030000};
 LOCAL	const UW	IICVec[IICMAX] = {IV_IRQ(33), IV_IRQ(39)};
 
@@ -71,24 +71,31 @@ LOCAL	const UW	IICVec[IICMAX] = {IV_IRQ(33), IV_IRQ(39)};
 #define	TIMEOUT		1000000	// microsec
 
 /* wait for register status */
+#if 0
 LOCAL	ER	wait_state(UW addr, UW mask, UW value)
 {
 	W	i=1;
 	return i ? E_OK : E_TMOUT;
 }
+#endif
 
 /* interrupt handler */
+#if 0
 LOCAL	void	iic_inthdr(INTVEC vec)
 {
 	return;
 }
+#endif
 
 /* wait for interrupt */
+#if 0
 LOCAL	ER	wait_int(void)
 {
 	return tk_slp_tsk(TIMEOUT / 1000);
 }
+#endif
 
+#if 0
 /* start/restart */
 LOCAL	ER	send_start(W ch, UH addr)
 {
@@ -112,6 +119,7 @@ LOCAL	ER	recv_data(W ch, UH *cmddata)
 {
 	return(E_OK);
 }
+#endif
 
 /* IIC transmission processing */
 EXPORT	ER	IICXfer(W ch, UH *cmddata, W words)

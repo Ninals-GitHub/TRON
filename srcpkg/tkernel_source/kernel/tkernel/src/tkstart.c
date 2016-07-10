@@ -26,6 +26,7 @@
 /*
  * Start initial task
  */
+#ifndef _BTRON_
 LOCAL void init_task_startup( T_CTSK *ctsk )
 {
 	ER	ercd;
@@ -54,6 +55,7 @@ err_exit:
 #endif
 	tm_monitor();
 }
+#endif
 
 /*
  * Call module initialization
@@ -78,7 +80,7 @@ LOCAL void init_module( ER (*initfunc)( void ), UB *name )
  */
 EXPORT void t_kernel_main( T_CTSK *inittask )
 {
-	ER err;
+	//ER err;
 IMPORT	void DispProgress( W n );	/* sysinit */
 	dispatch_disabled = DDS_DISABLE;
 	DISABLE_INTERRUPT;

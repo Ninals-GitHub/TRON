@@ -52,7 +52,7 @@
 
 ==================================================================================
 */
-
+struct timespec;
 
 /*
 ==================================================================================
@@ -78,5 +78,20 @@
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:nanosleep
+ Input		:const struct timespec *req
+ 		 < request sleep time >
+ 		 struct timespec *rem
+ 		 < remaining time >
+ Output		:struct timespec *rem
+ 		 < remaining time >
+ Return		:int
+ 		 < result >
+ Description	:high-resolution sleep
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int nanosleep(const struct timespec *req, struct timespec *rem);
 
 #endif	// __BK_WAIT_H__

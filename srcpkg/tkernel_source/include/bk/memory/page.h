@@ -105,32 +105,52 @@ struct vm;
 
 ==================================================================================
 */
-enum PAGE_FLAGS {
-	PAGE_ERROR,
-	PAGE_REFERENCED,
-	PAGE_UPTODATE,
-	PAGE_DIRTY,
-	PAGE_ACTIVE,
-	PAGE_SLAB,
-	PAGE_RESERVED,
-	PAGE_PRIVATE,
-	PAGE_SWAPCACHE,
-	PAGE_MAPPEDTODISK,
-	PAGE_RECLAIM,
-	PAGE_SWAPBACKED,
-	PAGE_UNEVICTABLE,
-	PAGE_MLOCKED,
+enum _PAGE_FLAGS {
+	_PAGE_ERROR,		// 0
+	_PAGE_REFERENCED,	// 1
+	_PAGE_UPTODATE,		// 2
+	_PAGE_DIRTY,		// 3
+	_PAGE_ACTIVE,		// 4
+	_PAGE_SLAB,		// 5
+	_PAGE_RESERVED,		// 6
+	_PAGE_PRIVATE,		// 7
+	_PAGE_SWAPCACHE,	// 8
+	_PAGE_MAPPEDTODISK,	// 9
+	_PAGE_RECLAIM,		// 10
+	_PAGE_SWAPBACKED,	// 11
+	_PAGE_UNEVICTABLE,	// 12
+	_PAGE_MLOCKED,		// 13
+	_PAGE_COW,		// 14
 	NUM_PAGE_FLAGS,
 };
+
+#define	PAGE_ERROR		(1UL << _PAGE_ERROR)
+#define	PAGE_REFERENCED		(1UL << _PAGE_REFERENCED)
+#define	PAGE_UPTODATE		(1UL << _PAGE_UPTODATE)
+#define	PAGE_DIRTY		(1UL << _PAGE_DIRTY)
+#define	PAGE_ACTIVE		(1UL << _PAGE_ACTIVE)
+#define	PAGE_SLAB		(1UL << _PAGE_SLAB)
+#define	PAGE_RESERVED		(1UL << _PAGE_RESERVED)
+#define	PAGE_PRIVATE		(1UL << _PAGE_PRIVATE)
+#define	PAGE_SWAPCACHE		(1UL << _PAGE_SWAPCACHE)
+#define	PAGE_MAPPEDTODISK	(1UL << _PAGE_MAPPEDTODISK)
+#define	PAGE_RECLAIM		(1UL << _PAGE_RECLAIM)
+#define	PAGE_SWAPBACKED		(1UL << _PAGE_SWAPBACKED)
+#define	PAGE_UNEVICTABLE	(1UL << _PAGE_UNEVICTABLE)
+#define	PAGE_MLOCKED		(1UL << _PAGE_MLOCKED)
+#define	PAGE_COW		(1UL << _PAGE_COW)
 
 
 struct page {
 	unsigned long		flags;
 	int			count;
-	void			*s_mem;
+//	void			*s_mem;
 	struct slab		*slab_page;
 	struct kmem_cache	*slab_cache;
 };
+
+#define	PAGE_JUST_COPY		0
+#define	PAGE_COW_COPY		1
 
 /*
 ==================================================================================
@@ -159,6 +179,30 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT ER init_memmgr(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_mm_lately
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:end procedure of initialization for mm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void init_mm_lately(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_page_index
+ Input		:unsigned long address
+ 		 < address to get its page index >
+ Output		:void
+ Return		:long
+ 		 < page index >
+ Description	:get page index of specified address
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT long get_page_index(unsigned long address);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -238,7 +282,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void free_pages(struct page *page, int num);
 
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_page
@@ -315,6 +358,20 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void
 show_pagetables(struct process *proc, unsigned long start, unsigned long end);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_a_pde_pte
+ Input		:struct process *proc
+ 		 < process to show its pde and pte >
+ 		 unsigned long addr
+ 		 < address to show its pde and ptes >
+ Output		:void
+ Return		:void
+ Description	:show a pde and a pte
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void show_a_pde_pte(struct process *proc, unsigned long addr);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -462,6 +519,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < start address to copy from >
  		 unsigned long end
  		 < end address to copy from >
+ 		 int cow
+ 		 < boolean cow flag. 0: just copy 1: cow copy
  Output		:void
  Return		:int
  		 < result >
@@ -469,7 +528,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int copy_user_pagetable(struct process *from, struct process *to,
-					unsigned long start, unsigned long end);
+					unsigned long start, unsigned long end,
+					int cow);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -518,6 +578,26 @@ map_pages_to_vm(struct process *proc, struct vm *vm);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:activate_page
+ Input		:pde_t *pde
+ 		 < pde which a process has >
+ 		 struct page *page
+ 		 < page to activate >
+ 		 struct vm *vm
+ 		 < virtual memory to activate its page >
+ 		 unsigned int la
+ 		 < virtual address which vm includes >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:activate a paged whic is already mapped to vm
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+activate_page(pde_t *pde, struct page *page, struct vm *vm, unsigned long la);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_la_pde
  Input		:unsigned long laddr
  		 < logical address of user space >
@@ -554,6 +634,61 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT pte_t* get_la_pte(unsigned long laddr);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_page_contents
+ Input		:struct page *to
+ 		 < copy to >
+ 		 struct page *from
+ 		 < copy from >
+ Output		:void
+ Return		:void
+ Description	:copy page contents
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void copy_page_contents(struct page *to, struct page *from);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:flush_tlb
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:flush tlb
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void flush_tlb(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_address_pde
+ Input		:struct process *proc
+ 		 < get pde corresponds to the address from the process's vm space>
+ 		 unsigned long address
+ 		 < address to get its pde >
+ Output		:void
+ Return		:pde_t *pde
+ 		 < pde >
+ Description	:get pde from address
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pde_t* get_address_pde(struct process *proc, unsigned long address);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_address_pte
+ Input		:struct process *proc
+ 		 < get pte corresponds to the address from the process's vm space>
+ 		 unsigned long address
+ 		 < address to get its pte >
+ Output		:void
+ Return		:pde_t *pte
+ 		 < pte >
+ Description	:get pte from address
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT pte_t* get_address_pte(struct process *proc, unsigned long address);
 
 /*
 ----------------------------------------------------------------------------------

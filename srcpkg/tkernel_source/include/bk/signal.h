@@ -87,4 +87,4 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void init_signal(struct process *proc);
 
-#endif	// __FORMAT_H__
+#endif	// __BK_SIGNAL_H__

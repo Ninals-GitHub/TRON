@@ -116,7 +116,6 @@ LOCAL	UW	SysRamLimit;
 /*
  *	Page table operations
  */
-
 /*
  * Get page directory entry
  */
@@ -719,6 +718,8 @@ EXPORT ER InitLogicalSpace( void )
 	/* set up global segment descriptor					*/
 	/* -------------------------------------------------------------------- */
 	initGdt();
+	
+	vd_printf("info->lowmem_top(InitLogicalSpace):0x%08X\n", info->lowmem_top);
 
 	/* -------------------------------------------------------------------- */
 	/* allocate memory for pde						*/
@@ -751,6 +752,7 @@ EXPORT ER InitLogicalSpace( void )
 	memset((void*)SysRamPTEBase, 0x00, sizeof(PTE) * npg_ram);
 	
 	info->lowmem_top = memend;
+	vd_printf("info->lowmem_top(InitLogicalSpace):0x%08X\n", memend);
 
 	/* -------------------------------------------------------------------- */
 	/* set up pdes								*/
@@ -795,11 +797,6 @@ EXPORT ER InitLogicalSpace( void )
 		vd_printf("error:set up kernel tss\n");
 	}
 	
-	/* -------------------------------------------------------------------- */
-	/* copy initrams to the memory which will be managed by the kernel	*/
-	/* -------------------------------------------------------------------- */
-	//copyInitramfs();	// moved to icrt0_t2ex for grub 2.0
-
 	return E_OK;
 }
 

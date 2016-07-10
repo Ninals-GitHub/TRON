@@ -219,16 +219,6 @@ EXPORT void timer_handler( void )
 		}
 	}
 
-	//END_CRITICAL_SECTION;
-if ( !isDI(_cpsr_)
- && ctxtsk != schedtsk
-  && !isTaskIndependent()
- && !dispatch_disabled ) {
- 	//vd_printf("start dispatch\n");
-					dispatch();
-				}
-	//vd_printf("end dispatch\n");
-	
-				enaint(_cpsr_); }
 	end_of_hw_timer_interrupt();		/* Clear timer interrupt */
+	END_CRITICAL_SECTION;
 }

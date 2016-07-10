@@ -328,7 +328,6 @@ EXPORT ID _tk_opn_dev( CONST UB *devnm, UINT omode )
 	devcb = searchDevCB(pdevnm);
 	if ( devcb == NULL || unitno > devcb->ddev.nsub ) {
 		ercd = E_NOEXS;
-		vd_printf("3 ");
 		goto err_ret2;
 	}
 
@@ -378,7 +377,6 @@ EXPORT ID _tk_opn_dev( CONST UB *devnm, UINT omode )
 		ercd = (*openfn)(DEVID(devcb, unitno), omode, exinf);
 #endif
 		if ( ercd < E_OK ) {
-			printf("openfn failed\n");
 			goto err_ret3;
 		}
 	}

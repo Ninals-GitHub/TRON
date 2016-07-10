@@ -41,6 +41,7 @@ asinf(float x)
 	int32_t hx,ix;
 	GET_FLOAT_WORD(hx,x);
 	ix = hx&0x7fffffff;
+	t = 0;
 	if(ix==0x3f800000) {
 		/* asin(1)=+-pi/2 with inexact */
 	    return x*pio2_hi+x*pio2_lo;	

@@ -20,7 +20,7 @@
 
 #include <tk/kernel.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 #include "check.h"
 #include <sys/rominfo.h>
 
@@ -289,7 +289,6 @@ SYSCALL ER _tk_wai_flg_u( ID flgid, UINT waiptn, UINT wfmode, UINT *p_flgptn, TM
 
 	BEGIN_CRITICAL_SECTION;
 	if ( flgcb->flgid == 0 ) {
-		vd_printf("0\n");
 		ercd = E_NOEXS;
 		goto error_exit;
 	}
@@ -328,28 +327,8 @@ SYSCALL ER _tk_wai_flg_u( ID flgid, UINT waiptn, UINT wfmode, UINT *p_flgptn, TM
 	}
 
     error_exit:
-#if 0
-	vd_printf("_cpsr_ : 0x%08X ", _cpsr_);
-	vd_printf("!isDI(_cpsr_) : %d ", !isDI(_cpsr_));
-	vd_printf("ctxtsk != schedtsk : %d\n", ctxtsk != schedtsk);
-	vd_printf("!isTaskIndependent() : %d ", !isTaskIndependent());
-	vd_printf("!dispatch_disabled : %d\n", !dispatch_disabled);
 
-#endif
-#if 1
-if ( !isDI(_cpsr_)
- && ctxtsk != schedtsk
-  && !isTaskIndependent()
- && !dispatch_disabled ) {
- 	//vd_printf("start dispatch\n");
-					dispatch();
-				}
-	//vd_printf("end dispatch\n");
-	
-				enaint(_cpsr_); }
-#else
 	END_CRITICAL_SECTION;
-#endif
 
 	return ercd;
 }

@@ -94,11 +94,11 @@ IMPORT void appl_main(void);
  */
 EXPORT	INT	usermain( void )
 {
-	ER	err;
+	ER	err = E_OK;
 	
 	/* Start the device drivers */
 #ifdef DRV_CONSOLE
-	err = ConsoleIO(0, NULL);
+	//err = ConsoleIO(0, NULL);
 	tm_putstring(err >= E_OK ? "ConsoleIO - OK\n" : "ConsoleIO - ERR\n");
 	vd_printf(err >= E_OK ? "ConsoleIO - OK\n" : "ConsoleIO - ERR\n");
 #endif
@@ -113,7 +113,7 @@ EXPORT	INT	usermain( void )
 	vd_printf(err >= E_OK ? "SysDiskDrv - OK\n" : "SysDiskDrv - ERR\n");
 #endif
 #ifdef DRV_SCREEN
-	err = ScreenDrv(0, NULL);
+	//err = ScreenDrv(0, NULL);
 	tm_putstring(err >= E_OK ? "ScreenDrv - OK\n" : "ScreenDrv - ERR\n");
 	vd_printf(err >= E_OK ? "ScreenDrv - OK\n" : "ScreenDrv - ERR\n");
 #endif
@@ -136,7 +136,7 @@ EXPORT	INT	usermain( void )
 	
 	if (err)vd_printf("err:initKeyborad\n");
 	initVga();
-
+	
 	/* Start the T2EX extension modules */
 #ifdef	USE_T2EX_DT
 	err = dt_main(0, NULL);

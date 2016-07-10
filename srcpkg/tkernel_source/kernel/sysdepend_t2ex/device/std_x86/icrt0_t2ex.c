@@ -32,7 +32,7 @@ IMPORT ER before_startup( void );
 // kernel/sysinit/src/sysinit_main.c
 IMPORT int main( void );
 // kernel_t2ex_img.lnk
-IMPORT unsigned long end_usr;
+IMPORT unsigned long end_bss;
 
 LOCAL void handle_multiboot1(struct multiboot_info *info);
 LOCAL void handle_multiboot2(void *info);
@@ -93,11 +93,6 @@ EXPORT void _kernel_entry( uint32_t magic, void *info )
 	}
 	
 	/* -------------------------------------------------------------------- */
-	/* copy initrams to the memory which will be managed by the kernel	*/
-	/* -------------------------------------------------------------------- */
-	copyInitramfs();
-	
-	/* -------------------------------------------------------------------- */
 	/* kernel startup							*/
 	/* -------------------------------------------------------------------- */
 	before_startup();
@@ -125,51 +120,6 @@ EXPORT __inline__ struct boot_info* getBootInfo( void )
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copyInitramfs
- Input		:void
- Output		:void
- Return		:int
-		 < status >
- Description	:copy initramfs on the unmanaged page to the safe memory area
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int copyInitramfs(void)
-{
-	/* -------------------------------------------------------------------- */
-	/* copy initramfs to the area which may reside on after kernel		*/
-	/* as for now, this may be redundant process				*/
-	/* -------------------------------------------------------------------- */
-	if (isInitramfs()) {
-		uint32_t ramfs_size = getInitramfsSize();
-		uint32_t ramfs_addr;
-		
-		align_low_memory(PAGESIZE);
-		
-		/* ------------------------------------------------------------ */
-		/* the memory area of initramfs is not freed forever 		*/
-		/* ------------------------------------------------------------ */
-		ramfs_addr = (uint32_t)allocLowMemory(ramfs_size);
-		
-		vd_printf("ramfs_addr=0x%08X, ", ramfs_addr);
-		vd_printf("module addr=0x%08X\n", getInitramfsAddress());
-		
-		if (!ramfs_addr) {
-			vd_printf("ramfs does not exist\n");
-			return(E_NOMEM);
-		}
-		
-		memcpy((void*)ramfs_addr,
-			(void*)getInitramfsAddress(), ramfs_size);
-		
-		setInitramfsAddress(ramfs_addr, ramfs_size);
-	}
-	
-	return(0);
-}
-
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:allocLowMemory
  Input		:uint32_t size
 		 < size to allocate >
@@ -183,9 +133,14 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT void* allocLowMemory(uint32_t size)
 {
 	unsigned long allocated;
+	unsigned long mask = sizeof(unsigned long) - 1;
 	
 	if (!size) {
 		return(NULL);
+	}
+	
+	if (boot_info.lowmem_top & ~mask) {
+		boot_info.lowmem_top = (boot_info.lowmem_top + mask) & ~mask;
 	}
 	
 	allocated = boot_info.lowmem_top | KERNEL_BASE_ADDR;
@@ -283,7 +238,7 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 			if (mmap->type == 1) {
 				unsigned long mem_addr;
 				unsigned long limit;
-				unsigned long end = (unsigned long)&end_usr;
+				unsigned long end = (unsigned long)&end_bss;
 
 				mem_addr = (unsigned long)mmap->addr;
 				limit = mem_addr + (unsigned long)mmap->len;
@@ -344,7 +299,7 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 	/* -------------------------------------------------------------------- */
 	/* modules to do something with?					*/
 	/* -------------------------------------------------------------------- */
-	if (info->mods_count && info->flags & MULTIBOOT_INFO_MODS) {
+	if (info->mods_count && (info->flags & MULTIBOOT_INFO_MODS)) {
 		int i;
 		boot_info.mods_count = info->mods_count;
 		boot_info.mod_list = (struct multiboot_mod_list*)
@@ -368,6 +323,7 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 		}
 		vd_printf("mods_count = %u\n", boot_info.mods_count);
 		vd_printf("mods_addr = 0x%08X\n", boot_info.mod_list);
+		vd_printf("mods_addr.start = 0x%08X\n", boot_info.mod_list[MULTIBOOT_VDSO].mod_start);
 		vd_printf("mods_addr.start = 0x%08X\n", boot_info.mod_list[MULTIBOOT_INITRAMFS].mod_start);
 	} else {
 		boot_info.mods_count = 0;

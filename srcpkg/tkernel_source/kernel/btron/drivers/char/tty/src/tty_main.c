@@ -45,6 +45,7 @@
 #include <bk/drivers/major.h>
 
 #include <device/std_x86/vga.h>
+#include <device/std_x86/kbd.h>
 
 /*
 ==================================================================================
@@ -220,7 +221,11 @@ LOCAL int tty_open(struct vnode *vnode, struct file *filp)
 */
 LOCAL ssize_t tty_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
 {
-	return(0);
+	ssize_t read_len;
+	
+	read_len = kbd_in(buf, len);
+	
+	return(read_len);
 }
 
 /*

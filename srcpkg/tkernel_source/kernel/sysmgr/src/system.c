@@ -181,18 +181,18 @@ LOCAL INT __tk_get_cfn( CONST UB *name, INT *val, INT max )
 
 	ercd = ChkSpaceBstrR(name, 0);
 	if ( ercd < E_OK ) {
-		vd_printf("ChkSpaceBstrR error:%d\n", ercd);
+		//vd_printf("ChkSpaceBstrR error:%d\n", ercd);
 		goto err_ret;
 	}
 	ercd = ChkSpaceRW(val, (INT)sizeof(INT) * max);
 	if ( ercd < E_OK ) {
-		vd_printf("ChkSpaceRW error:%d\n", ercd);
+		//vd_printf("ChkSpaceRW error:%d\n", ercd);
 		goto err_ret;
 	}
 
 	ercd = _tk_get_cfn(name, val, max);
 	if ( ercd < E_OK ) {
-		vd_printf("_tk_get_cfn error:%d\n", ercd);
+		//vd_printf("_tk_get_cfn error:%d\n", ercd);
 		goto err_ret;
 	}
 

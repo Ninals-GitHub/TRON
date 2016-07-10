@@ -188,7 +188,8 @@ int_syscall_return_\int_num:
 #if 1
 	popl	%ebx
 	popl	%ecx
-	addl	$4, %esp			# remove edx argument
+#	addl	$4, %esp			# remove edx argument
+	popl	%edx
 	popl	%esi
 	popl	%edi
 	popl	%ebp

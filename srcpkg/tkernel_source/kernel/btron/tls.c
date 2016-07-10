@@ -45,6 +45,7 @@
 
 #include <bk/kernel.h>
 #include <bk/tls.h>
+#include <bk/memory/vm.h>
 
 #include <t2ex/string.h>
 
@@ -99,6 +100,7 @@ SYSCALL int set_thread_area(struct user_desc *u_info)
 	struct task *task;
 	struct user_desc udesc;
 	int index;
+	ssize_t len;
 #if 0
 	printf("set_thread_area:\n");
 	printf("[entry_number=%d, ", u_info->entry_number);
@@ -115,7 +117,9 @@ SYSCALL int set_thread_area(struct user_desc *u_info)
 		return(-EFAULT);
 	}
 	
-	if(UNLIKELY(!copy_form_user(&udesc, u_info, sizeof(struct user_desc)))) {
+	len = copy_from_user(&udesc, u_info, sizeof(struct user_desc));
+	
+	if(UNLIKELY(len < 0)) {
 		return(-EFAULT);
 	}
 	
@@ -126,7 +130,8 @@ SYSCALL int set_thread_area(struct user_desc *u_info)
 		/* ------------------------------------------------------------ */
 		index = get_free_tls(&get_current_task()->tskctxb);
 		index += TLS_BASE_ENTRY;
-		err = ChkSpaceRW(u_info, sizeof(struct user_desc));
+		err = vm_check_access((void*)u_info,
+					sizeof(struct user_desc), PROT_WRITE);
 		if (err) {
 			return(-EFAULT);
 		}
@@ -164,6 +169,7 @@ SYSCALL int set_thread_area(struct user_desc *u_info)
 	/* -------------------------------------------------------------------- */
 	update_tls_descriptor(task, udesc.entry_number);
 	
+	//printf("update:entry_number=%d\n", udesc.entry_number);
 	return(0);
 }
 

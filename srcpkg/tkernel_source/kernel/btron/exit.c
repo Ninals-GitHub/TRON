@@ -169,32 +169,23 @@ SYSCALL pid_t wait4(pid_t pid, int *status, int options, struct rusage *rusage)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:wakeup4
- Input		:struct process *child
- 		 < child process about to exit >
+ Funtion	:waitpid
+ Input		:pid_t pid
+ 		 < pid of a process to wait for changing its status >
+ 		 int *status
+ 		 < wait status >
+ 		 int options
+ 		 < wait options >
  Output		:void
- Return		:void
- Description	:wake up slept parent by wait4
+ Return		:pid_t
+ 		 < pid of a process of which state is changed >
+ Description	:wait for process to change state
+ 		 this system call issues tk_slp_tsk
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void wakeup4(struct process *child)
+SYSCALL pid_t waitpid(pid_t pid, int *status, int options)
 {
-	struct process *parent = child->parent;
-	struct task *task;
-	int err;
-	
-	add_list_tail(&child->wait4_node, &parent->wait4_list);
-	
-	/* -------------------------------------------------------------------- */
-	/* wake up parent tasks							*/
-	/* -------------------------------------------------------------------- */
-	list_for_each_entry (task, &parent->list_tasks, task_node) {
-		err = _bk_rsm_tsk(task);
-		
-		if (UNLIKELY(err)) {
-			//printf("_bk_rsm_tsk(taskid=%d):unexpected error[%d]\n", task->tskid, err);
-		}
-	}
+	return(wait4(pid, status, options, NULL));
 }
 
 /*
@@ -211,10 +202,13 @@ SYSCALL void exit_group(int status)
 {
 	struct process *current = get_current();
 	
-#if 0
+	return;
+	
+#if 1
 	printf("exit_group[status=%d]\n", status);
 	printf("process %d is exitting\n", current->pid);
 #endif
+	for(;;);
 	/* -------------------------------------------------------------------- */
 	/* next task is dispatched in free_process function			*/
 	/* -------------------------------------------------------------------- */
@@ -241,6 +235,7 @@ SYSCALL void exit(int status)
 	printf("exit[status=%d]\n", status);
 	printf("process %d is exitting\n", current->pid);
 #endif
+	
 	/* -------------------------------------------------------------------- */
 	/* next task is dispatched in free_process function			*/
 	/* -------------------------------------------------------------------- */
@@ -249,6 +244,36 @@ SYSCALL void exit(int status)
 	printf("exit:unexpected error\n");
 	
 	for(;;);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:wakeup4
+ Input		:struct process *child
+ 		 < child process about to exit >
+ Output		:void
+ Return		:void
+ Description	:wake up slept parent by wait4
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void wakeup4(struct process *child)
+{
+	struct process *parent = child->parent;
+	struct task *task;
+	int err;
+	
+	add_list_tail(&child->wait4_node, &parent->wait4_list);
+	
+	/* -------------------------------------------------------------------- */
+	/* wake up parent tasks							*/
+	/* -------------------------------------------------------------------- */
+	list_for_each_entry (task, &parent->list_tasks, task_node) {
+		err = _bk_rsm_tsk(task);
+		
+		if (UNLIKELY(err)) {
+			//printf("_bk_rsm_tsk(taskid=%d):unexpected error[%d]\n", task->tskid, err);
+		}
+	}
 }
 
 /*
@@ -318,6 +343,7 @@ LOCAL INLINE pid_t xwait(struct wait4_args *w4a)
 		break;
 	default:
 		printf("xwait:unexpected waiting for type[%d]\n", w4a->wait_for);
+		for(;;);
 	}
 	
 	return(-ECHILD);
@@ -336,9 +362,7 @@ LOCAL INLINE pid_t xwait(struct wait4_args *w4a)
 */
 LOCAL INLINE pid_t xwait_children(struct wait4_args *w4a)
 {
-	struct process *child;
 	struct process *current;
-	int err;
 	pid_t pid;
 	
 	current = get_current();
@@ -465,7 +489,7 @@ LOCAL pid_t xwait_for(struct wait4_args *w4a)
 		}
 	}
 	
-	printf("sleep zzz...\n");
+	//printf("sleep zzz...\n");
 	
 	//err = _tk_slp_tsk(TMO_FEVR);
 	err = _tk_sus_tsk(current_task->tskid);

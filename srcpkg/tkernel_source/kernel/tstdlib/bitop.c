@@ -95,7 +95,7 @@ tstdlib_bitset_window( void *base, W offset, int window_len )
 	
 	while(window_len--) {
 		*cp |= mask;
-		if (mask == _BIT_SET_N(7)) {
+		if (UNLIKELY(mask == _BIT_SET_N(7))) {
 			mask = _BIT_SET_N(0);
 			cp++;
 		} else {
@@ -237,7 +237,7 @@ tstdlib_bitsearch0_window( void *base, W width, int window_len )
 			while (1) {
 				if (!(*cp & mask)) {
 					if (position < width) {
-						if (!len) {
+						if (UNLIKELY(!len)) {
 							first = position;
 						}
 						if (len < window_len) {
@@ -245,6 +245,11 @@ tstdlib_bitsearch0_window( void *base, W width, int window_len )
 						} else {
 							return(first);
 						}
+						
+						if (UNLIKELY(window_len <= len)) {
+							return(first);
+						}
+						
 					} else {
 						return -1;
 					}
@@ -263,6 +268,7 @@ tstdlib_bitsearch0_window( void *base, W width, int window_len )
 			mask = _BIT_SET_LONG(0);
 			position += sizeof(unsigned long) * 8;
 			cp++;
+			len = 0;
 		}
 	}
 

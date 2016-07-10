@@ -74,6 +74,7 @@ $(OBJ):
 	( cd ../../char/$(BUILD_PATH) ; $(MAKE) )
 
 clean:
+	( cd ../../ ; $(MAKE) clean )
 	( cd ../../char/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../block/$(BUILD_PATH) ; $(MAKE) clean )
 	$(RM) $(DRV_TARGET)

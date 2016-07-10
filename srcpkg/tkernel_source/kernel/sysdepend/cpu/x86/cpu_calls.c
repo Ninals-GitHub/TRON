@@ -106,10 +106,12 @@ SYSCALL ER _tk_set_tsp( ID tskid, CONST T_TSKSPC *pk_tskspc )
 /*
  * Set task register contents
  */
+#if 0
 LOCAL void set_reg( TCB *tcb, CONST T_REGS *regs, CONST T_EIT *eit, CONST T_CREGS *cregs )
 {
 
 }
+#endif
 
 /*
  * Set task register contents
@@ -125,10 +127,12 @@ SYSCALL ER _tk_set_reg( ID tskid,
 /*
  * Get task register contents
  */
+#if 0
 LOCAL void get_reg( TCB *tcb, T_REGS *regs, T_EIT *eit, T_CREGS *cregs )
 {
 
 }
+#endif
 
 /*
  * Get task register contents

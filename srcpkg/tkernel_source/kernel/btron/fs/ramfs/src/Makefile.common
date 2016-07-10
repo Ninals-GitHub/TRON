@@ -69,7 +69,7 @@ VPATH	= $(S)
 HEADER := $(S) $(BD)/include/t2ex $(HEADER)
 
 # source files
-SRC	= super_block.c
+SRC	= super_block.c initramfs.c vnode.c
 
 # object files
 OBJ	= $(addsuffix .o, $(basename $(SRC)))

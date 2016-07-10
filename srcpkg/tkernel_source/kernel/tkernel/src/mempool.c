@@ -21,7 +21,7 @@
 
 #include <tk/kernel.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 #include "check.h"
 #include "limits.h"
 #include <sys/rominfo.h>

@@ -57,6 +57,7 @@ struct dentry;
 struct super_block;
 struct vnode;
 struct path;
+struct linux_dirent64;
 
 /*
 ==================================================================================
@@ -73,7 +74,7 @@ struct path;
 */
 struct qstr {
 	char		*name;
-	int		len;
+	long		len;
 };
 
 /*
@@ -238,6 +239,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 < dentry of directory to lookup in >
  		 const struct qstr *name
  		 < name to lookup >
+ 		 unsigned int flags
+ 		 < look up flags >
  Output		:void
  Return		:struct dentry*
  		 < found result >
@@ -245,7 +248,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT struct dentry*
-lookup_dentry_children(struct dentry *dir, const struct qstr *name);
+lookup_dentry_children(struct dentry *dir, const struct qstr *name,
+						unsigned int flags);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -274,6 +278,38 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void dentry_add_dir(struct dentry *dir, struct dentry *dentry);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:dentry_name
+ Input		:struct dentry *dentry
+ 		 < dentry to get its name >
+ Output		:void
+ Return		:char *
+ 		 < dentry name >
+ Description	:get dentry name
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE char* dentry_name(struct dentry *dentry)
+{
+	if (UNLIKELY(dentry->d_name.name)) {
+		return(dentry->d_name.name);
+	}
+	
+	return(dentry->d_iname);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:show_subdirs
+ Input		:struct dentry *dir
+ 		 < directory to show its children >
+ Output		:void
+ Return		:void
+ Description	:show subdirectories
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void show_subdirs(struct dentry *dir);
 
 
 #endif	// __BK_FS_DENTRY_H__

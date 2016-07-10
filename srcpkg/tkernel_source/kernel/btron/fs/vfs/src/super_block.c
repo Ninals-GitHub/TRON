@@ -104,7 +104,7 @@ EXPORT int init_super_block(void)
 		return(-ENOMEM);
 	}
 	
-	next_ino = 0;
+	next_ino = 1;
 	
 	return(0);
 }
@@ -204,8 +204,6 @@ EXPORT struct vnode* vfs_alloc_vnode(struct super_block *sb)
 	}
 	
 	vnode->v_ino = next_ino++;
-	
-	vnode->v_rdev = sb->s_dev;
 	
 	vnode->v_atime.tv_sec = 0;
 	vnode->v_atime.tv_nsec = 0;

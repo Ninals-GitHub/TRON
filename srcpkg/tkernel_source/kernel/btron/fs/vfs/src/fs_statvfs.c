@@ -110,6 +110,7 @@ EXPORT	INT	xfs_statvfs(fs_env_t *env, const B *name, struct statvfs *ptr)
 	return -1;
 }
 
+#if 0
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:fstat64
@@ -158,6 +159,7 @@ SYSCALL int fstat64(int fd, struct stat64 *buf)
 #endif
 	return(err);
 }
+#endif
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

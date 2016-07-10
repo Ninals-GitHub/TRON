@@ -61,13 +61,15 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:start_task
  Input		:unsigned long start_text
  		 < start address >
+ 		 unsigned long stack_top
+ 		 < stack top address >
  Output		:void
  Return		:int
  		 < result >
  Description	:execute new user process forcibly
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT int start_task(unsigned long start_text);
+IMPORT int start_task(unsigned long start_text, unsigned long stack_top);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

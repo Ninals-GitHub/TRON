@@ -28,7 +28,7 @@ EXPORT	void	sdSendEvt(DrvTab *drv, W kind)
 {
 	W	i;
 	DiskEvt	evt;
-	ER	er;
+	//ER	er;
 
 	evt.h.evttyp = (kind == TDE_EJECT && drv->OpenCnt != 0) ?
 			TDE_ILLEJECT : kind;
@@ -41,7 +41,8 @@ EXPORT	void	sdSendEvt(DrvTab *drv, W kind)
 	}
 
 	/* Send to the message buffer for event notification:ignore error */
-	er = tk_snd_mbf(drv->MbfId, (void*)&evt, sizeof(evt), TMO_EVENT);
+	//er = tk_snd_mbf(drv->MbfId, (void*)&evt, sizeof(evt), TMO_EVENT);
+	tk_snd_mbf(drv->MbfId, (void*)&evt, sizeof(evt), TMO_EVENT);
 }
 
 /*

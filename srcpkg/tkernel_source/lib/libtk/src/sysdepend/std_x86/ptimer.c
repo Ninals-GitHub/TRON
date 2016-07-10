@@ -25,6 +25,7 @@
 /*
  * List of timers
  */
+#if 0
 LOCAL struct timerlist {
 	INT	base;		/* base address of timer registers  */
 	INTVEC	irq;		/* interrupt number */
@@ -46,6 +47,7 @@ LOCAL struct timerlist {
 	{ 0xc0001200,	IV_IRQ(60) },	/* TW2 */
 	{ 0xc0001300,	IV_IRQ(61) }	/* TW3 */
 };
+#endif
 
 #define	N_TIMER		( sizeof(TimerList) / sizeof(TimerList[0]) )
 
@@ -107,28 +109,34 @@ LOCAL struct timerlist {
 /*
  * Initialize timer
  */
+#if 0
 LOCAL void initialize_timer( void )
 {
 	return;
 }
+#endif
 
 /*
  * Check the physical timer number
  */
+#if 0
 LOCAL INT CHK_PTMRNO( UINT ptmrno )
 {
 	return 0;
 }
+#endif
 
 /* ------------------------------------------------------------------------ */
 
 /*
  * Timer interrupt handler
  */
+#if 0
 LOCAL void timer_inthdr( UINT dintno, void *sp )
 {
 	return;
 }
+#endif
 
 /*
  * Start physical timer

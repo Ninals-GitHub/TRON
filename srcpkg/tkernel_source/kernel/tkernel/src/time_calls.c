@@ -21,7 +21,7 @@
 #include <tk/kernel.h>
 #include <tk/timer.h>
 #include <tk/task.h>
-#include "wait.h"
+#include <tk/wait.h>
 #include "check.h"
 #include "tkdev_timer.h"
 #include <sys/rominfo.h>

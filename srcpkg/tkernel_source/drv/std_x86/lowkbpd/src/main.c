@@ -43,8 +43,7 @@ EXPORT	INT	kpCreTask(W name, FP entry)
 	T_CTSK	ctsk;
 	ID	tskid;
 	INT	er;
-	static int id_num = 0;
-
+	
         /* task creation */
 	ctsk.exinf = (void*)name;
 	ctsk.task = entry;
@@ -53,8 +52,7 @@ EXPORT	INT	kpCreTask(W name, FP entry)
 	ctsk.tskatr = TA_HLNG | TA_RNG0;
 	ctsk.dsname[0] = 'l';
 	ctsk.dsname[1] = 'w';
-	ctsk.dsname[2] = 0x30 + id_num++;
-	ctsk.dsname[3] = '\0';
+	ctsk.dsname[2] = '\0';
 
 	tskid = er = tk_cre_tsk(&ctsk);
 	if (er >= E_OK) {	/* start task */

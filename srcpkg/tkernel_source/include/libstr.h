@@ -21,6 +21,7 @@
 #ifndef	__LIBSTR_H__
 #define __LIBSTR_H__
 
+#include <typedef.h>
 #include <stdtype.h>
 
 #ifdef __cplusplus

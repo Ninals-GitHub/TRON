@@ -94,7 +94,6 @@ EXPORT void init_task(void)
 	/* System-dependent processes (after start_system) */
 	sysdepend_patch2();
 #endif
-	
 	/* Initial task main */
 	fin = init_task_main();
 

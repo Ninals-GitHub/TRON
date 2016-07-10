@@ -85,53 +85,10 @@
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
 /*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:mmap
- Input		:void *addr
- 		 < base address of virtual memory to request a mapping >
- 		 size_t length
- 		 < size of memory to request a mapping >
- 		 int prot
- 		 < page protection >
- 		 int flags
- 		 < mmap flags >
- 		 int fd
- 		 < file descriptor >
- 		 off_t offset
- 		 < offset in a file >
- Output		:void
- Return		:void *addr
- 		 < base address of mapped memory >
- Description	:make a new memory mapping
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+----------------------------------------------------------------------------------
+	kernel internal operations
+----------------------------------------------------------------------------------
 */
-IMPORT void* mmap(void *addr, size_t length, int prot,
-			int flags, int fd, off_t offset);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:mmap2
- Input		:void *addr
- 		 < base address of virtual memory to request a mapping >
- 		 size_t length
- 		 < size of memory to request a mapping >
- 		 int prot
- 		 < page protection >
- 		 int flags
- 		 < mmap flags >
- 		 int fd
- 		 < file descriptor >
- 		 off_t offset
- 		 < offset in a file in unit of page size >
- Output		:void
- Return		:void *addr
- 		 < base address of mapped memory >
- Description	:make a new memory mapping with page size offset
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT void* mmap2(void *addr, size_t length, int prot,
-			int flags, int fd, off_t pgoffset);
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:xmmap
@@ -158,6 +115,60 @@ IMPORT void* xmmap(struct process *proc, void *addr, size_t length,
 			int prot, int flags, int fd, off_t offset);
 
 /*
+----------------------------------------------------------------------------------
+	system call operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL void* mmap(void *addr, size_t length, int prot,
+			int flags, int fd, off_t offset);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mmap2
+ Input		:void *addr
+ 		 < base address of virtual memory to request a mapping >
+ 		 size_t length
+ 		 < size of memory to request a mapping >
+ 		 int prot
+ 		 < page protection >
+ 		 int flags
+ 		 < mmap flags >
+ 		 int fd
+ 		 < file descriptor >
+ 		 off_t offset
+ 		 < offset in a file in unit of page size >
+ Output		:void
+ Return		:void *addr
+ 		 < base address of mapped memory >
+ Description	:make a new memory mapping with page size offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL void* mmap2(void *addr, size_t length, int prot,
+			int flags, int fd, off_t pgoffset);
+
+
+/*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:munmap
  Input		:void *addr
@@ -170,6 +181,23 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:unmap mapped memory
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT int munmap(void *addr, size_t length);
+SYSCALL int munmap(void *addr, size_t length);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:mprotect
+ Input		:void *addr
+ 		 < start address of a memory region to set memory protectoin >
+ 		 size_t len
+ 		 < size of a memory region >
+ 		 int prot
+ 		 < protection >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set protection on a region of memory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int mprotect(void *addr, size_t len, int prot);
 
 #endif	// __BK_MMAP_H__

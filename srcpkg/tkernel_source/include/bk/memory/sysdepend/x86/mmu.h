@@ -185,6 +185,10 @@ typedef union PageDirectryEntry {
 #define	PDE_USR_RO	( PD_Present|PD_User|PDE_SYS_RO )
 #define PDE_USR_EXEC	( PD_Present|PD_User|PDE_SYS_EXEC )
 
+#define	PDE_USR_RW_NOT_P	( PD_User|PT_Writable )
+#define	PDE_USR_RO_NOT_P	( PD_User )
+#define PDE_USR_EXEC_NOT_P	( PD_User )
+
 /*
  * The number of PTEs in a page table
  */
@@ -262,6 +266,10 @@ typedef union PageTablEntry {
 #define	PTE_USR_RW	( PT_Present | PT_User|PTE_SYS_RW )
 #define	PTE_USR_RO	( PT_Present | PT_User|PTE_SYS_RO )
 #define PTE_USR_EXEC	( PT_Present | PT_User|PTE_SYS_EXEC )
+
+#define	PTE_USR_RW_NOT_P	( PT_User|PT_Writable )
+#define	PTE_USR_RO_NOT_P	( PT_User )
+#define PTE_USR_EXEC_NOT_P	( PT_User )
 
 #define	PAGE_INDEX(laddr)	(((unsigned long)(laddr) >> PAGE_SHIFT) & 0x3FF)	// relative index based on page talbe
 

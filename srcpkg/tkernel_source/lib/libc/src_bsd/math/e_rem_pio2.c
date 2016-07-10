@@ -57,6 +57,8 @@ __ieee754_rem_pio2(double x, double *y)
 	double tx[3];
 	int32_t e0,i,j,nx,n,ix,hx;
 	u_int32_t low;
+	
+	z = 0;
 
 	GET_HIGH_WORD(hx,x);		/* high word of x */
 	ix = hx&0x7fffffff;

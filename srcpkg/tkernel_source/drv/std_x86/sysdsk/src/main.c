@@ -44,10 +44,12 @@ LOCAL	SDInfo	mmc_drv[] = {
 };
 
 /* ROM disk definition */
+#ifndef _BTRON_
 LOCAL	SDInfo	rd_drv[] = {
 	{3,	ROM_DISK, "rda", (UW)CH4toW('m','d','s','k'),
 			MEM_DRV + 0,		0,	0	},
 };
+#endif
 /* RAM disk definition */
 LOCAL	SDInfo	md_drv[] = {
 	{4,	RAM_DISK, "mda", (UW)CH4toW('m','a','d','k'),
@@ -62,8 +64,7 @@ LOCAL	ID	CreTask(FP entry, INT par, UW name4)
 	T_CTSK	ctsk;
 	ID	tskid;
 	ER	er;
-	static int dssn=0;
-
+	
 	/* Task creation */
 	ctsk.exinf = (void*)name4;
 	ctsk.task = entry;
@@ -74,8 +75,7 @@ LOCAL	ID	CreTask(FP entry, INT par, UW name4)
 	ctsk.dsname[0] = 's';
 	ctsk.dsname[1] = 'd';
 	ctsk.dsname[2] = 'd';
-	ctsk.dsname[3] = 0x30 + dssn++;
-	ctsk.dsname[4] = '\0';
+	ctsk.dsname[3] = '\0';
 	
 	tskid = er = tk_cre_tsk(&ctsk);
 	if (er >= E_OK) {
@@ -170,7 +170,6 @@ LOCAL	void	ExecTask(SDInfo	*inf)
 				}
 			}
 		} else {			/* Others */
-			vd_printf("others 0x%08X\n", drv->IOB);
 			er = E_OK;
 		}
 		if (er < E_OK) {		/* Release the drive information */
@@ -213,9 +212,11 @@ E_EXIT:
  */
 EXPORT	ER	SysDiskDrv(INT ac, UB *av[])
 {
+#ifndef _BTRON_
 	W	v[L_DEVCONF_VAL];
 	UW	*mp;
-
+#endif
+	
 	if (ac < 0) {
 		/* End processing: execute especially nothing because it is end of system */
 		return E_OK;

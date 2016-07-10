@@ -42,8 +42,11 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/fs/vdso.h>
 #include <bk/memory/slab.h>
+#include <bk/memory/vm.h>
 #include <bk/uapi/sys/stat.h>
+#include <bk/uapi/fcntl.h>
 
 #include <t2ex/limits.h>
 //#include <t2ex/sys/fcntl.h>
@@ -68,7 +71,8 @@ LOCAL int alloc_fd(struct process *proc);
 LOCAL void free_fd(struct process *proc, int fd);
 LOCAL ALWAYS_INLINE int
 install_file(struct process *proc, struct file *file);
-LOCAL ALWAYS_INLINE struct file* get_open_file(int fd);
+LOCAL int
+xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode);
 
 /*
 ==================================================================================
@@ -303,6 +307,128 @@ EXPORT void free_file(struct process *proc, int fd)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_open_file
+ Input		:int fd
+ 		 < open file descriptor >
+ Output		:void
+ Return		:struct file*
+ 		 < open file object >
+ Description	:get opened file from a current process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct file* get_open_file(int fd)
+{
+	struct process *proc = get_current();
+	struct fdtable *files = proc->fs.files;
+	
+	return(files->fd[fd]);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_dirfd_path
+ Input		:int dirfd
+ 		 < open directory file descriptor >
+ 		 struct path **dir_path
+ 		 < directory path >
+ Output		:struct path **dir_path
+ 		 < directory path >
+ Return		:int
+ 		 < result >
+ Description	:get directory path from directory file descriptor
+ 		 Before calling the function, must be set NULL to *dir_path
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int get_dirfd_path(int dirfd, struct path **dir_path)
+{
+	struct vnode *dir_vnode;
+	struct file *filp;
+	int err;
+	
+	*dir_path = NULL;
+	
+	if (dirfd != AT_FDCWD) {
+		err = is_open_file(dirfd);
+		
+		if (UNLIKELY(err)) {
+			return(-EBADF);
+		}
+		
+		filp = get_open_file(dirfd);
+		
+		if (UNLIKELY(!filp)) {
+			return(-EBADF);
+		}
+		
+		dir_vnode = filp->f_vnode;
+		
+		if (UNLIKELY(!S_ISDIR(dir_vnode->v_mode))) {
+			return(-ENOTDIR);
+		}
+		
+		*dir_path = &filp->f_path;
+	}
+	
+	return(0);
+}
+
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_open_file
+ Input		:int fd
+ 		 < open file descriptor to be checked >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether fd is a opened file descriptor or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int is_open_file(int fd)
+{
+	struct process *proc = get_current();
+	struct fdtable *files = proc->fs.files;
+	
+	if (fd < 0) {
+		return(-EBADF);
+	}
+	
+	if (UNLIKELY(get_soft_limit(RLIMIT_NOFILE) < fd)) {
+		return(-EBADF);
+	}
+	
+	if (files->max_fds < fd) {
+		return(-EBADF);
+	}
+	
+	return(!files->fd[fd]);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_open_dir
+ Input		:int dirfd
+ 		 < open directory file descriptor to be checked >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check whether fd is a opened directory file descriptor or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int is_open_dir(int fd)
+{
+	if (fd == AT_FDCWD) {
+		return(0);
+	}
+	
+	return(is_open_file(fd));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:has_fdtable
  Input		:struct process *proc
  		 < process to test whether it has already a fd table >
@@ -316,6 +442,263 @@ EXPORT int has_fdtable(struct process *proc)
 {
 	struct fs_states *fs = &proc->fs;
 	return((int)fs->files);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open_exe_file
+ Input		:const char *filename
+ 		 < a file to open >
+ Output		:void
+ Return		:int
+ 		 < result or fd >
+ Description	:open a executable file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int open_exe_file(const char *filename)
+{
+	struct file_name *fname;
+	struct dentry *dentry;
+	struct file *filp;
+	struct process *proc;
+	int err;
+	int fd;
+	
+	err = vfs_lookup(filename, &fname, LOOKUP_ENTRY);
+	
+	if (err) {
+		return(err);
+	}
+	
+	dentry = fname->dentry;
+	
+	put_file_name(fname);
+	
+	if (!dentry->d_vnode) {
+		return(-ENOENT);
+	}
+	
+	if (S_ISDIR(dentry->d_vnode->v_mode)) {
+		return(-EISDIR);
+	}
+	
+	if (!S_ISREG(dentry->d_vnode->v_mode)) {
+		return(-EACCES);
+	}
+	
+	proc = get_current();
+	
+	filp = file_cache_alloc();
+	
+	if (UNLIKELY(!filp)) {
+		err = -ENOMEM;
+		panic("unexpected error at %s\n", __func__);
+		goto failed_file_cache_alloc;
+	}
+	
+	filp->f_vnode = dentry->d_vnode;
+	filp->f_fops = dentry->d_vnode->v_fops;
+	filp->f_path.mnt = vfs_get_cwd(proc)->mnt;
+	filp->f_path.dentry = dentry;
+	
+	//vd_printf("open_exe_file:%s\n", filename);
+	
+	err = vfs_open(dentry->d_vnode, filp);
+	
+	if (err) {
+		vd_printf("open:failed vfs_open\n");
+		err = -ENOENT;
+		goto failed_vfs_open;
+	}
+	
+	fd = install_file(proc, filp);
+	
+	vd_printf("install_file:%s fd:%d\n", filename, fd);
+	
+	if (fd < 0) {
+		vd_printf("open:failed install_file\n");
+		err = fd;
+		goto failed_install_file;
+	}
+	
+	return(fd);
+	
+failed_file_cache_alloc:
+	put_file_name(fname);
+	return(err);
+failed_vfs_open:
+failed_install_file:
+	file_cache_free(filp);
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open_vdso_file
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result or fd >
+ Description	:open a vdso file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int open_vdso_file(void)
+{
+	struct file *filp;
+	struct vnode *vdso_vnode = get_vdso_vnode();
+	struct process *proc = get_current();
+	int fd;
+	int err;
+	
+	filp = file_cache_alloc();
+	
+	if (UNLIKELY(!filp)) {
+		err = -ENOMEM;
+		panic("unexpected error at %s\n", __func__);
+		goto failed_file_cache_alloc;
+	}
+	
+	filp->f_vnode = vdso_vnode;
+	filp->f_fops = vdso_vnode->v_fops;
+	filp->f_path.mnt = vfs_get_cwd(proc)->mnt;
+	filp->f_path.dentry = vfs_get_cwd(proc)->dentry;
+	
+	printf("open_vdso_file\n");
+	
+	err = vfs_open(vdso_vnode, filp);
+	
+	if (err) {
+		printf("open:failed vfs_open\n");
+		err = -ENOENT;
+		goto failed_vfs_open;
+	}
+	
+	fd = install_file(proc, filp);
+	
+	if (fd < 0) {
+		vd_printf("open:failed install_file at %s\n", __func__);
+		err = fd;
+		goto failed_install_file;
+	}
+	
+	return(fd);
+
+failed_install_file:
+failed_vfs_open:
+	file_cache_free(filp);
+failed_file_cache_alloc:
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kwrite
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const void *buf
+ 		 < buffer to write >
+ 		 size_t count
+ 		 < size of buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < result >
+ Description	:write data to a file in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ssize_t kwrite(int fd, const void *buf, size_t count)
+{
+	struct file *filp;
+	int err;
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!count)) {
+		return(0);
+	}
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	filp = get_open_file(fd);
+	
+	if (UNLIKELY(!filp)) {
+		return(-EBADF);
+	}
+	
+	return(vfs_write(filp, buf, count, &filp->f_pos));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kpread
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 void *buf
+ 		 < buffer to output >
+ 		 size_t count
+ 		 < read length >
+ 		 loff_t offset
+ 		 < file offset >
+ Output		:void *buf
+ 		 < buffer to output >
+ Return		:ssize_t
+ 		 < result >
+ Description	:read data from a file at offset in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT ssize_t kpread(int fd, void *buf, size_t count, loff_t offset)
+{
+	struct file *filp;
+	loff_t new_offset = offset;
+	int err;
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!count)) {
+		return(0);
+	}
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		vd_printf("error:kpread:%d\n", err);
+		return(err);
+	}
+	
+	filp = get_open_file(fd);
+	
+	if (UNLIKELY(!filp)) {
+		return(-EBADF);
+	}
+	
+	return(vfs_read(filp, buf, count, &new_offset));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kopen
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:open a file in kernel space
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int kopen(const char *pathname, int flags, mode_t mode)
+{
+	return(xopenat(NULL, pathname, flags, mode));
 }
 
 /*
@@ -342,6 +725,11 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL ssize_t read(int fd, void *buf, size_t count)
 {
 	struct file *filp;
+	int err;
+	
+//	printf("fd=%d, ", fd);
+//	printf("*buf=0x%08X, ", buf);
+//	printf("count = 0x%08X\n", count);
 	
 	if (UNLIKELY(!buf)) {
 		return(-EFAULT);
@@ -351,8 +739,16 @@ SYSCALL ssize_t read(int fd, void *buf, size_t count)
 		return(0);
 	}
 	
-	if (UNLIKELY(get_soft_limit(RLIMIT_NOFILE) < fd)) {
-		return(-EBADF);
+	err = vm_check_access((void*)buf, count, PROT_WRITE);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		return(err);
 	}
 	
 	filp = get_open_file(fd);
@@ -362,6 +758,64 @@ SYSCALL ssize_t read(int fd, void *buf, size_t count)
 	}
 	
 	return(vfs_read(filp, buf, count, &filp->f_pos));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:pread
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 void *buf
+ 		 < buffer to output >
+ 		 size_t count
+ 		 < read length >
+ 		 loff_t offset
+ 		 < file offset >
+ Output		:void *buf
+ 		 < buffer to output >
+ Return		:ssize_t
+ 		 < result >
+ Description	:read data from a file at offset
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t pread(int fd, void *buf, size_t count, loff_t offset)
+{
+	struct file *filp;
+	loff_t new_offset = offset;
+	int err;
+	
+//	printf("pread:fd=%d, ", fd);
+//	printf("*buf=0x%08X, ", buf);
+//	printf("count=0x%08X, ", count);
+//	printf("offset=0x%08X\n", offset);
+	
+	if (UNLIKELY(!buf)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!count)) {
+		return(0);
+	}
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = vm_check_access((void*)buf, count, PROT_WRITE);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	filp = get_open_file(fd);
+	
+	if (UNLIKELY(!filp)) {
+		return(-EBADF);
+	}
+	
+	return(vfs_read(filp, buf, count, &new_offset));
 }
 
 /*
@@ -382,6 +836,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 {
 	struct file *filp;
+	int err;
 	
 	if (UNLIKELY(!buf)) {
 		return(-EFAULT);
@@ -390,9 +845,19 @@ SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 	if (UNLIKELY(!count)) {
 		return(0);
 	}
+	//printf("write buf:0x%08X count:%d\n", buf, count);
 	
-	if (UNLIKELY(get_soft_limit(RLIMIT_NOFILE) < fd)) {
-		return(-EBADF);
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		vd_printf("error:write\n");
+		return(err);
+	}
+	
+	err = vm_check_access((void*)buf, count, PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
 	}
 	
 	filp = get_open_file(fd);
@@ -402,6 +867,86 @@ SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 	}
 	
 	return(vfs_write(filp, buf, count, &filp->f_pos));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:writev
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 const struct iovec *iov
+ 		 < io vector to write >
+ 		 int iovcnt
+ 		 < number of io buffer >
+ Output		:void
+ Return		:ssize_t
+ 		 < size of written bytes > 
+ Description	:write buffers to an open file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt)
+{
+	struct file *filp;
+	int i;
+	int err;
+	ssize_t len = 0;
+
+	//printf("writev start-------[%d]\n", iovcnt);
+	
+	if (UNLIKELY(!iov)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(iovcnt < 0 || UIO_MAXIOV < iovcnt)) {
+		return(-EINVAL);
+	}
+	
+	err = vm_check_access((void*)iov,
+				sizeof(struct iovec*) * iovcnt, PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	filp = get_open_file(fd);
+	
+	if (UNLIKELY(!filp)) {
+		return(-EBADF);
+	}
+	
+	for (i = 0;i < iovcnt;i++) {
+		ssize_t write_len;
+		//printf("fd:%d iov_base:0x%08X iov_len:0x%08X\n", fd, iov[i].iov_base, iov[i].iov_len);
+		//write_len = vfs_write(filp, iov[i].iov_base, iov[i].iov_len, &filp->f_pos);
+		
+		err = vm_check_access((void*)iov[i].iov_base,
+					iov[i].iov_len, PROT_READ);
+		
+		if (UNLIKELY(err)) {
+			return(-EFAULT);
+		}
+		
+		write_len = write(fd, iov[i].iov_base, iov[i].iov_len);
+		if (UNLIKELY(write_len < 0)) {
+			return(write_len);
+		}
+		
+		len += write_len;
+		
+		if (UNLIKELY(len < 0)) {
+			return(-EINVAL);
+		}
+	}
+	
+	//printf("writev end---------\n");
+	
+	return(len);
 }
 
 /*
@@ -421,62 +966,149 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int open(const char *pathname, int flags, mode_t mode)
 {
-	struct file_name *fname;
-	struct file *filp;
-	struct process *proc;
-	struct dentry *dentry;
 	int err;
-	int fd;
 	
-	err = vfs_lookup(pathname, &fname, 0);
+	//printf("open:%s\n", pathname);
 	
-	if (err) {
-		goto failed_vfs_lookup;
+	if (UNLIKELY(!pathname)) {
+		return(-EFAULT);
 	}
 	
-	dentry = fname->dentry;
+	err = vm_check_access((void*)pathname, sizeof(char), PROT_READ);
 	
-	put_file_name(fname);
-	
-	if (!dentry->d_vnode) {
-		vd_printf("open:negative dentry?\n");
-		return(-ENOENT);
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
 	}
 	
-	proc = get_current();
-	
-	filp = file_cache_alloc();
-	
-	if (UNLIKELY(!filp)) {
-		err = -ENOENT;
-		goto failed_vfs_lookup;
-	}
-	
-	err = vfs_open(dentry->d_vnode, filp);
-	
-	if (err) {
-		vd_printf("open:failed vfs_open\n");
-		err = -ENOENT;
-		goto failed_vfs_open;
-	}
-	
-	fd = install_file(proc, filp);
-	
-	if (fd) {
-		vd_printf("open:failed install_file\n");
-		err = -ENOENT;
-		goto failed_install_file;
-	}
-	
-	return(fd);
+	return(xopenat(NULL, pathname, flags, mode));
+}
 
-failed_vfs_lookup:
-	put_file_name(fname);
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:openat
+ Input		:int dirfd
+ 		 < open directory file descriptor >
+ 		 const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:open a file relative to a directory file descriptor
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int openat(int dirfd, const char *pathname, int flags, mode_t mode)
+{
+	int err;
+	struct path *dir_path;
+	
+	if (UNLIKELY(!pathname)) {
+		return(-EFAULT);
+	}
+	
+	err = is_open_dir(dirfd);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = vm_check_access((void*)pathname, sizeof(char), PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	dir_path = NULL;
+	
+	err = get_dirfd_path(dirfd, &dir_path);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	
+	err = xopenat(dir_path, pathname, flags, mode);
+	
+	//printf("openat:%s [%d]\n", pathname, err);
+	
+	
 	return(err);
-failed_vfs_open:
-failed_install_file:
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:close
+ Input		:int fd
+ 		 < open file descriptor to close >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:close a file descriptor
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int close(int fd)
+{
+	struct process *proc = get_current();
+	struct fdtable *fdtable = get_fdtable(proc);
+	struct file *filp;
+	int err = 0;
+	
+	//printf("close:%d\n", fd);
+	
+	if (UNLIKELY(!fdtable)) {
+		printf("close:error[1]\n");
+		err = -EBADF;
+		goto error_out;
+	}
+	
+	if (UNLIKELY(fdtable->max_fds < fd)) {
+		printf("close:error[2]\n");
+		err = -EBADF;
+		goto error_out;
+	}
+	
+	/* -------------------------------------------------------------------- */
+	/* :begin critical section						*/
+	/* -------------------------------------------------------------------- */
+	BEGIN_CRITICAL_SECTION {
+	free_fd(proc, fd);
+	
+	filp = fdtable->fd[fd];
+	fdtable->fd[fd] = NULL;
+	
 	file_cache_free(filp);
+	/* -------------------------------------------------------------------- */
+	/* :end critical section						*/
+	/* -------------------------------------------------------------------- */
+	} END_CRITICAL_SECTION;
+	
+error_out:
+	put_fdtable(proc);
 	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:lseek64
+ Input		:int fd
+ 		 < open file descriptor >
+ 		 loff_t offset64
+ 		 < file offset >
+ 		 int whence
+ 		 < seek operation >
+ Output		:void
+ Return		:loff_t
+ 		 < offset after seeking >
+ Description	:seek a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL loff_t lseek64(int fd, loff_t offset64, int whence)
+{
+	panic("%s is not implemented\n", __func__);
+	return(offset64);
 }
 
 /*
@@ -504,10 +1136,26 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:vfs file read method
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT ssize_t vfs_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
+EXPORT ssize_t
+vfs_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
 {
+//	printf("*ppos = %ld\n", *ppos);
+	if (UNLIKELY(filp->f_vnode->v_size < *ppos)) {
+		return(0);
+	}
+	
+	if (UNLIKELY(filp->f_vnode->v_size < (*ppos + len))) {
+		len = filp->f_vnode->v_size - *ppos;
+	}
+	
 	if (filp->f_fops && filp->f_fops->read) {
-		return(filp->f_fops->read(filp, buf, len, ppos));
+		ssize_t read_len;
+		
+		read_len = filp->f_fops->read(filp, buf, len, ppos);
+		
+		//vd_printf("read_len:%d\n", read_len);
+		
+		return(read_len);
 	}
 	
 	return(-EINVAL);
@@ -561,11 +1209,35 @@ EXPORT int vfs_open(struct vnode *vnode, struct file *filp)
 	if (UNLIKELY(S_ISCHR(vnode->v_mode))) {
 		err = open_char_device(vnode, filp);
 	} else if (UNLIKELY(S_ISBLK(vnode->v_mode))) {
-	} else if (filp->f_fops->open) {
+	} else if (filp->f_fops && filp->f_fops->open) {
 		err = filp->f_fops->open(vnode, filp);
 	}
 	
 	return(err);
+}
+
+
+/*
+----------------------------------------------------------------------------------
+	generic file operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:generic_open
+ Input		:struct vnode *vnode
+ 		 < vnode to open >
+ 		 struct file *filp
+ 		 < open file object >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:generic file open
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int generic_open(struct vnode *vnode, struct file *filp)
+{
+	return(0);
 }
 
 /*
@@ -599,6 +1271,10 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 LOCAL struct file* file_cache_alloc(void)
 {
 	struct file *file = (struct file*)kmem_cache_alloc(file_cache, 0);
+	
+	if (UNLIKELY(!file)) {
+		return(NULL);
+	}
 	
 	memset((void*)file, 0x00, sizeof(struct file));
 	
@@ -815,6 +1491,7 @@ LOCAL int alloc_fd(struct process *proc)
 retry_find_fd:
 	found_fd =(int)tstdlib_bitsearch0(fdtable->open_fds, next_fd,
 						fdtable->max_fds);
+	
 	if (UNLIKELY(found_fd < 0)) {
 		if (UNLIKELY(!next_fd)) {
 			next_fd = fdtable->max_fds;
@@ -831,7 +1508,7 @@ retry_find_fd:
 		goto retry_find_fd;
 	}
 	
-	old = tstdlib_bittest(fdtable->open_fds, found_fd);
+	old = tstdlib_bitset(fdtable->open_fds, found_fd);
 	
 	if (UNLIKELY(old)) {
 		goto retry_find_fd;
@@ -870,7 +1547,9 @@ LOCAL void free_fd(struct process *proc, int fd)
 	
 	tstdlib_bitclr(fdtable->open_fds, fd);
 	
-	fdtable->next_fd = fd;
+	if (fd <= fdtable->next_fd) {
+		fdtable->next_fd = fd;
+	}
 	
 	put_fdtable(proc);
 	/* -------------------------------------------------------------------- */
@@ -924,23 +1603,102 @@ install_file(struct process *proc, struct file *file)
 	return(fd);
 }
 
+
 /*
 ==================================================================================
- Funtion	:get_open_file
- Input		:int fd
- 		 < open file descriptor >
+ Funtion	:xopenat
+ Input		:struct path *dir_path
+ 		 < directory path >
+ 		 const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
  Output		:void
- Return		:struct file*
- 		 < open file object >
- Description	:get opened file from a current process
+ Return		:int
+ 		 < open file descriptor >
+ Description	:actual file open process relative to a directory file descriptor
 ==================================================================================
 */
-LOCAL ALWAYS_INLINE struct file* get_open_file(int fd)
+LOCAL int
+xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 {
-	struct process *proc = get_current();
-	struct fdtable *files = proc->fs.files;
+	struct file_name *fname;
+	struct file *filp;
+	struct process *proc;
+	struct dentry *dentry;
+	int err;
+	int fd;
 	
-	return(files->fd[fd]);
+	//printf("open [%s]\n", pathname);
+	
+	err = vfs_lookup_at(dir_path, pathname, &fname, LOOKUP_ENTRY);
+	//err = vfs_lookup(pathname, &fname, LOOKUP_TEST);
+	
+	if (err) {
+		//printf("failed vfs lookup at %s\n", __func__);
+		goto failed_vfs_lookup;
+	}
+	
+	dentry = fname->dentry;
+	
+	put_file_name(fname);
+	
+	if (!dentry->d_vnode) {
+		//printf("open:negative dentry?\n");
+		return(-ENOENT);
+	}
+	
+	proc = get_current();
+	
+	filp = file_cache_alloc();
+	
+	if (UNLIKELY(!filp)) {
+		err = -ENOMEM;
+		panic("unexpected error at %s\n", __func__);
+		goto failed_vfs_lookup;
+	}
+	
+	filp->f_vnode = dentry->d_vnode;
+	filp->f_fops = dentry->d_vnode->v_fops;
+	filp->f_path.mnt = vfs_get_cwd(proc)->mnt;
+	filp->f_path.dentry = dentry;
+	
+	//vd_printf("vfs_open:%s\n", pathname);
+	
+	err = vfs_open(dentry->d_vnode, filp);
+	
+	if (err) {
+		printf("open:failed vfs_open\n");
+		err = -ENOENT;
+		goto failed_vfs_open;
+	}
+	
+	fd = install_file(proc, filp);
+	
+	//printf("install_file:%s fd:%d\n", pathname, fd);
+	
+	if (fd < 0) {
+		printf("open:failed install_file\n");
+		err = fd;
+		goto failed_install_file;
+	}
+	
+	//printf("open file:%s at [%d]\n", dentry->d_iname, fd);
+
+	
+	//printf("opened:fd=%d\n", fd);
+	
+	return(fd);
+
+failed_vfs_lookup:
+	put_file_name(fname);
+	return(err);
+failed_vfs_open:
+failed_install_file:
+	file_cache_free(filp);
+	return(err);
 }
 
 /*

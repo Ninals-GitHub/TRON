@@ -24,7 +24,6 @@
 
 ==================================================================================
 */
-LOCAL void clear_screen(void);
 void vga_update_timer(void *exinf);
 
 /*
@@ -63,43 +62,6 @@ LOCAL uint16_t text_color = DEFAULT_COLOR << COLOR_SHIFT;
 
 LOCAL uint16_t fb[X_MAX * Y_MAX];
 
-#if 0
-LOCAL uint32_t update_flag = 0;
-
-LOCAL ID vga_cycid;
-LOCAL CONST T_CCYC vga_pk_ccyc = {
-	.exinf		= NULL;
-	.cycatr		= TA_HLNG | TA_DSNAME,
-	.cychdr		= (FP*)vga_update_timer,
-	.cyctim		= 100,
-	.cycphs		= 0,
-	.dsname		= "vga_tim"
-};
-
-
-LOCAL ID vga_flgid;
-
-
-LOCAL CONST T_CFLG vga_pk_cflg = {
-	.exinf		= NULL,
-	.figattr	= (TA_PRI | TA_WSGL | TA_DSNAME ),
-	.iflgptn	= 0,
-	.dsname		= "vga_flg",
-};
-
-LOCAL CONST T_CTSK vga_pk_ctsk = {
-	.exinf		= NULL,
-	.tskattr	= TA_HLNG | TA_SSTKSZ | TA_DSNAME | TA_RNG0,
-	.task		= vga_main,
-	.itskpri	= 0,
-	.sstksz		= 8192,
-	.stkptr		= NULL,
-	.uatb		= NULL,
-	.lsid		= 0,
-	.resid		= 0,
-	.dsname		= "vga_tsk"
-};
-#endif
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
@@ -139,19 +101,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT ER startup_vga(void)
 {
-#if 0
-	vga_cycid = tk_cre_cyc(&vga_pk_ccyc);
-	
-	if (vga_cycid < 0) {
-		return((ER)vga_cycid);
-	}
-	
-	vga_flgid = tk_cre_flg(&vga_pk_cflg);
-	
-	if (vga_flgid < 0) {
-		return((ER)vga_flgid);
-	}
-#endif
 	return(E_OK);
 }
 
@@ -226,47 +175,6 @@ EXPORT ER vga_out(B *buf, UW len)
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
-/*
-==================================================================================
- Funtion	:clear_screen
- Input		:void
- Output		:void
- Return		:void
- Description	:clear screen
-==================================================================================
-*/
-LOCAL void clear_screen(void)
-{
-	memset((void*)VRAM, 0x00, sizeof(fb));
-}
-
-/*
-==================================================================================
- Funtion	:vga_update_timer
- Input		:void *exinf
-		 < extended information >
- Output		:void
- Return		:void
- Description	:timer handler for vga task
-==================================================================================
-*/
-#if 0
-void vga_update_timer(void *exinf)
-{
-	if (update_flag) {
-		int i;
-		//tk_set_flg(vga_flgid, VGA_UPDATE);
-		
-		if (line_start) {
-			memcpy((void*)((uint16_t*)VRAM + line_start * x_max),
-				fb + line_start * x_max, (y_max - line_start) * x_max);
-			memcpy((void*)VRAM, fb, line_start * x_max);
-		} else {
-			memcpy((void*)VRAM , fb, x_max * y_max);
-		}
-	}
-}
-#endif
 /*
 ==================================================================================
  Funtion	:void

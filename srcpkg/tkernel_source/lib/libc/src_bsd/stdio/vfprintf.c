@@ -351,7 +351,13 @@ __vfprintf(FILE *fp, const char *fmt0, __va_list ap)
 
 	static const char xdigs_lower[16] = "0123456789abcdef";
 	static const char xdigs_upper[16] = "0123456789ABCDEF";
-
+	
+	xdigs = xdigs_lower;
+	ndig = 0;
+	lead = 0;
+	expsize = 0;
+	expchar = '\0';
+	
 	/*
 	 * BEWARE, these `goto error' on error, and PAD uses `n'.
 	 */

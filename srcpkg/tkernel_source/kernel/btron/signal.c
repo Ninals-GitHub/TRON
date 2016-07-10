@@ -148,8 +148,8 @@ SYSCALL int rt_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 		return(-EFAULT);
 	}
 	
-	printf("rt_sigprocmask[how=%d", how);
-	printf(", *set=0x%08X\n", *set);
+	//printf("rt_sigprocmask[how=%d", how);
+	//printf(", *set=0x%08X\n", *set);
 	if (oldset) {
 		err = ChkUsrSpaceRW((const void*)oldset, sizeof(sigset_t));
 	
@@ -159,7 +159,7 @@ SYSCALL int rt_sigprocmask(int how, const sigset_t *set, sigset_t *oldset)
 		}
 		
 		*oldset = sig->blocked;
-		printf(", *oldset=0x%08X]\n", *oldset);
+		//printf(", *oldset=0x%08X]\n", *oldset);
 	}
 	
 	switch (how) {
@@ -203,10 +203,11 @@ SYSCALL int rt_sigaction(int signum,
 	int err;
 	struct signals *signals;
 	
+#if 0
 	printf("rt_sigaction[signum=%d, ", signum);
 	printf("*act=0x%08X, ", act);
 	printf("*oldact=0x%08X\n", oldact);
-	
+#endif
 	if (UNLIKELY(SIGRTMAX <= signum)) {
 		return(-EINVAL);
 	}

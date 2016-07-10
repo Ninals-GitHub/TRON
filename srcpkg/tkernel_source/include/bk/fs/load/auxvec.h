@@ -114,6 +114,37 @@
 #define	AT_L3_CACHESHAPE	37
 
 /*
+----------------------------------------------------------------------------------
+	AT_HWCAP
+----------------------------------------------------------------------------------
+*/
+#define	HWCAP_FPU	(1 << 0)
+#define	HWCAP_VME	(1 << 1)
+#define	HWCAP_DE	(1 << 2)
+#define	HWCAP_PSE	(1 << 3)
+#define	HWCAP_TSC	(1 << 4)
+#define	HWCAP_MSR	(1 << 5)
+#define	HWCAP_PAE	(1 << 5)
+#define	HWCAP_MCE	(1 << 7)
+#define	HWCAP_CX8	(1 << 8)
+#define	HWCAP_APIC	(1 << 9)
+
+#define	HWCAP_SEP	(1 << 11)
+#define	HWCAP_MTRR	(1 << 12)
+#define	HWCAP_PGE	(1 << 13)
+#define	HWCAP_MCA	(1 << 14)
+#define	HWCAP_CMOV	(1 << 15)
+#define	HWCAP_FCMOV	(1 << 16)
+
+#define	HWCAP_MMX	(1 << 23)
+#define	HWCAP_OSFXSR	(1 << 24)
+#define	HWCAP_XMM	(1 << 25)
+#define	HWCAP_XMM2	(1 << 26)
+
+#define	HWCAP_AMD3D	(1 << 31)
+
+
+/*
 ==================================================================================
 
 	Management 

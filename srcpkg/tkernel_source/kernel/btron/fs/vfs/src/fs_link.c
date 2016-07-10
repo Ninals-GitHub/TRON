@@ -97,7 +97,7 @@ SYSCALL ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 	int err;
 	ssize_t test_size;
 
-	//printf("readlink[path=%s, ", path);
+	printf("readlink[path=%s, ", path);
 
 	if (UNLIKELY(!path)) {
 		return(-ENOENT);
@@ -152,14 +152,13 @@ LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz)
 	#define	TEST_EXE	"test"
 	size_t size;
 	struct memory_space *mspace = get_current()->mspace;
-	size_t len = strnlen((const char*)mspace->start_arg, PAGESIZE);
-	char *buf_user;
+	//size_t len = strnlen((const char*)mspace->start_arg, PAGESIZE);
 	
 	if (!strncmp(path, TEST_PROC_SELF_EXE, sizeof(TEST_PROC_SELF_EXE))) {
-		size = strncpy(buf, TEST_EXE_DIR TEST_EXE, 4096);
+		strncpy(buf, TEST_EXE_DIR TEST_EXE, 4096);
 	}
 	
-	
+	size = sizeof(TEST_PROC_SELF_EXE) - 1;
 	
 	return(size);
 }

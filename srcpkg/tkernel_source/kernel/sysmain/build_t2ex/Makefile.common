@@ -76,6 +76,7 @@ BLD_SYSINIT_PATH	= ../../../sysinit/build$(T2EX_MM)/$(MDIR)
 ifdef BTRON
   BLD_BTRON_PATH	= ../../../btron/build/$(MDIR)
   BKERNEL_PATH		= ../../../btron/
+  VDSO_PATH		= ../../../btron/fs/sysdepend/build/$(MDIR)/vdso.so
 endif
 
 ifdef T2EX
@@ -328,7 +329,8 @@ $(ROM_INFO): $(TARGET_IMG)
 
 # make grub rescue disk image
 cd:$(TARGET_IMG)
-	cp $(TARGET_IMG) $(GRUB_PATH)
+	cp $(TARGET_IMG) $(GRUB_PATH)/boot
+	cp $(VDSO_PATH) $(GRUB_PATH)/boot
 	$(GRUB_COMMAND) --output=$(TARGET_GRUB) $(GRUB_PATH)
 
 # objects for RAM

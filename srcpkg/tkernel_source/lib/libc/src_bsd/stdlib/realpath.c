@@ -48,7 +48,7 @@ realpath2_eno(const char *path1, const char *path, char *resolved, int *eno)
 	/*struct stat sb;*/
 	char *p, *q, *s;
 	size_t left_len, resolved_len;
-	unsigned symlinks;
+	//unsigned symlinks;
 	int serrno/*, slen*/, mem_allocated;
 	char left[PATH_MAX], next_token[PATH_MAX]/*, symlink[PATH_MAX]*/;
 
@@ -67,7 +67,6 @@ realpath2_eno(const char *path1, const char *path, char *resolved, int *eno)
 	} else
 		mem_allocated = 0;
 
-	symlinks = 0;
 	if (path[0] == '/') {
 		resolved[0] = '/';
 		resolved[1] = '\0';

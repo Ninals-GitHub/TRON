@@ -1305,7 +1305,7 @@ EXPORT ER elf_load( ProgInfo *pg, LoadSource *ldr, UINT attr, Elf32_Ehdr *hdr )
 	return E_OK;
 #endif
 
-	return(start_task((unsigned long)hdr->e_entry + lofs));
+	return(start_task((unsigned long)hdr->e_entry + lofs, mspace->end_stack));
 	/* never return								*/
 	
 err_ret3:

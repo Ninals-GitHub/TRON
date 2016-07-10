@@ -73,7 +73,7 @@
 
 #define	NODE_NAME_NONE		"(none)"
 
-#define	MACHINE_NAME		"i386"
+#define	MACHINE_NAME		"i686"
 
 #define	DOMAIN_NAME_NONE	"(none)"
 
@@ -156,11 +156,19 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int uname(struct new_utsname *buf)
 {
+	ssize_t err;
+	
+#if 0
+	printf("uname:\n");
+#endif
+
 	if (!buf) {
 		return(-EFAULT);
 	}
 	
-	if (copy_to_user(buf, &tron_utsname, sizeof(struct new_utsname))) {
+	err = copy_to_user(buf, &tron_utsname, sizeof(struct new_utsname));
+	
+	if (0 < err) {
 #if 0
 	printf("sysname : %s\n", buf->sysname);
 	printf("nodename : %s\n", buf->nodename);
@@ -195,7 +203,8 @@ SYSCALL int olduname(struct old_utsname *buf)
 		return(-EFAULT);
 	}
 	
-	err = ChkSpaceRW(buf, sizeof(struct old_utsname));
+	//err = ChkSpaceRW(buf, sizeof(struct old_utsname));
+	err = vm_check_access((void*)buf, sizeof(struct old_utsname), PROT_READ);
 	
 	if (err) {
 		return(-EFAULT);
@@ -228,11 +237,15 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int oldolduname(struct oldold_utsname *buf)
 {
+	ssize_t err;
+	
 	if (!buf) {
 		return(-EFAULT);
 	}
 	
-	if (copy_to_user(buf, &tron_old_utsname, sizeof(struct oldold_utsname))) {
+	err = copy_to_user(buf, &tron_old_utsname, sizeof(struct oldold_utsname));
+	
+	if (0 < err) {
 		return(E_OK);
 	}
 	
@@ -251,7 +264,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL pid_t getpid(void)
 {
-	return(get_current()->pid);
+	//printf("getpid:%d\n", get_current()->pid);
+	return(get_current()->pid + 1);
 }
 
 /*
@@ -299,22 +313,6 @@ SYSCALL pid_t gettid(void)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:geteuid32
- Input		:void
- Output		:void
- Return		:uid_t
- 		 < effective user id >
- Description	:returns the effective user id of the calling process
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL uid_t geteuid32(void)
-{
-	printf("geteuid32[%d]\n", get_current()->euid);
-	return(get_current()->euid);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:getuid32
  Input		:void
  Output		:void
@@ -325,9 +323,73 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t getuid32(void)
 {
-	printf("getuid32[%d]\n", get_current()->uid);
+	//printf("getuid32[%d]\n", get_current()->uid);
 	return(get_current()->uid);
+	//return(1001);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setuid32
+ Input		:uid_t uid
+ 		 < effective user id to set >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set user identity
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int setuid32(uid_t uid)
+{
+	struct process *proc = get_current();
+	
+	printf("setuid[uid=%d]\n");
+	printf("euid=%d ->", proc->euid);
+	proc->euid = uid;
+	printf("euid=%d\n", proc->euid);
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:geteuid32
+ Input		:void
+ Output		:void
+ Return		:uid_t
+ 		 < effective user id >
+ Description	:returns the effective user id of the calling process
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL uid_t geteuid32(void)
+{
+	//printf("geteuid32[%d]\n", get_current()->euid);
+	return(get_current()->euid);
+//	return(1001);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:setgid32
+ Input		:gid_t gid
+ 		 < effective group id to set >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set group identity
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int setgid32(gid_t gid)
+{
+	struct process *proc = get_current();
+	
+	printf("setgid[gid=%d]\n");
+	printf("egid=%d ->", proc->egid);
+	proc->egid = gid;
+	printf("egid=%d\n", proc->egid);
+	
+	return(0);
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -341,9 +403,11 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL uid_t getegid32(void)
 {
-	printf("getegid32[%d]\n", get_current()->egid);
+	//printf("getegid32[%d]\n", get_current()->egid);
 	return(get_current()->egid);
+	//return(1001);
 }
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -359,7 +423,9 @@ SYSCALL uid_t getgid32(void)
 {
 	printf("getgid32[%d]\n", get_current()->gid);
 	return(get_current()->gid);
+	//return(1001);
 }
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

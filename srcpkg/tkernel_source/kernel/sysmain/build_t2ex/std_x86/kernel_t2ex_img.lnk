@@ -55,6 +55,8 @@ OUTPUT_ARCH(arm)*/
 ENTRY(_tron_start)
 OUTPUT_FORMAT(elf32-i386)
 
+reserved_bss_size = 4M;
+
 SECTIONS {
 	. = 0xC0100000;
 	/*.text 0x70030000 : {*/
@@ -129,23 +131,6 @@ SECTIONS {
 		_edata = .;
 		PROVIDE (edata = .);
 	}
-	/*.bss ALIGN(4) : {*/
-	.bss ALIGN(4) : AT(ADDR(.bss)-0xC0000000){
-		__bss_start = .;
-		PROVIDE (__sbss_start = .);
-		PROVIDE (___sbss_start = .);
-		*(EXCLUDE_FILE (*.uo) .sbss)
-		*(EXCLUDE_FILE (*.uo) .sbss.*)
-		*(EXCLUDE_FILE (*.uo) .scommon)
-		PROVIDE (__sbss_end = .);
-		PROVIDE (___sbss_end = .);
-		*(EXCLUDE_FILE (*.uo) .bss)
-		*(EXCLUDE_FILE (*.uo) .bss.*)
-		*(EXCLUDE_FILE (*.uo) COMMON)
-		. = ALIGN(4);
-		_end = .;
-		PROVIDE (end = .);
-	}
 	__data_usr_org = LOADADDR(.bss) + SIZEOF(.bss);
 	/*.data_usr ALIGN(0x1000) : AT(__data_usr_org) {*/
 	.data_usr ALIGN(0x1000) : AT(ADDR(.data_usr)-0xC0000000) {
@@ -177,5 +162,28 @@ SECTIONS {
 		. = ALIGN(4);
 		_end_usr = .;
 		PROVIDE (end_usr = .);
+	}
+	/*.bss ALIGN(4) : {*/
+	.bss ALIGN(4) : AT(ADDR(.bss)-0xC0000000){
+		__bss_start = .;
+		PROVIDE (__sbss_start = .);
+		PROVIDE (___sbss_start = .);
+		*(EXCLUDE_FILE (*.uo) .sbss)
+		*(EXCLUDE_FILE (*.uo) .sbss.*)
+		*(EXCLUDE_FILE (*.uo) .scommon)
+		PROVIDE (__sbss_end = .);
+		PROVIDE (___sbss_end = .);
+		*(EXCLUDE_FILE (*.uo) .bss)
+		*(EXCLUDE_FILE (*.uo) .bss.*)
+		*(EXCLUDE_FILE (*.uo) COMMON)
+		. = ALIGN(4);
+		_end_bss = .;
+		PROVIDE (end_bss = .);
+		/* ------------------------------------------------------------ */
+		/* initrd is loaded after bss section by grub.			*/
+		/* To allocate enough memory for kernel bss memory space	*/
+		/* is reserved							*/
+		/* ------------------------------------------------------------ */
+		. = . + reserved_bss_size;
 	}
 }

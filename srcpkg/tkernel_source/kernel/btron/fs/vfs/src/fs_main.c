@@ -48,8 +48,11 @@
  *
  */
 
+#include <bk/fs/vdso.h>
 
 #include <bk/fs/vfs.h>
+#include <bk/fs/ramfs/initramfs.h>
+#include <bk/fs/exec.h>
 #include <bk/drivers/major.h>
 #include "fsdefs.h"
 
@@ -146,8 +149,9 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 				(void)fs_tk_finalize();
 			}
 			
-			fs_attach("mda", "ram", FIMP_FAT, 0, NULL);
-			//vd_printf("ramdisk attatch %d\n", fs_attach("mda", "ram", FIMP_FAT, 0, NULL));
+			//vd_printf("ramdisk attatch ");
+			//vd_printf("%d\n", fs_attach("mda", "ram", FIMP_FAT, 0, NULL));
+			//fs_attach("mda", "ram", FIMP_FAT, 0, NULL);
 		}
 	} else {		/* Finish */
 		/* Assume all tasks are never executing fs_xxx() call !! */
@@ -186,54 +190,63 @@ EXPORT int init_fs(void)
 	
 	err = init_super_block();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_super_block\n");
 		return(err);
 	}
 	
 	err = init_vnode();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_vnode\n");
 		goto failed_init_vnode;
 	}
 	err = init_dentry();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_dentry\n");
 		goto failed_init_dentry;
 	}
 	
 	err = init_mount();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_mount\n");
 		goto failed_init_mount;
 	}
 	
 	err = init_files();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_files\n");
 		goto failed_init_files;
 	}
 	
 	err = init_block_device();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_block_devicek\n");
 		goto failed_init_block_device;
 	}
 	
 	err = init_char_device();
 	
-	if (err) {
+	if (UNLIKELY(err)) {
 		vd_printf("failed init_char_device\n");
 		goto failed_init_char_device;
 	}
 	
+	err = init_page_cache();
+	
+	if (UNLIKELY(err)) {
+		vd_printf("failed init_page_cache\n");
+		goto failed_init_page_cache;
+	}
+	
 	return(err);
 
+failed_init_page_cache:
+	destroy_char_device_cache();
 failed_init_char_device:
 	destroy_block_device_cache();
 failed_init_block_device:
@@ -282,38 +295,90 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT int make_init_fs(void)
 {
 	int err;
-	int fd;
-	char buf[] = "hello vfs world!";
+	int fd, fdin, fdout, fderr;
+	//char buf[] = "hello vfs world!";
+	char buf2[10];
+#if 0
+	char com[] = "ls";
+	char ls_path[] = "/bin";
+	char opt[] ="-la";
+#endif
+	char shell[] = "sh";
+	//char *argv[4] = {com, opt, ls_path, NULL};
+	char *argv[2] = {shell, NULL};
+	//char env[] = "LD_SHOW_AUXV=0";
+	//char env1[] = "LD_DEBUG=all";
+	//char env1[] = "LD_DEBUG=symbols";
+	//char env2[] = "LD_VERBOSE=1";
+	//char env3[] = "LD_WARN=1";
+	//char lib[] = "LD_LIBRARY_PATH=/lib/i386-linux-gnu:/lib";
+	//char *envp[5] = {lib, env1, env2, env3, NULL};
+	//char *envp[4] = {lib, env2, env3, NULL};
+	//char *envp[3] = {lib, env1, NULL};
+	//char *envp[2] = {lib,  NULL};
+	char *envp[1] = { NULL};
 	
 	err = mount_root_fs();
 	
 	if (err) {
-		vd_printf("failed mount_root_fs\n");
+		panic("failed mount_root_fs\n");
 		return(err);
 	}
 	
-	err = mkdir("/dev", 0);
+	vd_printf("mkdir\n");
+	
+	err = kmkdir("/dev", 0755);
 	
 	if (UNLIKELY(err)) {
-		vd_printf("mkdir /dev failed\n");
+		panic("mkdir /dev failed\n");
 		return(err);
 	}
 	
-	err = mknod("/dev/tty", S_IFCHR, make_dev(TTYAUX_MAJOR, 0));
+	vd_printf("mknod\n");
+	
+	err = kmknod("/dev/tty", S_IFCHR, make_dev(TTYAUX_MAJOR, 0));
 	
 	if (UNLIKELY(err)) {
-		vd_printf("mknod /dev/tty failed\n");
+		panic("mknod /dev/tty failed\n");
 		return(err);
 	}
 	
-	fd = open("/dev/tty", 0, 0);
+	fdin = kopen("/dev/tty", O_RDONLY, 0640);
 	
-	if (UNLIKELY(fd < 0)) {
-		vd_printf("open /dev/tty failed\n");
+	if (UNLIKELY(fdin < 0)) {
+		panic("open /dev/tty failed\n");
 		return(err);
 	}
 	
-	err = write(fd, buf, sizeof(buf));
+	fdout = kopen("/dev/tty", O_WRONLY, 0);
+	
+	if (UNLIKELY(fdout < 0)) {
+		panic("open /dev/tty failed\n");
+		return(err);
+	}
+	
+	fderr = kopen("/dev/tty", O_WRONLY, 0);
+	
+	if (UNLIKELY(fderr < 0)) {
+		panic("open /dev/tty failed\n");
+		return(err);
+	}
+	
+	//err = write(fdout, buf, sizeof(buf));
+	
+	err = make_vdso_file();
+	
+	if (UNLIKELY(err)) {
+		panic("error at make_vdso_file[%d]\n", -err);
+	}
+	
+	err = make_initramfs((void*)getInitramfsAddress());
+	
+	init_mm_lately();
+	
+	err = execve("/bin/busybox", argv, envp);
+	
+	panic("cannot execute [%d]\n", -err);
 	
 	return(err);
 }

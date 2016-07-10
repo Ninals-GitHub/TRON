@@ -32,7 +32,6 @@ extern void read_masks(void);
  */
 EXPORT ER tkdev_initialize( void )
 {
-	ER err;
 	/* -------------------------------------------------------------------- */
 	/* initialize programmable interrupt controller				*/
 	/* -------------------------------------------------------------------- */
