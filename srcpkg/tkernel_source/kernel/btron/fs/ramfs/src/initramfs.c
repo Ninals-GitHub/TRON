@@ -42,6 +42,7 @@
 
 #include <string.h>
 
+#include <libstr.h>
 #include <tk/typedef.h>
 #include <tstdlib/round.h>
 #include <debug/vdebug.h>
@@ -74,6 +75,7 @@ LOCAL char* old_get_filename(union cpio_header *entry);
 LOCAL void* old_get_file(union cpio_header *entry);
 LOCAL mode_t old_get_mode(union cpio_header *entry);
 LOCAL dev_t old_get_rdev(union cpio_header *entry);
+LOCAL size_t old_get_filesize(union cpio_header *entry);
 int old_set_inode(union cpio_header *entry, struct vnode *vnode);
 LOCAL union cpio_header* old_get_next(union cpio_header *entry);
 
@@ -90,6 +92,7 @@ struct cpio_ope {
 	void* (*get_file)(union cpio_header *entry);
 	mode_t (*get_mode)(union cpio_header *entry);
 	dev_t (*get_rdev)(union cpio_header *entry);
+	size_t (*get_filesize)(union cpio_header *entry);
 	int (*set_inode)(union cpio_header *entry, struct vnode *vnode);
 	union cpio_header *(*get_next)(union cpio_header *entry);
 	int (*create)(union cpio_header *entry, struct cpio_ope *cpio_ope);
@@ -107,6 +110,7 @@ LOCAL struct cpio_ope cpio_old_ope = {
 	.get_file	= old_get_file,
 	.get_mode	= old_get_mode,
 	.get_rdev	= old_get_rdev,
+	.get_filesize	= old_get_filesize,
 	.set_inode	= old_set_inode,
 	.get_next	= old_get_next,
 	.create		= old_cpio_create,
@@ -167,11 +171,45 @@ EXPORT int make_initramfs(void *cpio)
 			//ret = kmkdir(name, mode);
 			ret = cpio_ope->create(header, cpio_ope);
 		} else if (S_ISLNK(mode)) {
-			//vd_printf("symlink a %s\n", cpio_ope->get_filename(header));
+			char *linkpath;
+			char *target;
+			const char *f_target;
+			size_t size = cpio_ope->get_filesize(header);
+			
 			/* ---------------------------------------------------- */
 			/* symbolic link					*/
 			/* ---------------------------------------------------- */
+			linkpath = cpio_ope->get_filename(header);
 			
+			if (UNLIKELY(!linkpath)) {
+				goto goto_next;
+			}
+			
+			if (UNLIKELY(!size)) {
+				goto goto_next;
+			}
+			
+			f_target = (const char*)cpio_ope->get_file(header);
+			
+			if (UNLIKELY(f_target)) {
+				goto goto_next;
+			}
+			
+			target = (char*)kmalloc(size + 1, 0);
+			
+			if (UNLIKELY(!target)) {
+				goto goto_next;
+			}
+			
+			target = strncpy(target, f_target, size);
+			
+			vd_printf("symlink a target:%s linkpath:%s\n", target, linkpath);
+			
+			target[size] = '\0';
+			
+			ret = symlink(target, linkpath);
+			
+			kfree(target);
 		} else {
 			char *name = cpio_ope->get_filename(header);
 			//vd_printf("mknod a %s\n", name);
@@ -202,12 +240,22 @@ EXPORT int make_initramfs(void *cpio)
 			return(ret);
 		}
 		
+goto_next:
 		header = cpio_ope->get_next(header);
 	}
 	
 	//vd_printf("cpio finished\n");
 	
-	//show_dir_path("/");
+	show_dir_path("/bin");
+#if 0
+	{
+		struct stat64_i386 buf;
+		ret = lstat64("/bin/dmesg", &buf);
+		
+		printf("ret:%d\n", -ret);
+	}
+	for(;;);
+#endif
 	//show_dir_path("/etc");
 	
 	return(0);
@@ -421,6 +469,29 @@ LOCAL dev_t old_get_rdev(union cpio_header *entry)
 {
 	return((dev_t)entry->old.c_rdev);
 }
+
+/*
+==================================================================================
+ Funtion	:old_get_filesize
+ Input		:union cpio_header *entry
+ 		 < cpio header entry >
+ Output		:void
+ Return		:size_t
+ 		 < file size >
+ Description	:get file size of the old cpio header entry
+==================================================================================
+*/
+LOCAL size_t old_get_filesize(union cpio_header *entry)
+{
+	struct cpio_old_header *old = &entry->old;
+	size_t file_size;
+	
+	file_size = ((size_t)old->c_filesize[0] << 16)
+					+ (size_t)old->c_filesize[1];
+	
+	return(file_size);
+}
+
 
 /*
 ==================================================================================

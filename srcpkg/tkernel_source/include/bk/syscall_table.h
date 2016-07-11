@@ -153,10 +153,9 @@
 	_SVC_ENTRY syscall_test 		/* 0080 *//* getgroups		*/
 	_SVC_ENTRY syscall_test 		/* 0081 *//* setgroups		*/
 	_SVC_ENTRY syscall_test 		/* 0082 *//* select		*/
-	_SVC_ENTRY syscall_test 		/* 0083 *//* symlink		*/
+	_SVC_ENTRY symlink	 		/* 0083 *//* symlink		*/
 	_SVC_ENTRY syscall_test 		/* 0084 *//* oldlstat		*/
-//	_SVC_ENTRY readlink	 		/* 0085 *//* readlink		*/
-	_SVC_ENTRY syscall_test	 		/* 0085 *//* readlink		*/
+	_SVC_ENTRY readlink	 		/* 0085 *//* readlink		*/
 	_SVC_ENTRY syscall_test 		/* 0086 *//* uselib		*/
 	_SVC_ENTRY syscall_test 		/* 0087 *//* swapon		*/
 	_SVC_ENTRY syscall_test 		/* 0088 *//* reboot		*/

@@ -126,11 +126,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 struct process *from
  		 < copy from >
  Output		:void
- Return		:void
+ Return		:int
+ 		 < result >
  Description	:copy fs states
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT void copy_fs_states(struct process *to, struct process *from)
+EXPORT int copy_fs_states(struct process *to, struct process *from)
 {
 	struct fs_states *to_fs = &to->fs;
 	struct fs_states *from_fs = &from->fs;
@@ -144,7 +145,7 @@ EXPORT void copy_fs_states(struct process *to, struct process *from)
 	
 	to_fs->fd_count = from_fs->fd_count;
 	
-	copy_fdtable(to_fs->files, from_fs->files);
+	copy_proc_fdtable(to, from);
 }
 
 /*

@@ -65,6 +65,7 @@ LOCAL void fdtable_cache_free(struct fdtable *fdtable);
 LOCAL struct fdtable* alloc_fdtable(size_t new_size);
 LOCAL ALWAYS_INLINE struct fdtable* get_fdtable(struct process *proc);
 LOCAL ALWAYS_INLINE void put_fdtable(struct process *proc);
+LOCAL void copy_fdtable(struct fdtable *to, struct fdtable *from);
 LOCAL ALWAYS_INLINE
 void install_fdtable(struct process *proc, struct fdtable *fdtable);
 LOCAL int alloc_fd(struct process *proc);
@@ -242,27 +243,6 @@ EXPORT void free_fdtable(struct fdtable *fdtable)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copy_fdtable
- Input		:struct fdtable *to
- 		 < copy to >
- 		 struct fdtable *from
- 		 < copy form >
- Output		:void
- Return		:void
- Description	:copy fd table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT void copy_fdtable(struct fdtable *to, struct fdtable *from)
-{
-	memcpy(to->fd, from->fd, sizeof(struct file*) * from->max_fds);
-	memcpy(to->close_on_exec, from->close_on_exec,
-		sizeof(unsigned long) * from->max_fds / 8);
-	memcpy(to->open_fds, from->open_fds,
-		sizeof(unsigned long) * from->max_fds / 8);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_file
  Input		:struct process *proc
  		 < process to be freed a file >
@@ -303,6 +283,38 @@ EXPORT void free_file(struct process *proc, int fd)
 	/* :end critical section						*/
 	/* -------------------------------------------------------------------- */
 	END_CRITICAL_SECTION;
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:copy_proc_fdtable
+ Input		:struct process *to
+ 		 < copy fdtalbe to the process >
+ 		 struct process *from
+ 		 < copy fdtable from the process >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:copy process's fdtable
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int copy_proc_fdtable(struct process *to, struct process *from)
+{
+	struct fdtable *from_fdtable = from->fs.files;
+	struct fdtable *to_fdtable;
+	int i;
+	
+	to->fs.files = alloc_fdtable(from_fdtable->max_fds);
+	
+	if (UNLIKELY(!to->fs.files)) {
+		return(-ENOMEM);
+	}
+	
+	to_fdtable = to->fs.files;
+	
+	copy_fdtable(to_fdtable, from_fdtable);
+	
+	return(0);
 }
 
 /*
@@ -372,8 +384,6 @@ EXPORT int get_dirfd_path(int dirfd, struct path **dir_path)
 	
 	return(0);
 }
-
-
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -1139,6 +1149,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT ssize_t
 vfs_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
 {
+	struct vnode *vnode = filp->f_vnode;
+	
+	if (UNLIKELY(S_ISDIR(vnode->v_mode))) {
+		return(-EISDIR);
+	}
+	
 //	printf("*ppos = %ld\n", *ppos);
 	if (UNLIKELY(filp->f_vnode->v_size < *ppos)) {
 		return(0);
@@ -1182,6 +1198,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT ssize_t
 vfs_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 {
+	struct vnode *vnode = filp->f_vnode;
+	
+	if (UNLIKELY(S_ISDIR(vnode->v_mode))) {
+		return(-EISDIR);
+	}
+	
 	if (filp->f_fops && filp->f_fops->write) {
 		return(filp->f_fops->write(filp, buf, len, ppos));
 	}
@@ -1560,6 +1582,25 @@ LOCAL void free_fd(struct process *proc, int fd)
 
 /*
 ==================================================================================
+ Funtion	:copy_fdtable
+ Input		:struct fdtable *to
+ 		 < copy to >
+ 		 struct fdtable *from
+ 		 < copy form >
+ Output		:void
+ Return		:void
+ Description	:copy fd table
+==================================================================================
+*/
+LOCAL void copy_fdtable(struct fdtable *to, struct fdtable *from)
+{
+	memcpy(to->fd, from->fd, sizeof(struct file*) * from->max_fds);
+	memcpy(to->close_on_exec, from->close_on_exec, from->max_fds / 8);
+	memcpy(to->open_fds, from->open_fds, from->max_fds / 8);
+}
+
+/*
+==================================================================================
  Funtion	:install_file
  Input		:struct process *proc
  		 < process to be installed a file to its fd table >
@@ -1645,7 +1686,7 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	
 	put_file_name(fname);
 	
-	if (!dentry->d_vnode) {
+	if (UNLIKELY(!dentry->d_vnode)) {
 		//printf("open:negative dentry?\n");
 		return(-ENOENT);
 	}

@@ -1184,20 +1184,23 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 		return(-ENOMEM);
 	}
 	
-	for (i = 0;i < vm_stack->nr_pages;i++) {
-		new_pages[i] = vm_stack->pages[i];
-	}
-	
-	for (i = vm_stack->nr_pages;i < vm_stack->nr_pages + nr_ex_pages;i++) {
+	for (i = 0;i < nr_ex_pages;i++) {
 		new_pages[i] = alloc_zeroed_page();
 	}
 	
+	for (i = nr_ex_pages;i < vm_stack->nr_pages + nr_ex_pages;i++) {
+		new_pages[i] = vm_stack->pages[i - nr_ex_pages];
+		new_pages[i]->count++;
+	}
+	
 	vm_extend.nr_pages = nr_ex_pages;
-	vm_extend.pages = &new_pages[vm_stack->nr_pages];
+	//vm_extend.pages = &new_pages[vm_stack->nr_pages];
+	vm_extend.pages = new_pages;
 	vm_extend.prot = vm_stack->prot;
 	vm_extend.mspace = vm_stack->mspace;
 	vm_extend.start = vm_stack->start - new_extend;
 	vm_extend.end = vm_stack->start;
+	//vm_extend.end = vm_stack->end;
 	
 	err = map_pages_to_vm(proc, &vm_extend);
 	
@@ -1215,8 +1218,8 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 	vm_stack->nr_pages = nr_ex_pages;
 	
 	mspace->start_stack = vm_stack->start;
-	vd_printf("new vm_stack->start:0x%08X ", vm_stack->start);
-	vd_printf("new vm_statck->end:0x%08X\n", vm_stack->end);
+	printf("new vm_stack->start:0x%08X ", vm_stack->start);
+	printf("new vm_statck->end:0x%08X\n", vm_stack->end);
 	
 	return(0);
 }

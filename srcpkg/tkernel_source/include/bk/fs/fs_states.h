@@ -128,11 +128,12 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  		 struct process *from
  		 < copy from >
  Output		:void
- Return		:void
+ Return		:int
+ 		 < result >
  Description	:copy fs states
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void copy_fs_states(struct process *to, struct process *from);
+IMPORT int copy_fs_states(struct process *to, struct process *from);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

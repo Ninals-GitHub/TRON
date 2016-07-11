@@ -230,8 +230,13 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 LOCAL INLINE int copy_process(struct process *new)
 {
 	struct process *current = get_current();
+	int err;
 	
-	copy_fs_states(new, current);
+	err = copy_fs_states(new, current);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
 	
 	return(copy_mm(current, new));
 }

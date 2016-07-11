@@ -50,7 +50,7 @@
 
 ==================================================================================
 */
-LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz);
+//LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz);
 
 /*
 ==================================================================================
@@ -76,6 +76,7 @@ LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz);
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+#if 0
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:readlink
@@ -128,7 +129,7 @@ SYSCALL ssize_t readlink(const char *path, char *buf, size_t bufsiz)
 #endif
 	return(test_size);
 }
-
+#endif
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
@@ -145,6 +146,7 @@ SYSCALL ssize_t readlink(const char *path, char *buf, size_t bufsiz)
  Description	:void
 ==================================================================================
 */
+#if 0
 LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz)
 {
 	#define	TEST_PROC_SELF_EXE "/proc/self/exe"
@@ -162,7 +164,7 @@ LOCAL int test_readlink(const char *path, char *buf, size_t bufsiz)
 	
 	return(size);
 }
-
+#endif
 
 /*
 ==================================================================================

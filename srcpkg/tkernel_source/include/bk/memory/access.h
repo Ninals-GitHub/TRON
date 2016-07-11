@@ -155,6 +155,24 @@ LOCAL INLINE int vm_check_accessR(void *user_addr, size_t size)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vm_check_accessW
+ Input		:void *user_addr
+ 		 < user space address >
+ 		 size_t size
+ 		 < memory size to check >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:check user memory permission
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL INLINE int vm_check_accessW(void *user_addr, size_t size)
+{
+	return(vm_check_access(user_addr, size, PROT_WRITE));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:vm_check_accessRW
  Input		:void *user_addr
  		 < user space address >

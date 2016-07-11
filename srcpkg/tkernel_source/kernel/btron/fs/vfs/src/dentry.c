@@ -255,7 +255,6 @@ lookup_dentry_children(struct dentry *dir, const struct qstr *name,
 	
 	list_for_each_entry_safe(dentry, temp, &dir->d_subdirs, d_child) {
 		result = compare_dentry_name(name, dentry);
-		
 #if 0
 		if (UNLIKELY(is_lookup_test(flags))) {
 			char *d_name;

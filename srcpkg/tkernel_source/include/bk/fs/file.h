@@ -224,17 +224,18 @@ IMPORT void free_fdtable(struct fdtable *fdtable);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copy_fdtable
- Input		:struct fdtable *to
- 		 < copy to >
- 		 struct fdtable *from
- 		 < copy form >
+ Funtion	:copy_proc_fdtable
+ Input		:struct process *to
+ 		 < copy fdtalbe to the process >
+ 		 struct process *from
+ 		 < copy fdtable from the process >
  Output		:void
- Return		:void
- Description	:copy fd table
+ Return		:int
+ 		 < result >
+ Description	:copy process's fdtable
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void copy_fdtable(struct fdtable *to, struct fdtable *from);
+IMPORT int copy_proc_fdtable(struct process *to, struct process *from);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

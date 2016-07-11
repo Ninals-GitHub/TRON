@@ -377,6 +377,45 @@ SYSCALL int symlink(const char *target, const char *linkpath);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:readlinkat
+ Input		:int dirfd
+ 		 < directory file descriptor >
+ 		 cnost char *pathname
+ 		 < path name of a simbolic link >
+ 		 char *buf
+ 		 < buffer to store a target path name >
+ 		 size_t bufsiz
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < buffer to store a target path name >
+ Return		:ssize_t
+ 		 < an actual read length >
+ Description	:read value of a symbolic link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t
+readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:readlink
+ Input		:cnost char *pathname
+ 		 < path name of a simbolic link >
+ 		 char *buf
+ 		 < buffer to store a target path name >
+ 		 size_t bufsiz
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < buffer to store a target path name >
+ Return		:ssize_t
+ 		 < an actual read length >
+ Description	:read value of a symbolic link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:stat64
  Input		:const char *path
  		 < file path to get its status >

@@ -44,6 +44,7 @@
 #include <bk/unistd.h>
 #include <bk/fs/vfs.h>
 #include <bk/memory/slab.h>
+#include <bk/memory/access.h>
 #include <bk/uapi/sys/stat.h>
 
 #include <t2ex/limits.h>
@@ -59,6 +60,8 @@
 */
 LOCAL struct file_name*
 lookup_at(struct path *dir_path, const struct qstr *path_name, unsigned int flags);
+LOCAL ssize_t
+xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsiz);
 
 /*
 ==================================================================================
@@ -452,7 +455,6 @@ SYSCALL int symlink(const char *target, const char *linkpath)
 	struct dentry *dentry;
 	struct vnode *dir;
 	char *target_path;
-	char *symname;
 	ssize_t len;
 	int err;
 	
@@ -503,25 +505,89 @@ SYSCALL int symlink(const char *target, const char *linkpath)
 	len = strnlen(target_path, PATH_MAX + 1);
 	
 	if (UNLIKELY(PATH_MAX <= len)) {
-		kfree(target_path);
-		return(-ENAMETOOLONG);
+		err = -ENAMETOOLONG;
+		goto out;
 	}
 	
 	if (UNLIKELY(len <= 0)) {
-		kfree(target_path);
-		return(len);
+		err = len;
+		goto out;
 	}
 	
-	symname = kstrndup(target_path, PATH_MAX, 0);
+	err = vfs_symlink(dir, dentry, target_path);
 	
-	if (UNLIKELY(!symname)) {
-		kfree(target_path);
-		return(-ENOMEM);
+	if (UNLIKELY(err)) {
+		goto out;
 	}
 	
+	dentry->d_vnode->v_size = len;
+	
+out:
 	kfree(target_path);
+	return(err);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:readlinkat
+ Input		:int dirfd
+ 		 < directory file descriptor >
+ 		 cnost char *pathname
+ 		 < path name of a simbolic link >
+ 		 char *buf
+ 		 < buffer to store a target path name >
+ 		 size_t bufsiz
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < buffer to store a target path name >
+ Return		:ssize_t
+ 		 < an actual read length >
+ Description	:read value of a symbolic link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t
+readlinkat(int dirfd, const char *pathname, char *buf, size_t bufsiz)
+{
+	struct path *dir_path = NULL;
+	int err;
 	
-	return(vfs_symlink(dir, dentry, symname));
+	err = get_dirfd_path(dirfd, &dir_path);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = xreadlinkat(dir_path, pathname, buf, bufsiz);
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:readlink
+ Input		:cnost char *pathname
+ 		 < path name of a simbolic link >
+ 		 char *buf
+ 		 < buffer to store a target path name >
+ 		 size_t bufsiz
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < buffer to store a target path name >
+ Return		:ssize_t
+ 		 < an actual read length >
+ Description	:read value of a symbolic link
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
+{
+	int err;
+	
+	err = xreadlinkat(NULL, pathname, buf, bufsiz);
+	
+	printf("buf:%s\n", buf);
+	
+	return(err);
 }
 
 
@@ -546,7 +612,6 @@ SYSCALL int stat64(const char *path, struct stat64_i386 *buf)
 	int err;
 	
 	//printf("stat64:path[%s] ", path);
-	
 	
 	if (UNLIKELY(!path)) {
 		return(-EFAULT);
@@ -595,7 +660,6 @@ SYSCALL int lstat64(const char *path, struct stat64_i386 *buf)
 	int err;
 	
 	//printf("lstat64:path[%s] ", path);
-	
 	
 	if (UNLIKELY(!path)) {
 		return(-EFAULT);
@@ -1064,6 +1128,8 @@ vfs_symlink(struct vnode *dir, struct dentry *dentry, const char *symname)
 	
 	vnode->v_link = (char*)symname;
 	
+	printf("symname:%s\n", vnode->v_link);
+	
 	return(0);
 
 out:
@@ -1296,6 +1362,87 @@ found_dots:
 	
 	return(fname);
 
+}
+
+/*
+==================================================================================
+ Funtion	:xreadlinkat
+ Input		:struct path *dir_path
+ 		 < directory path >
+ 		 int dirfd
+ 		 < directory file descriptor >
+ 		 cnost char *pathname
+ 		 < path name of a simbolic link >
+ 		 char *buf
+ 		 < buffer to store a target path name >
+ 		 size_t bufsiz
+ 		 < size of a buffer >
+ Output		:char *buf
+ 		 < buffer to store a target path name >
+ Return		:ssize_t
+ 		 < an actual read length >
+ Description	:read value of a symbolic link
+==================================================================================
+*/
+LOCAL ssize_t
+xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsiz)
+{
+	struct file_name *fname;
+	struct dentry *dentry;
+	struct vnode *vnode;
+	int err;
+	
+	if (UNLIKELY(!pathname || !buf)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!bufsiz)) {
+		return(-EINVAL);
+	}
+	
+	err = vm_check_accessW((void*)buf, bufsiz);
+		
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = vm_check_accessR((void*)pathname, PATH_MAX);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = vfs_lookup_at(dir_path, pathname, &fname, LOOKUP_ENTRY);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	dentry = fname->dentry;
+	
+	put_file_name(fname);
+	
+	if (UNLIKELY(!dentry->d_vnode)) {
+		return(-ENOENT);
+	}
+	
+	vnode = dentry->d_vnode;
+	
+	if (UNLIKELY(!S_ISLNK(vnode->v_mode))) {
+		return(-EINVAL);
+	}
+	
+	printf("vnode->v_link:%s\n", vnode->v_link);
+	
+	err = copy_to_user((void*)buf, (void*)vnode->v_link, vnode->v_size);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	buf[vnode->v_size] = '\0';
+	
+	return(0);
 }
 
 /*

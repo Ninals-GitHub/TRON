@@ -470,6 +470,7 @@ wake_up_from_low_power:
 		:"esp", "memory"
 		);
 		update_tss_esp0((uint32_t)ctxtsk->tskctxb.ssp);
+		//update_tss_esp0(getEsp());
 		
 		ctxtsk = schedtsk;
 		

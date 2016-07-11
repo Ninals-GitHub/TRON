@@ -465,7 +465,10 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	//vd_printf("block_len:0x%08X\n", block_len);
 	
 	if (UNLIKELY(is_empty_list(&vnode->v_cache))) {
-		panic("block i/o request is not implemented %s[1]\n", __func__);
+		printf("block i/o request is not implemented %s[1]\n", __func__);
+		printf("file:%s\n", dentry_name(filp->f_path.dentry));
+		printf("buf:%s\n", buf);
+		panic("");
 		//return(rw_len);
 	}
 	
