@@ -43,6 +43,9 @@
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
 #include <bk/drivers/major.h>
+#include <bk/uapi/ioctl.h>
+#include <bk/uapi/ioctl_tty.h>
+#include <bk/uapi/termios.h>
 
 #include <device/std_x86/vga.h>
 #include <device/std_x86/kbd.h>
@@ -58,6 +61,17 @@ LOCAL int tty_open(struct vnode *vnode, struct file *filp);
 LOCAL ssize_t tty_read(struct file *filp, char *buf, size_t len, loff_t *ppos);
 LOCAL ssize_t
 tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos);
+
+/*
+----------------------------------------------------------------------------------
+	ioctl operations
+----------------------------------------------------------------------------------
+*/
+LOCAL long tty_ioctl(struct file *filp, unsigned int cmd, unsigned long arg);
+LOCAL int tty_tcgetattr(struct termios *termios);
+LOCAL int tty_tcsetattr(struct termios *termios);
+LOCAL int tty_tiocgwinsz(struct winsize *ws);
+LOCAL int tty_tiocswinsz(struct winsize *ws);
 
 /*
 ==================================================================================
@@ -104,11 +118,52 @@ LOCAL uint16_t fb[X_MAX * Y_MAX];
 ----------------------------------------------------------------------------------
 */
 LOCAL struct file_operations tty_fops = {
-	.open	= tty_open,
-	.read	= tty_read,
-	.write	= tty_write,
+	.open		= tty_open,
+	.read		= tty_read,
+	.write		= tty_write,
+	.unlocked_ioctl	= tty_ioctl,
 };
 
+/*
+----------------------------------------------------------------------------------
+	tty termios
+----------------------------------------------------------------------------------
+*/
+LOCAL struct termios2 tty_termios = {
+	//.c_iflags = 066402,		// IUTF8 IMAXBEL IXANY IXON ICRNL BRKINT in ubuntu
+	.c_iflag = 026402,		// IMAXBEL IXANY IXON ICRNL BRKINT
+	.c_oflag = 00005,		// ONLCR OPOST
+	.c_cflag = 02277,		// HUPCL CREAD CS8 B38400
+	.c_lflag = 0105073,		// IEXTEN ECHOKE ECHOCTL ECHOK ECHOE
+					// ECHO ICANON ISIG
+					// [CCS]	[ASCII]
+	.c_cc = { 0x03,		// 0:VINTR	EXT <end of text>
+			0x1C,		// 1:VQUIT	FS  <file separator>
+			0x7F,		// 2:VERASE	DEL
+			0x15,		// 3:VKILL	NAK
+			0x04,		// 4:VEOF	EOT <end of transmission>
+			0x00,		// 5:VTIME	ENQ <enquery>
+			0x01,		// 6:VMIN	SOH <start of heading>
+			0xFF,		// 7:VSWTC
+			0x11,		// 8:VSTART	DC1 <device control 1>
+			0x13,		// 9:VSTOP	CR
+			0x1A,		// 10:VSUSP	SUB/EOF <substitute/EOF>
+			0xFF,		// 11:VEOL
+			0x12,		// 12:VREPRINT	DC2
+			0x0F,		// 13:VDISCARD	SI <shift in>
+			0x17,		// 14:VWERASE	ETB <end of tx block>
+			0x16,		// 15:VLNEXT	SYN <synchronous idle>
+			0xFF,		// 16:VEOL2
+			0x00,
+			0x00, },
+};
+
+/*
+----------------------------------------------------------------------------------
+	tty window size
+----------------------------------------------------------------------------------
+*/
+LOCAL struct winsize tty_winsize;
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -139,6 +194,9 @@ EXPORT int _INIT_ init_tty(void)
 	
 	x_max = X_MAX;
 	y_max = Y_MAX;
+	
+	tty_winsize.ws_row = Y_MAX;
+	tty_winsize.ws_col = X_MAX;
 	
 	pos = 0;
 	line_start = 0;
@@ -296,6 +354,180 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 
 	return(len);
 }
+
+/*
+----------------------------------------------------------------------------------
+	ioctl operations
+----------------------------------------------------------------------------------
+*/
+/*
+==================================================================================
+ Funtion	:tty_ioctl
+ Input		:struct file *filp
+ 		 < open file >
+ 		 unsigned int cmd
+ 		 < request command >
+ 		 unsigned long arg
+ 		 < command arguments >
+ Output		:unsigned long arg
+ 		 < command arguments if in function >
+ Return		:long
+ 		 < result >
+ Description	:io control of tty
+==================================================================================
+*/
+LOCAL long tty_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+{
+	int err = 0;
+	if (UNLIKELY(_IOC_TYPE(cmd) != 'T')) {
+		return(-ENOTTY);
+	}
+	
+	switch (cmd) {
+	case	TCGETS:
+		err = tty_tcgetattr((struct termios*)arg);
+		break;
+	case	TCSETS:
+		err = tty_tcsetattr((struct termios*)arg);
+		break;
+	case	TIOCGWINSZ:
+		err = tty_tiocgwinsz((struct winsize*)arg);
+		break;
+	case	TIOCSWINSZ:
+		err = tty_tiocswinsz((struct winsize*)arg);
+		break;
+	default:
+		printf("tty_ioctl:currently not implmented req=0x%08X\n", cmd);
+		for(;;);
+		break;
+	}
+	
+	return(err);
+}
+
+/*
+==================================================================================
+ Funtion	:tty_tcgetattr
+ Input		:struct termios *termios
+ 		 < terminal io settings >
+ Output		:struct termios *termios
+ 		 < terminal io settings >
+ Return		:int
+ 		 < result >
+ Description	:get the current serial port settings
+==================================================================================
+*/
+LOCAL int tty_tcgetattr(struct termios *termios)
+{
+	int i;
+	
+	if (UNLIKELY(vm_check_accessW((void*)termios, sizeof(struct termios)))) {
+		return(-EINVAL);
+	}
+	
+	termios->c_iflag = tty_termios.c_iflag;
+	termios->c_oflag = tty_termios.c_oflag;
+	termios->c_cflag = tty_termios.c_cflag;
+	termios->c_lflag = tty_termios.c_lflag;
+	termios->c_line = tty_termios.c_line;
+	
+	for (i = 0;i < NCCS;i++) {
+		termios->c_cc[i] = tty_termios.c_cc[i];
+	}
+	
+	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:tty_tcsetattr
+ Input		:struct termios *termios
+ 		 < terminal io settings >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set the current serial port settings
+==================================================================================
+*/
+LOCAL int tty_tcsetattr(struct termios *termios)
+{
+	int i;
+	
+	if (UNLIKELY(vm_check_accessR((void*)termios, sizeof(struct termios)))) {
+		return(-EINVAL);
+	}
+	
+	tty_termios.c_iflag = termios->c_iflag;
+	tty_termios.c_oflag = termios->c_oflag;
+	tty_termios.c_cflag = termios->c_cflag;
+	tty_termios.c_lflag = termios->c_lflag;
+	tty_termios.c_line = termios->c_line;
+	
+	//printf("TCSETS:\n");
+	//printf("c_iflag:0x%08o c_oflag:0x%08o ", termios->c_iflag, termios->c_oflag);
+	//printf("c_cflag:0x%08o c_loflag:0x%08o ", termios->c_cflag, termios->c_lflag);
+	//printf("c_lflag:0x%08o c_line:0x%08o\n", termios->c_lflag, termios->c_line);
+	//printf("c_cc[]:\n");
+	for (i = 0;i < NCCS;i++) {
+		tty_termios.c_cc[i] = termios->c_cc[i];
+		//printf("%02X ", termios->c_cc[i]);
+	}
+	//printf("\n");
+	
+	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:tty_tiocgwinsz
+ Input		:struct winsize *ws
+ 		 < window size >
+ Output		:struct winsize *ws
+ 		 < window size >
+ Return		:int
+ 		 < result >
+ Description	:get window size
+==================================================================================
+*/
+LOCAL int tty_tiocgwinsz(struct winsize *ws)
+{
+	if (UNLIKELY(vm_check_accessW((void*)ws, sizeof(struct winsize)))) {
+		return(-EINVAL);
+	}
+	
+	ws->ws_row = tty_winsize.ws_row;
+	ws->ws_col = tty_winsize.ws_col;
+	ws->ws_xpixel = 0;
+	ws->ws_ypixel = 0;
+	
+	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:tty_tiocswinsz
+ Input		:struct winsize *ws
+ 		 < window size >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:set window size
+==================================================================================
+*/
+LOCAL int tty_tiocswinsz(struct winsize *ws)
+{
+	if (UNLIKELY(vm_check_accessR((void*)ws, sizeof(struct winsize)))) {
+		return(-EINVAL);
+	}
+	
+	tty_winsize.ws_row = ws->ws_row;
+	tty_winsize.ws_col = ws->ws_col;
+	tty_winsize.ws_xpixel = ws->ws_xpixel;
+	tty_winsize.ws_ypixel = ws->ws_ypixel;
+	
+	return(0);
+}
+
 
 /*
 ==================================================================================

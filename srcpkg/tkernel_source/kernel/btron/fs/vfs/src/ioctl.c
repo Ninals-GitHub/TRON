@@ -42,6 +42,9 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/uapi/ioctl.h>
+#include <bk/uapi/ioctl_tty.h>
+#include <bk/uapi/sys/stat.h>
 
 /*
 ==================================================================================
@@ -90,9 +93,14 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:control device
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-SYSCALL int ioctl(int fd, unsigned long request, ...)
+SYSCALL int ioctl(int fd, unsigned long request,
+			unsigned long argp1, unsigned long argp2,
+			unsigned long argp3, unsigned long argp4)
 {
 	struct file *filp;
+	struct vnode *vnode;
+	umode_t mode;
+	int err;
 	
 	if (UNLIKELY(get_soft_limit(RLIMIT_NOFILE) < fd)) {
 		return(-EBADF);
@@ -104,8 +112,29 @@ SYSCALL int ioctl(int fd, unsigned long request, ...)
 		return(-EBADF);
 	}
 	
-	//printf("As for now ioctl is not implemented\n");
-	//return(-ENOTTY);
+	if (UNLIKELY(!filp->f_vnode)) {
+		return(-ENOTTY);
+	}
+	
+	mode = filp->f_vnode->v_mode;
+	
+	if (UNLIKELY(!S_ISCHR(mode))) {
+		return(-ENOTTY);
+	}
+	
+	if (UNLIKELY(!filp->f_fops && filp->f_fops->unlocked_ioctl)) {
+		return(-ENOTTY);
+	}
+	
+	//printf("ioctl:request[0x%08X]\n", request);
+	
+	err = filp->f_fops->unlocked_ioctl(filp, request, argp1);
+	
+	if (UNLIKELY(err)) {
+		printf("ioctl:request[0x%08X] is not implemented\n", request);
+		for(;;);
+	}
+	
 	return(0);
 }
 
