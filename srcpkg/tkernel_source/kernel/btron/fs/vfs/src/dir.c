@@ -300,8 +300,6 @@ SYSCALL int getdents64(int fd, struct linux_dirent64 *dirp, unsigned int count)
 					dentry->d_name.len);
 			dirp->d_name[dentry->d_name.len] = '\0';
 			
-			//printf("%s\n", dirp->d_name);
-			
 			write_len += dirp->d_reclen;
 			filp->f_pos++;
 			

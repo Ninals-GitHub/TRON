@@ -97,32 +97,6 @@ LOCAL int tty_tiocswinsz(struct winsize *ws);
 
 ==================================================================================
 */
-/*
-----------------------------------------------------------------------------------
-	vga management
-----------------------------------------------------------------------------------
-*/
-LOCAL uint32_t x_max;
-LOCAL uint32_t y_max;
-
-LOCAL uint32_t pos;
-LOCAL uint32_t line_start;
-
-LOCAL uint16_t text_color = DEFAULT_COLOR << COLOR_SHIFT;
-
-LOCAL uint16_t fb[X_MAX * Y_MAX];
-
-/*
-----------------------------------------------------------------------------------
-	tty file operations
-----------------------------------------------------------------------------------
-*/
-LOCAL struct file_operations tty_fops = {
-	.open		= tty_open,
-	.read		= tty_read,
-	.write		= tty_write,
-	.unlocked_ioctl	= tty_ioctl,
-};
 
 /*
 ----------------------------------------------------------------------------------
@@ -166,6 +140,52 @@ LOCAL struct termios2 tty_termios = {
 LOCAL struct winsize tty_winsize;
 
 /*
+----------------------------------------------------------------------------------
+	tty management
+----------------------------------------------------------------------------------
+*/
+#if 0
+LOCAL uint32_t x_max;
+LOCAL uint32_t y_max;
+#endif
+
+struct tty {
+	struct termios2	*termios;
+	struct winsize	*winsize;
+	uint32_t	pos;
+	uint32_t	line_start;
+	uint16_t	text_color;
+	uint16_t	fb[X_MAX * Y_MAX];
+};
+
+LOCAL struct tty tty = {
+	.termios	= &tty_termios,
+	.winsize	= &tty_winsize,
+	.text_color	= DEFAULT_COLOR << COLOR_SHIFT,
+};
+
+#if 0
+LOCAL uint32_t pos;
+LOCAL uint32_t line_start;
+
+LOCAL uint16_t text_color = DEFAULT_COLOR << COLOR_SHIFT;
+
+LOCAL uint16_t fb[X_MAX * Y_MAX];
+#endif
+
+/*
+----------------------------------------------------------------------------------
+	tty file operations
+----------------------------------------------------------------------------------
+*/
+LOCAL struct file_operations tty_fops = {
+	.open		= tty_open,
+	.read		= tty_read,
+	.write		= tty_write,
+	.unlocked_ioctl	= tty_ioctl,
+};
+
+/*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
 	< Open Functions >
@@ -192,16 +212,13 @@ EXPORT int _INIT_ init_tty(void)
 		return(err);
 	}
 	
-	x_max = X_MAX;
-	y_max = Y_MAX;
+	tty.winsize->ws_row = Y_MAX;
+	tty.winsize->ws_col = X_MAX;
 	
-	tty_winsize.ws_row = Y_MAX;
-	tty_winsize.ws_col = X_MAX;
+	tty.pos = 0;
+	tty.line_start = 0;
 	
-	pos = 0;
-	line_start = 0;
-	
-	memset((void*)fb, 0x00, sizeof(fb));
+	memset((void*)tty.fb, 0x00, sizeof(tty.fb));
 	
 	return(0);
 }
@@ -310,46 +327,47 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 	size_t i;
 	int line_feed;
 	static int page = 0;
+	uint32_t y_max = tty.winsize->ws_row;
+	uint32_t x_max = tty.winsize->ws_col;
 	
 	for (i = 0;i < len;i++) {
 		if (*(buf + i) == '\n') {
-			line_feed = x_max - pos % x_max;
-			memset(fb + pos, 0x00, line_feed * sizeof(uint16_t));
-			pos += line_feed;
-			if (page) line_start++;
-			if (y_max <= line_start) line_start = 0;
-			if (x_max * y_max <= pos) {
+			line_feed = x_max - tty.pos % x_max;
+			memset(tty.fb + tty.pos, 0x00, line_feed * sizeof(uint16_t));
+			tty.pos += line_feed;
+			if (page) tty.line_start++;
+			if (y_max <= tty.line_start) tty.line_start = 0;
+			if (x_max * y_max <= tty.pos) {
 				page = 1;
-				pos = 0;
-				line_start = 1;
+				tty.pos = 0;
+				tty.line_start = 1;
 			}
 			
-			memset(fb + pos, 0x00, x_max * sizeof(uint16_t));
+			memset(tty.fb + tty.pos, 0x00, x_max * sizeof(uint16_t));
 			continue;
 		}
 		
-		*(fb + pos++) = (uint16_t)(text_color | *(buf + i));
+		*(tty.fb + tty.pos++) = (uint16_t)(tty.text_color | *(buf + i));
 		
-		if (pos && !(pos % x_max)) {
-			if (page) line_start++;
-			if (y_max <= line_start) line_start = 0;
-			if (x_max * y_max <= pos) {
+		if (tty.pos && !(tty.pos % x_max)) {
+			if (page) tty.line_start++;
+			if (y_max <= tty.line_start) tty.line_start = 0;
+			if (x_max * y_max <= tty.pos) {
 				page = 1;
-				pos = 0;
-				line_start = 1;
+				tty.pos = 0;
+				tty.line_start = 1;
 			}
-			memset(fb + pos, 0x00, x_max * sizeof(uint16_t));
+			memset(tty.fb + tty.pos, 0x00, x_max * sizeof(uint16_t));
 		}
 	}
-	if (line_start) {
-		
-		memcpy((void*)((uint16_t*)VRAM + (y_max - line_start) * x_max),
-			fb, line_start * x_max * sizeof(uint16_t));
-		memcpy((void*)VRAM, fb + line_start * x_max,
-			(y_max - line_start) * x_max * sizeof(uint16_t));
+	if (tty.line_start) {
+		memcpy((void*)((uint16_t*)VRAM + (y_max - tty.line_start) * x_max),
+			tty.fb, tty.line_start * x_max * sizeof(uint16_t));
+		memcpy((void*)VRAM, tty.fb + tty.line_start * x_max,
+			(y_max - tty.line_start) * x_max * sizeof(uint16_t));
 		
 	} else {
-		memcpy((void*)VRAM , fb, x_max * y_max * sizeof(uint16_t));
+		memcpy((void*)VRAM , tty.fb, x_max * y_max * sizeof(uint16_t));
 	}
 
 	return(len);
@@ -425,14 +443,14 @@ LOCAL int tty_tcgetattr(struct termios *termios)
 		return(-EINVAL);
 	}
 	
-	termios->c_iflag = tty_termios.c_iflag;
-	termios->c_oflag = tty_termios.c_oflag;
-	termios->c_cflag = tty_termios.c_cflag;
-	termios->c_lflag = tty_termios.c_lflag;
-	termios->c_line = tty_termios.c_line;
+	termios->c_iflag = tty.termios->c_iflag;
+	termios->c_oflag = tty.termios->c_oflag;
+	termios->c_cflag = tty.termios->c_cflag;
+	termios->c_lflag = tty.termios->c_lflag;
+	termios->c_line = tty.termios->c_line;
 	
 	for (i = 0;i < NCCS;i++) {
-		termios->c_cc[i] = tty_termios.c_cc[i];
+		termios->c_cc[i] = tty.termios->c_cc[i];
 	}
 	
 	return(0);
@@ -457,11 +475,11 @@ LOCAL int tty_tcsetattr(struct termios *termios)
 		return(-EINVAL);
 	}
 	
-	tty_termios.c_iflag = termios->c_iflag;
-	tty_termios.c_oflag = termios->c_oflag;
-	tty_termios.c_cflag = termios->c_cflag;
-	tty_termios.c_lflag = termios->c_lflag;
-	tty_termios.c_line = termios->c_line;
+	tty.termios->c_iflag = termios->c_iflag;
+	tty.termios->c_oflag = termios->c_oflag;
+	tty.termios->c_cflag = termios->c_cflag;
+	tty.termios->c_lflag = termios->c_lflag;
+	tty.termios->c_line = termios->c_line;
 	
 	//printf("TCSETS:\n");
 	//printf("c_iflag:0x%08o c_oflag:0x%08o ", termios->c_iflag, termios->c_oflag);
@@ -469,7 +487,7 @@ LOCAL int tty_tcsetattr(struct termios *termios)
 	//printf("c_lflag:0x%08o c_line:0x%08o\n", termios->c_lflag, termios->c_line);
 	//printf("c_cc[]:\n");
 	for (i = 0;i < NCCS;i++) {
-		tty_termios.c_cc[i] = termios->c_cc[i];
+		tty.termios->c_cc[i] = termios->c_cc[i];
 		//printf("%02X ", termios->c_cc[i]);
 	}
 	//printf("\n");
@@ -495,8 +513,8 @@ LOCAL int tty_tiocgwinsz(struct winsize *ws)
 		return(-EINVAL);
 	}
 	
-	ws->ws_row = tty_winsize.ws_row;
-	ws->ws_col = tty_winsize.ws_col;
+	ws->ws_row = tty.winsize->ws_row;
+	ws->ws_col = tty.winsize->ws_col;
 	ws->ws_xpixel = 0;
 	ws->ws_ypixel = 0;
 	
@@ -520,10 +538,10 @@ LOCAL int tty_tiocswinsz(struct winsize *ws)
 		return(-EINVAL);
 	}
 	
-	tty_winsize.ws_row = ws->ws_row;
-	tty_winsize.ws_col = ws->ws_col;
-	tty_winsize.ws_xpixel = ws->ws_xpixel;
-	tty_winsize.ws_ypixel = ws->ws_ypixel;
+	tty.winsize->ws_row = ws->ws_row;
+	tty.winsize->ws_col = ws->ws_col;
+	tty.winsize->ws_xpixel = ws->ws_xpixel;
+	tty.winsize->ws_ypixel = ws->ws_ypixel;
 	
 	return(0);
 }

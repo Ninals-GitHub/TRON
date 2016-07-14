@@ -89,7 +89,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 #define	DENT64_PAD		4
 #define	DENT64_ROUND		(DENT64_PAD - 1)
-#define dent64_reclen(name_len) (((name_len) + sizeof(ino64_t) +		\
+#define dent64_reclen(name_len) (((name_len + 1) + sizeof(ino64_t) +		\
 						sizeof(loff_t) +		\
 						sizeof(unsigned short) +	\
 						sizeof(unsigned char) +		\
