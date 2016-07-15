@@ -198,6 +198,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT int vd_printf( const char *format, ... )
 {
+#if 0
 	va_list	ap;
 	size_t	len;
 	uint8_t	buf[1024];
@@ -211,6 +212,8 @@ EXPORT int vd_printf( const char *format, ... )
 	vd_puts((char*)buf);
 	
 	return(len);
+#endif
+	return(0);
 }
 
 /*

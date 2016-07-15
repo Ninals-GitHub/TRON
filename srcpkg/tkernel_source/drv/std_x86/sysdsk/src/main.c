@@ -197,7 +197,6 @@ LOCAL	void	ExecTask(SDInfo	*inf)
 
 	/* It does not come here because it does not exit */
 E_EXIT:
-	vd_printf("exit\n");
 	while ((ndrv = drv) != NULL) {
 		DeleteLock(&ndrv->ProcLock);
 		GDelDevice(ndrv->Gdi);
@@ -243,11 +242,8 @@ EXPORT	ER	SysDiskDrv(INT ac, UB *av[])
 	/* Driver for RAM disk (mda) : DEVCONF: RAMDISK  size */
 #if _STD_X86_
 	if (isInitramfs()) {
-		vd_printf("ramdisk ");
 		md_drv[0].iob = (UW)getInitramfsAddress();
 		md_drv[0].misc = getInitramfsSize();
-		vd_printf("CreTask:%d\n", CreTask((FP)ExecTask, (INT)&md_drv[0], md_drv[0].name4));
-		vd_printf("E_SYS:%d\n", E_SYS);
 	}
 #else
 	if (GetDevConf("RAMDISK", v) > 0) {

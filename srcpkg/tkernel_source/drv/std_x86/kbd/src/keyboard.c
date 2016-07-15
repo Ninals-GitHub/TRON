@@ -579,9 +579,11 @@ EXPORT ER kbd_in(B *buf, UW len)
 		} else {
 			return(err);
 		}
+#if 0
 		if (!get_kbd_queue_size()) {
 			return(read_len);
 		}
+#endif
 	}
 	
 	//vd_printf("%s\n", buf);
@@ -693,7 +695,8 @@ LOCAL int get_kbd_queue_size(void)
 		return(kbd_queue.write - kbd_queue.read);
 	}
 	
-	return(kbd_queue.read - kbd_queue.write);
+	//return(kbd_queue.read - kbd_queue.write);
+	return(kbd_queue.size - kbd_queue.read + kbd_queue.write);
 }
 
 /*
@@ -710,8 +713,10 @@ LOCAL int get_kbd_queue_size(void)
 LOCAL ER write_kbd_queue(uint8_t data)
 {
 	ER err;
-	
-	if (kbd_queue.write + 1 == kbd_queue.read) {
+
+	if ((get_kbd_queue_size() == kbd_queue.size) &&
+		(kbd_queue.write + 1 == kbd_queue.read)) {
+		tk_set_flg(kbd_state.flgid, KBD_IN_EVENT);
 		return(E_QOVR);
 	}
 	
@@ -721,8 +726,11 @@ LOCAL ER write_kbd_queue(uint8_t data)
 		kbd_queue.write = 0;
 	}
 	
-	//err = _tk_set_flg(kbd_state.flgid, KBD_IN_EVENT);
-	err = tk_set_flg(kbd_state.flgid, KBD_IN_EVENT);
+	err = _tk_set_flg(kbd_state.flgid, KBD_IN_EVENT);
+	
+	if (err) {
+		printf("kbd_err:%d\n", err);
+	}
 	
 	return(err);
 }
@@ -742,22 +750,28 @@ LOCAL ER read_one_byte(void)
 	UINT flgptn;
 	ER err;
 	
+repeat:
+	BEGIN_CRITICAL_SECTION;
 	if (get_kbd_queue_size()) {
 		err = (ER)kbd_queue.data[kbd_queue.read++];
 		if (kbd_queue.size <= kbd_queue.read) {
 			kbd_queue.read = 0;
 		}
+		OUT_CRITICAL_SECTION;
 		return(err);
 	}
+	END_CRITICAL_SECTION;
 	
 	/* wait for a data							*/
 	err = tk_wai_flg(kbd_state.flgid, KBD_IN_EVENT,
 			TWF_ANDW | TWF_BITCLR, &flgptn, TMO_FEVR);
 	
 	if (err) {
-		return(err);
+		return(0);
 	}
 	
+	goto repeat;
+#if 0
 	if (get_kbd_queue_size()) {
 		err = (ER)kbd_queue.data[kbd_queue.read++];
 		if (kbd_queue.size <= kbd_queue.read) {
@@ -765,8 +779,8 @@ LOCAL ER read_one_byte(void)
 		}
 		return(err);
 	}
-	
-	return(E_OBJ);
+#endif
+	return(0);
 }
 
 /*
@@ -1071,7 +1085,7 @@ LOCAL void kbd_intterupt(struct ctx_reg *reg)
 	
 	scan_code = (int)read_kbd_enc();
 	
-	if (scan_code_func[kbd_state.analyze_state]) {
+	if (kbd_state.analyze_state < ANALYZED_STATE_NUM) {
 		scan_code_func[kbd_state.analyze_state](scan_code);
 	} else {
 		kbd_state.analyze_state = SINGLE_CODE_MAKE;

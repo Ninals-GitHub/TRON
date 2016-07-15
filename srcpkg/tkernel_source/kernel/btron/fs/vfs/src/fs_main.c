@@ -161,6 +161,8 @@ EXPORT	INT	fs_main(INT ac, UB *arg[])
 		}
 	}
 	
+	//for(;;);
+	
 	make_init_fs();
 
 exit0:
