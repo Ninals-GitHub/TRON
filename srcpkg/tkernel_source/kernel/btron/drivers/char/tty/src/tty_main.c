@@ -50,6 +50,9 @@
 #include <device/std_x86/vga.h>
 #include <device/std_x86/kbd.h>
 
+#include "tty.h"
+#include "csi.h"
+
 /*
 ==================================================================================
 
@@ -80,15 +83,6 @@ LOCAL int tty_tiocswinsz(struct winsize *ws);
 
 ==================================================================================
 */
-#define	VRAM		((uint16_t*)0xC00B8000)
-
-#define	COLOR_SHIFT	8
-#define	BACK_SHIFT	4
-
-#define	DEFAULT_COLOR	( (VGA_BLACK << BACK_SHIFT) | (VGA_WHITE & 0xFF) )
-
-#define	X_MAX		80
-#define	Y_MAX		25
 
 /*
 ==================================================================================
@@ -148,15 +142,6 @@ LOCAL struct winsize tty_winsize;
 LOCAL uint32_t x_max;
 LOCAL uint32_t y_max;
 #endif
-
-struct tty {
-	struct termios2	*termios;
-	struct winsize	*winsize;
-	uint32_t	pos;
-	uint32_t	line_start;
-	uint16_t	text_color;
-	uint16_t	fb[X_MAX * Y_MAX];
-};
 
 LOCAL struct tty tty = {
 	.termios	= &tty_termios,
@@ -298,6 +283,10 @@ LOCAL ssize_t tty_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
 {
 	ssize_t read_len;
 	
+	if (UNLIKELY(tty.report)) {
+		return(read_csi_report(buf, len, &tty));
+	}
+	
 	read_len = kbd_in(buf, len);
 	
 	return(read_len);
@@ -329,8 +318,17 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 	static int page = 0;
 	uint32_t y_max = tty.winsize->ws_row;
 	uint32_t x_max = tty.winsize->ws_col;
+	struct csi_state state = {
+		.state		= CSI_NONE,
+		.n		= 0,
+		.m		= 0,
+	};
 	
 	for (i = 0;i < len;i++) {
+		if (UNLIKELY(analyze_csi(buf + i, &state, &tty))) {
+			continue;
+		}
+		
 		if (*(buf + i) == '\n') {
 			line_feed = x_max - tty.pos % x_max;
 			memset(tty.fb + tty.pos, 0x00, line_feed * sizeof(uint16_t));
@@ -368,6 +366,12 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 		
 	} else {
 		memcpy((void*)VRAM , tty.fb, x_max * y_max * sizeof(uint16_t));
+	}
+	
+	tty.pos_cur = tty.pos + 1;
+	
+	if (UNLIKELY((x_max * y_max) <= tty.pos_cur)) {
+		tty.pos_cur = 0;
 	}
 
 	return(len);
@@ -545,7 +549,6 @@ LOCAL int tty_tiocswinsz(struct winsize *ws)
 	
 	return(0);
 }
-
 
 /*
 ==================================================================================

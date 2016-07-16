@@ -141,22 +141,6 @@ struct file {
 	void				*f_private;
 };
 
-/*
-----------------------------------------------------------------------------------
-	open file descriptor table
-----------------------------------------------------------------------------------
-*/
-#define	DEFAULT_NR_FDS			32
-#define	INC_NR_FDS			32
-
-struct fdtable {
-	int				next_fd;
-	unsigned int			max_fds;
-	struct file			**fd;
-	unsigned long			*close_on_exec;
-	unsigned long			*open_fds;
-};
-
 
 /*
 ==================================================================================
@@ -196,46 +180,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void destroy_files_cache(void);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:extend_fdtable
- Input		:struct process *proc
- 		 < process to extend its fd table >
- Output		:void
- Return		:int
- 		 < result >
- Description	:extend a fd table or allocate a fd table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT int extend_fdtable(struct process *proc);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:free_fdtable
- Input		:struct fdtable *fdtable
- 		 < a fd table to free >
- Output		:void
- Return		:void
- Description	:free a fd table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT void free_fdtable(struct fdtable *fdtable);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copy_proc_fdtable
- Input		:struct process *to
- 		 < copy fdtalbe to the process >
- 		 struct process *from
- 		 < copy fdtable from the process >
- Output		:void
- Return		:int
- 		 < result >
- Description	:copy process's fdtable
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT int copy_proc_fdtable(struct process *to, struct process *from);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -319,19 +263,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int is_open_dir(int fd);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:has_fdtable
- Input		:struct process *proc
- 		 < process to test whether it has already a fd table >
- Output		:void
- Return		:int
- 		 < boolean >
- Description	:test whether the process has already a fd table or not
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT int has_fdtable(struct process *proc);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

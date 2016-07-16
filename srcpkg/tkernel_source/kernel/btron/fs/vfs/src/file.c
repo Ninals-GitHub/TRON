@@ -42,6 +42,7 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/fs/fdtable.h>
 #include <bk/fs/vdso.h>
 #include <bk/memory/slab.h>
 #include <bk/memory/vm.h>
@@ -60,14 +61,6 @@
 */
 LOCAL struct file* file_cache_alloc(void);
 LOCAL void file_cache_free(struct file *file);
-LOCAL struct fdtable* fdtable_cache_alloc(void);
-LOCAL void fdtable_cache_free(struct fdtable *fdtable);
-LOCAL struct fdtable* alloc_fdtable(size_t new_size);
-LOCAL ALWAYS_INLINE struct fdtable* get_fdtable(struct process *proc);
-LOCAL ALWAYS_INLINE void put_fdtable(struct process *proc);
-LOCAL void copy_fdtable(struct fdtable *to, struct fdtable *from);
-LOCAL ALWAYS_INLINE
-void install_fdtable(struct process *proc, struct fdtable *fdtable);
 LOCAL int alloc_fd(struct process *proc);
 LOCAL void free_fd(struct process *proc, int fd);
 LOCAL ALWAYS_INLINE int
@@ -93,9 +86,6 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode);
 LOCAL struct kmem_cache *file_cache;
 LOCAL const char file_cache_name[] = "file_cache";
 
-LOCAL struct kmem_cache *fdtable_cache;
-LOCAL const char fdtable_cache_name[] = "fdtable_cache";
-
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 	
@@ -115,6 +105,8 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 EXPORT int init_files(void)
 {
+	int err;
+	
 	file_cache = kmem_cache_create(file_cache_name,
 					sizeof(struct file), 0, 0, NULL);
 	
@@ -123,15 +115,9 @@ EXPORT int init_files(void)
 		return(-ENOMEM);
 	}
 	
-	fdtable_cache = kmem_cache_create(fdtable_cache_name,
-					sizeof(struct fdtable), 0, 0, NULL);
+	err = init_fdtable();
 	
-	if (UNLIKELY(!fdtable_cache)) {
-		vd_printf("error:fdtable_cache\n");
-		return(-ENOMEM);
-	}
-	
-	return(0);
+	return(err);
 }
 
 /*
@@ -148,98 +134,6 @@ EXPORT void destroy_files_cache(void)
 	kmem_cache_destroy(file_cache);
 }
 
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:extend_fdtable
- Input		:struct process *proc
- 		 < process to extend its fd table >
- Output		:void
- Return		:int
- 		 < result >
- Description	:extend a fd table or allocate a fd table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int extend_fdtable(struct process *proc)
-{
-	struct fdtable *new_table;
-	struct fdtable *old_table;
-	size_t new_size;
-	unsigned long max_nofile;
-	
-	/* -------------------------------------------------------------------- */
-	/* :begin critical section						*/
-	/* -------------------------------------------------------------------- */
-	BEGIN_CRITICAL_SECTION;
-	if (UNLIKELY(!has_fdtable(proc))) {
-		/* ------------------------------------------------------------ */
-		/* allocate a new fd table					*/
-		/* ------------------------------------------------------------ */
-		new_table = alloc_fdtable(DEFAULT_NR_FDS);
-		
-		if (UNLIKELY(!new_table)) {
-			goto error_out;
-		}
-		
-		goto success_out;
-	}
-	
-	max_nofile = get_soft_limit(RLIMIT_NOFILE);
-	
-	old_table = get_fdtable(proc);
-	
-	if (UNLIKELY(max_nofile < old_table->max_fds)) {
-		return(-EMFILE);
-	} else {
-		new_size = old_table->max_fds + INC_NR_FDS;
-	}
-	
-	if (UNLIKELY(max_nofile < new_size)) {
-		new_size = max_nofile;
-	}
-
-	new_table = alloc_fdtable(new_size);
-
-	if (!new_table) {
-error_out:
-		put_fdtable(proc);
-		OUT_CRITICAL_SECTION;
-		return(-ENOMEM);
-	}
-	
-	copy_fdtable(new_table, old_table);
-	free_fdtable(old_table);
-success_out:
-	install_fdtable(proc, new_table);
-	put_fdtable(proc);
-	/* -------------------------------------------------------------------- */
-	/* :end critical section						*/
-	/* -------------------------------------------------------------------- */
-	END_CRITICAL_SECTION;
-	
-	return(0);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:free_fdtable
- Input		:struct fdtable *fdtable
- 		 < a fd table to free >
- Output		:void
- Return		:void
- Description	:free a fd table
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT void free_fdtable(struct fdtable *fdtable)
-{
-	if (UNLIKELY(!fdtable)) {
-		return;
-	}
-	
-	kfree(fdtable->close_on_exec);
-	kfree(fdtable->open_fds);
-	kfree(fdtable->fd);
-	fdtable_cache_free(fdtable);
-}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -283,38 +177,6 @@ EXPORT void free_file(struct process *proc, int fd)
 	/* :end critical section						*/
 	/* -------------------------------------------------------------------- */
 	END_CRITICAL_SECTION;
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:copy_proc_fdtable
- Input		:struct process *to
- 		 < copy fdtalbe to the process >
- 		 struct process *from
- 		 < copy fdtable from the process >
- Output		:void
- Return		:int
- 		 < result >
- Description	:copy process's fdtable
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int copy_proc_fdtable(struct process *to, struct process *from)
-{
-	struct fdtable *from_fdtable = from->fs.files;
-	struct fdtable *to_fdtable;
-	int i;
-	
-	to->fs.files = alloc_fdtable(from_fdtable->max_fds);
-	
-	if (UNLIKELY(!to->fs.files)) {
-		return(-ENOMEM);
-	}
-	
-	to_fdtable = to->fs.files;
-	
-	copy_fdtable(to_fdtable, from_fdtable);
-	
-	return(0);
 }
 
 /*
@@ -435,23 +297,6 @@ EXPORT int is_open_dir(int fd)
 	}
 	
 	return(is_open_file(fd));
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:has_fdtable
- Input		:struct process *proc
- 		 < process to test whether it has already a fd table >
- Output		:void
- Return		:int
- 		 < boolean >
- Description	:test whether the process has already a fd table or not
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int has_fdtable(struct process *proc)
-{
-	struct fs_states *fs = &proc->fs;
-	return((int)fs->files);
 }
 
 /*
@@ -1322,159 +1167,6 @@ LOCAL void file_cache_free(struct file *file)
 
 /*
 ==================================================================================
- Funtion	:fdtable_cache_alloc
- Input		:void
- Output		:void
- Return		:struct fdtable*
- 		 < fdtable object >
- Description	:allocate a fdtable object
-==================================================================================
-*/
-LOCAL struct fdtable* fdtable_cache_alloc(void)
-{
-	struct fdtable *fdtable;
-	
-	fdtable = (struct fdtable*)kmem_cache_alloc(fdtable_cache, 0);
-	
-	memset((void*)fdtable, 0x00, sizeof(struct fdtable));
-	
-	return(fdtable);
-}
-
-/*
-==================================================================================
- Funtion	:fdtable_cache_free
- Input		:struct fdtable *fdtable
- 		 < fdtable object to free >
- Output		:void
- Return		:void
- Description	:free a fdtable object
-==================================================================================
-*/
-LOCAL void fdtable_cache_free(struct fdtable *fdtable)
-{
-	kmem_cache_free(fdtable_cache, fdtable);
-}
-
-/*
-==================================================================================
- Funtion	:alloc_fdtable
- Input		:size_t new_size
- 		 < size of new fd table >
- Output		:void
- Return		:struct fdtable*
- 		 < allocated fd table >
- Description	:allocate a fd table
-==================================================================================
-*/
-LOCAL struct fdtable* alloc_fdtable(size_t new_size)
-{
-	struct fdtable *fdtable;
-	
-	fdtable = fdtable_cache_alloc();
-	
-	if (UNLIKELY(!fdtable)) {
-		
-		return(NULL);
-	}
-	
-	fdtable->fd = (struct file**)kcalloc(sizeof(struct file*), new_size, 0);
-	
-	if (UNLIKELY(!fdtable->fd)) {
-		goto failed_alloc_fd;
-	}
-	
-	fdtable->open_fds = (unsigned long*)kcalloc(sizeof(unsigned long),
-					new_size / (sizeof(unsigned long) * 8), 0);
-	
-	if (UNLIKELY(!fdtable->open_fds)) {
-		goto failed_alloc_open_fds;
-	}
-	
-	fdtable->close_on_exec = (unsigned long*)kcalloc(sizeof(unsigned long),
-					new_size / (sizeof(unsigned long) * 8), 0);
-	
-	if (UNLIKELY(!fdtable->close_on_exec)) {
-		goto failed_alloc_close_on_exec;
-	}
-	
-	fdtable->max_fds = new_size;
-	
-	return(fdtable);
-	
-failed_alloc_close_on_exec:
-	kfree(fdtable->open_fds);
-failed_alloc_open_fds:
-	kfree(fdtable->fd);
-failed_alloc_fd:
-	fdtable_cache_free(fdtable);
-	
-	return(NULL);
-}
-
-/*
-==================================================================================
- Funtion	:get_fdtable
- Input		:struct process *proc
- 		 < process to get its fd table >
- Output		:void
- Return		:struct fdtable*
- 		 < fd table >
- Description	:get fd table
-==================================================================================
-*/
-LOCAL ALWAYS_INLINE struct fdtable* get_fdtable(struct process *proc)
-{
-	if (UNLIKELY(!proc->fs.files)) {
-		return(NULL);
-	}
-	
-	atomic_inc(&proc->fs.fd_count);
-	
-	return(proc->fs.files);
-}
-
-/*
-==================================================================================
- Funtion	:put_fdtable
- Input		:struct process *proc
- 		 < process to put its fd table >
- Output		:void
- Return		:void
- Description	:put fd table
-==================================================================================
-*/
-LOCAL ALWAYS_INLINE void put_fdtable(struct process *proc)
-{
-	if (atomic_read(&proc->fs.fd_count)) {
-		atomic_dec(&proc->fs.fd_count);
-	}
-}
-
-/*
-==================================================================================
- Funtion	:install_fdtable
- Input		:struct process *proc
- 		 < process to be installed >
- 		 struct fdtable *fdtable
- 		 < a fd table to install >
- Output		:void
- Return		:void
- Description	:install a fd table to a process
-==================================================================================
-*/
-LOCAL ALWAYS_INLINE
-void install_fdtable(struct process *proc, struct fdtable *fdtable)
-{
-	if (UNLIKELY(!atomic_read(&proc->fs.fd_count))) {
-		atomic_inc(&proc->fs.fd_count);
-	}
-	
-	proc->fs.files = fdtable;
-}
-
-/*
-==================================================================================
  Funtion	:alloc_fd
  Input		:struct process *proc
  		 < process to be allocated a fd  >
@@ -1578,25 +1270,6 @@ LOCAL void free_fd(struct process *proc, int fd)
 	/* :end critical section						*/
 	/* -------------------------------------------------------------------- */
 	} END_CRITICAL_SECTION;
-}
-
-/*
-==================================================================================
- Funtion	:copy_fdtable
- Input		:struct fdtable *to
- 		 < copy to >
- 		 struct fdtable *from
- 		 < copy form >
- Output		:void
- Return		:void
- Description	:copy fd table
-==================================================================================
-*/
-LOCAL void copy_fdtable(struct fdtable *to, struct fdtable *from)
-{
-	memcpy(to->fd, from->fd, sizeof(struct file*) * from->max_fds);
-	memcpy(to->close_on_exec, from->close_on_exec, from->max_fds / 8);
-	memcpy(to->open_fds, from->open_fds, from->max_fds / 8);
 }
 
 /*

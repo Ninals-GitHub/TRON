@@ -42,6 +42,7 @@
 
 #include <bk/kernel.h>
 #include <bk/fs/vfs.h>
+#include <bk/fs/fdtable.h>
 #include <bk/memory/vm.h>
 #include <bk/uapi/sys/stat.h>
 
