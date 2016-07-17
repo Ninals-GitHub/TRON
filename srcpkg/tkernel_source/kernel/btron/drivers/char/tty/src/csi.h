@@ -303,4 +303,25 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT size_t read_csi_report(char *buf, size_t len, struct tty *tty);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_csi_cursor
+ Input		:struct file *filp
+ 		 < open file >
+ 		 char *buf
+ 		 < user buffer to output >
+ 		 size_t len
+ 		 < length of the buffer >
+ 		 struct tty *tty
+ 		 < tty management >
+ Output		:char *buf
+ 		 < user buffer to output >
+ Return		:size_t
+ 		 < atucal read length >
+ Description	:read tty report
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT size_t
+read_csi_cursor(struct file *filp, char *buf, size_t len, struct tty *tty);
+
 #endif	// __TTY_CSI_H__

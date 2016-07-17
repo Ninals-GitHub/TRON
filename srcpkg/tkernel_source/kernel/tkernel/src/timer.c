@@ -46,6 +46,8 @@ EXPORT LSYSTIM	real_time_ofs;	/* Actual time - System operation time */
  * Timer event queue
  */
 LOCAL QUEUE	timer_queue;
+LOCAL unsigned long current_time_msec;
+LOCAL unsigned long current_time_sec;
 
 /*
  * Initialization of timer module
@@ -188,15 +190,24 @@ EXPORT void timer_handler( void )
 
 	BEGIN_CRITICAL_SECTION;
 	current_time = ll_add(current_time, to_usec(uitoll(TIMER_PERIOD)));
+	
+	current_time_msec += TIMER_PERIOD;
+	
+	if (UNLIKELY(current_time_msec == 1000)) {
+		current_time_msec = 0;
+		current_time_sec++;
+	}
 
 	if ( ctxtsk != NULL ) {
+#if 0
 		/* Task at execution */
 		if ( ctxtsk->sysmode > 0 ) {
 			ctxtsk->stime += TIMER_PERIOD;
 		} else {
 			ctxtsk->utime += TIMER_PERIOD;
 		}
-
+#endif
+		
 		if ( schedtsk == ctxtsk ) {
 			schedtsk = time_slice_schedule(ctxtsk);
 			if ( schedtsk != ctxtsk ) {
@@ -222,3 +233,27 @@ EXPORT void timer_handler( void )
 	end_of_hw_timer_interrupt();		/* Clear timer interrupt */
 	END_CRITICAL_SECTION;
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_time
+ Input		:unsigned long *sec
+ 		 < second >
+ 		 unsigned long *msec
+ 		 < milisecond >
+ Output		:unsigned long *sec
+ 		 < second >
+ 		 unsigned long *msec
+ 		 < milisecond >
+ Return		:void
+ Description	:get current second and milisecond
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void get_current_time(unsigned long *sec, unsigned long *msec)
+{
+	BEGIN_CRITICAL_SECTION;
+	*sec = current_time_sec;
+	*msec = current_time_msec;
+	END_CRITICAL_SECTION;
+}
+

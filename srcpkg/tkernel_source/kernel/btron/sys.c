@@ -43,6 +43,8 @@
 #include <typedef.h>
 #include <bk/kernel.h>
 #include <tk/kernel.h>
+#include <bk/memory/access.h>
+#include <bk/uapi/sys/time.h>
 
 
 /*
@@ -426,22 +428,6 @@ SYSCALL uid_t getgid32(void)
 	//return(1001);
 }
 
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_machine_name
- Input		:void
- Output		:void
- Return		:char *
- 		 < machine name >
- Description	:get machine name
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT char* get_machine_name(void)
-{
-	return(tron_utsname.machine);
-}
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:restart_syscall
@@ -458,6 +444,72 @@ SYSCALL int restart_syscall(void)
 	printf("stopped\n");
 	for(;;);
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:times
+ Input		:struct tms *buf
+ 		 < times buffer to out put >
+ Output		:struct tms *buf
+ 		 < times buffer to out put >
+ Return		:long
+ 		 < result >
+ Description	:get proces times
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL long times(struct tms *buf)
+{
+	struct process *proc = get_current();
+	struct task *task = get_current_task();
+	int err;
+	long tick;
+	
+	err = vm_check_accessW((void*)buf, sizeof(struct tms));
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	buf->tms_utime = task->utime;
+	buf->tms_stime = task->stime;
+	
+	buf->tms_cutime = 0;
+	buf->tms_cstime = 0;
+	
+	tick = (long)get_current_tick();
+	
+	if (is_empty_list(&proc->list_tasks)) {
+		return(tick);
+	}
+	
+	list_for_each_entry(task, &proc->list_tasks, task_node) {
+		buf->tms_cutime = task->utime;
+		buf->tms_cstime = task->stime;
+	}
+	
+	return(tick);
+}
+
+/*
+----------------------------------------------------------------------------------
+	kernel internal operations
+----------------------------------------------------------------------------------
+*/
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_machine_name
+ Input		:void
+ Output		:void
+ Return		:char *
+ 		 < machine name >
+ Description	:get machine name
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT char* get_machine_name(void)
+{
+	return(tron_utsname.machine);
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

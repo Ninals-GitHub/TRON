@@ -23,6 +23,8 @@
 #include <sys/queue.h>
 #include <tk/longlong.h>
 
+#include <bk/typedef.h>
+
 /*
  * conversion of milliseconds and microseconds
  */
@@ -111,6 +113,37 @@ IMPORT void timer_insert_abs( TMEB *evt, LSYSTIM time, CBACK cback, void *arg );
 Inline void timer_delete( TMEB *event )
 {
 	QueRemove(&event->queue);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_time
+ Input		:unsigned long *sec
+ 		 < second >
+ 		 unsigned long *msec
+ 		 < milisecond >
+ Output		:unsigned long *sec
+ 		 < second >
+ 		 unsigned long *msec
+ 		 < milisecond >
+ Return		:void
+ Description	:get current second and milisecond
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void get_current_time(unsigned long *sec, unsigned long *msec);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_current_tick
+ Input		:void
+ Output		:void
+ Return		:void
+ Description	:get current second and milisecond
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL ALWAYS_INLINE clock_t get_current_tick(void)
+{
+	return(current_time);
 }
 
 #endif /* _TIMER_ */

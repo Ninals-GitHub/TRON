@@ -112,7 +112,7 @@
 	_SVC_ENTRY syscall_test 		/* 0040 *//* rmdir		*/
 	_SVC_ENTRY syscall_test 		/* 0041 *//* dup		*/
 	_SVC_ENTRY syscall_test 		/* 0042 *//* pipe		*/
-	_SVC_ENTRY syscall_test 		/* 0043 *//* times		*/
+	_SVC_ENTRY times	 		/* 0043 *//* times		*/
 	_SVC_ENTRY syscall_test 		/* 0044 *//* prof		*/
 	_SVC_ENTRY brk		 		/* 0045 *//* brk		*/
 	_SVC_ENTRY syscall_test 		/* 0046 *//* setgid		*/
@@ -276,8 +276,7 @@
 	_SVC_ENTRY getuid32			/* 0199 *//* getuid32		*/
 	_SVC_ENTRY getgid32			/* 0200 *//* getgid32		*/
 	_SVC_ENTRY geteuid32			/* 0201 *//* geteuid32		*/
-//	_SVC_ENTRY getegid32			/* 0202 *//* getegid32		*/
-	_SVC_ENTRY syscall_test			/* 0202 *//* getegid32		*/
+	_SVC_ENTRY getegid32			/* 0202 *//* getegid32		*/
 	_SVC_ENTRY syscall_test			/* 0203 *//* setreuid32		*/
 	_SVC_ENTRY syscall_test			/* 0204 *//* setregid32		*/
 	_SVC_ENTRY syscall_test			/* 0205 *//* getgroups32	*/
@@ -296,7 +295,7 @@
 	_SVC_ENTRY syscall_test			/* 0218 *//* mincore		*/
 	_SVC_ENTRY syscall_test			/* 0219 *//* madvise		*/
 	_SVC_ENTRY getdents64			/* 0220 *//* getdents64		*/
-	_SVC_ENTRY syscall_test			/* 0221 *//* fcntl64		*/
+	_SVC_ENTRY fcntl64			/* 0221 *//* fcntl64		*/
 	_SVC_ENTRY syscall_test			/* 0222 *//* reserved		*/
 	_SVC_ENTRY syscall_test			/* 0223 *//* reserved		*/
 //	_SVC_ENTRY gettid			/* 0224 *//* gettid		*/
@@ -350,7 +349,7 @@
 	_SVC_ENTRY syscall_test			/* 0269 *//* fstatfs64		*/
 //	_SVC_ENTRY tgkill			/* 0270 *//* tgkill		*/
 	_SVC_ENTRY syscall_test			/* 0270 *//* tgkill		*/
-	_SVC_ENTRY syscall_test			/* 0271 *//* utimes		*/
+	_SVC_ENTRY utimes			/* 0271 *//* utimes		*/
 	_SVC_ENTRY syscall_test			/* 0272 *//* fadvise64_64	*/
 	_SVC_ENTRY syscall_test			/* 0273 *//* vserver		*/
 	_SVC_ENTRY syscall_test			/* 0274 *//* mbind		*/

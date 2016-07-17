@@ -93,6 +93,13 @@ struct timespec {
 	long	tv_nsec;	/* Nanosecond					*/
 };
 
+struct tms {
+	clock_t	tms_utime;	/* user time					*/
+	clock_t	tms_stime;	/* system time					*/
+	clock_t	tms_cutime;	/* user time of children			*/
+	clock_t	tms_cstime;	/* system time of children			*/
+};
+
 /*
 ----------------------------------------------------------------------------------
 	time zone
@@ -145,13 +152,22 @@ typedef int	clockid_t;
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:timeval_to_timespec
+ Input		:struct timeval *from
+ 		 < timeval struct >
+ 		 struct timespec *to
+ 		 < timespec struct >
  Output		:void
  Return		:void
- Description	:void
+ Description	:convert values of timeval to those of timespec
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+LOCAL ALWAYS_INLINE void
+timeval_to_timespec(struct timeval *from, struct timespec *to)
+{
+	to->tv_sec = from->tv_sec;
+	to->tv_nsec = from->tv_usec;
+}
 
 #endif	/* __SYS_TIME_H__ */
 

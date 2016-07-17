@@ -98,8 +98,18 @@ struct linux_dirent64 {
 	unsigned char	d_type;		// file type
 	char		d_name[];	// filename
 					// length is actually (d_reclen - 2 -
-					// offsetof(struct linux_dirent, d_name)
+					// offsetof(struct linux_dirent, d_name))
 };
+
+/*
+----------------------------------------------------------------------------------
+	UID and GID
+----------------------------------------------------------------------------------
+*/
+#define	ROOT_UID	0
+#define	ROOT_EUID	0
+#define	ROOT_GID	0
+#define	ROOT_EGID	0
 
 /*
 ==================================================================================

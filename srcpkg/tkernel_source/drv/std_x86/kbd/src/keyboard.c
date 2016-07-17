@@ -1,3 +1,4 @@
+#if 0
 /*
  *----------------------------------------------------------------------
  *    T2EX Software Package
@@ -306,6 +307,11 @@ struct keyboard_state{
 #define KEY_TAB			'\t'
 
 #define	KEY_ASCII_MAX		0x80
+
+#define	KEY_ARROW_UP		0xE0
+#define	KEY_ARROW_DOWN		0xE1
+#define	KEY_ARROW_RIGHT		0xE2
+#define	KEY_ARROW_LEFT		0xE3
 
 #define	KEY_F1			0xF1
 #define	KEY_F2			0xF2
@@ -1104,3 +1110,4 @@ LOCAL void kbd_intterupt(struct ctx_reg *reg)
  Description	:void
 ==================================================================================
 */
+#endif

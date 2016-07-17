@@ -1378,6 +1378,7 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	filp->f_fops = dentry->d_vnode->v_fops;
 	filp->f_path.mnt = vfs_get_cwd(proc)->mnt;
 	filp->f_path.dentry = dentry;
+	filp->f_flags = flags;
 	
 	//vd_printf("vfs_open:%s\n", pathname);
 	

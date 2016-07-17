@@ -64,6 +64,7 @@ LOCAL int tty_open(struct vnode *vnode, struct file *filp);
 LOCAL ssize_t tty_read(struct file *filp, char *buf, size_t len, loff_t *ppos);
 LOCAL ssize_t
 tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos);
+LOCAL void update_pos_cur(struct tty *tty);
 
 /*
 ----------------------------------------------------------------------------------
@@ -210,6 +211,36 @@ EXPORT int _INIT_ init_tty(void)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:tty_notify_arrow
+ Input		:int arrow
+ 		 < the type of pressed arrow button >
+ Output		:void
+ Return		:void
+ Description	:notify the event which arrow up is pressed
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void tty_notify_arrow(int arrow)
+{
+	switch (arrow) {
+	case	TTY_ARROW_UP:
+		tty.arrow_up = 1;
+		break;
+	case	TTY_ARROW_DOWN:
+		tty.arrow_down = 1;
+		break;
+	case	TTY_ARROW_RIGHT:
+		tty.arrow_right = 1;
+		break;
+	case	TTY_ARROW_LEFT:
+		tty.arrow_left = 1;
+		break;
+	default:
+		break;
+	}
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -287,7 +318,17 @@ LOCAL ssize_t tty_read(struct file *filp, char *buf, size_t len, loff_t *ppos)
 		return(read_csi_report(buf, len, &tty));
 	}
 	
+	if (UNLIKELY(tty.arrow_up || tty.arrow_down ||
+				tty.arrow_right || tty.arrow_left)) {
+		return(read_csi_cursor(filp, buf, len, &tty));
+	}
+	
 	read_len = kbd_in(buf, len);
+
+	if (UNLIKELY(tty.arrow_up || tty.arrow_down ||
+				tty.arrow_right || tty.arrow_left)) {
+		return(read_csi_cursor(filp, buf, len, &tty));
+	}
 	
 	return(read_len);
 }
@@ -323,9 +364,14 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 		.n		= 0,
 		.m		= 0,
 	};
+	int csi_com;
 	
 	for (i = 0;i < len;i++) {
-		if (UNLIKELY(analyze_csi(buf + i, &state, &tty))) {
+		csi_com = analyze_csi(buf + i, &state, &tty);
+		
+		if (UNLIKELY(csi_com)) {
+			if (UNLIKELY(csi_com == CSI_ED)) {
+			}
 			continue;
 		}
 		
@@ -345,7 +391,16 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 			continue;
 		}
 		
-		*(tty.fb + tty.pos++) = (uint16_t)(tty.text_color | *(buf + i));
+		if (UNLIKELY(*(buf + i) == BACKSPACE)) {
+			if (tty.pos) {
+				tty.pos--;
+			}
+			*(tty.fb + tty.pos) = (uint16_t)(tty.text_color | ' ');
+		} else if (UNLIKELY((*(buf + i) < ' ') || ('~' < *(buf + i)))) {
+			continue;
+		} else {
+			*(tty.fb + tty.pos++) = (uint16_t)(tty.text_color | *(buf + i));
+		}
 		
 		if (tty.pos && !(tty.pos % x_max)) {
 			if (page) tty.line_start++;
@@ -368,11 +423,7 @@ tty_write(struct file *filp, const char *buf, size_t len, loff_t *ppos)
 		memcpy((void*)VRAM , tty.fb, x_max * y_max * sizeof(uint16_t));
 	}
 	
-	tty.pos_cur = tty.pos + 1;
-	
-	if (UNLIKELY((x_max * y_max) <= tty.pos_cur)) {
-		tty.pos_cur = 0;
-	}
+	update_pos_cur(&tty);
 
 	return(len);
 }
@@ -548,6 +599,26 @@ LOCAL int tty_tiocswinsz(struct winsize *ws)
 	tty.winsize->ws_ypixel = ws->ws_ypixel;
 	
 	return(0);
+}
+
+/*
+==================================================================================
+ Funtion	:update_pos_cur
+ Input		:struct tty *tty
+ 		 < tty management >
+ Output		:void
+ Return		:void
+ Description	:update current cursor position
+==================================================================================
+*/
+LOCAL void update_pos_cur(struct tty *tty)
+{
+	tty->pos_cur = tty->pos + 1;
+	
+	if (UNLIKELY((tty->winsize->ws_col * tty->winsize->ws_row) <=
+							tty->pos_cur)) {
+		tty->pos_cur = 0;
+	}
 }
 
 /*

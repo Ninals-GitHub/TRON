@@ -264,6 +264,10 @@ EXPORT void wakeup4(struct process *child)
 	
 	add_list_tail(&child->wait4_node, &parent->wait4_list);
 	
+	if (is_empty_list(&parent->list_tasks)) {
+		return;
+	}
+	
 	/* -------------------------------------------------------------------- */
 	/* wake up parent tasks							*/
 	/* -------------------------------------------------------------------- */

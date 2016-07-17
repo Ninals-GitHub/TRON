@@ -9,9 +9,12 @@
  *----------------------------------------------------------------------
  */
 
+#include <cpu.h>
+
 #include <device/port.h>
 #include <tk/errno.h>
 #include <tk/timer.h>
+#include <tk/task.h>
 
 #include <device/std_x86/port.h>
 #include <device/std_x86/pic.h>
@@ -140,6 +143,7 @@ EXPORT ER initPit(void)
 
 	if (PIT_CLOCK < TIMER_PERIOD) {
 		fperiod = PIT_CLOCK;
+		TIMER_PERIOD = PIT_CLOCK;
 	} else {
 		fperiod = (uint32_t)(1000 / TIMER_PERIOD);
 	}
@@ -354,6 +358,16 @@ LOCAL INLINE uint8_t recvCounter2(void)
 */
 LOCAL void pit_intterupt(struct ctx_reg *reg)
 {
+	struct task *task = get_current_task();
+	
+	if (task) {
+		if (reg->eip < KERNEL_BASE_ADDR) {
+			task->utime++;
+		} else {
+			task->stime++;
+		}
+	}
+	
 	timer_handler();
 }
 

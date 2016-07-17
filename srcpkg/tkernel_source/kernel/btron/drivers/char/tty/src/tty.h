@@ -72,7 +72,13 @@ struct winsize;
 #define	X_MAX		80
 #define	Y_MAX		25
 
+#define	BACKSPACE	0x08
 #define	ESCAPE		0x1B
+
+#define	TTY_ARROW_UP	0
+#define	TTY_ARROW_DOWN	1
+#define	TTY_ARROW_RIGHT	2
+#define	TTY_ARROW_LEFT	3
 
 struct tty {
 	struct termios2	*termios;
@@ -86,6 +92,10 @@ struct tty {
 	uint32_t	report;
 	uint32_t	aux:1;
 	uint32_t	hide_cur:1;
+	uint32_t	arrow_up:1;
+	uint32_t	arrow_down:1;
+	uint32_t	arrow_right:1;
+	uint32_t	arrow_left:1;
 };
 
 /*
@@ -106,12 +116,14 @@ struct tty {
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:tty_notify_arrow
+ Input		:int arrow
+ 		 < the type of pressed arrow button >
  Output		:void
  Return		:void
- Description	:void
+ Description	:notify the event which arrow up is pressed
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+IMPORT void tty_notify_arrow(int arrow);
 
 #endif	// __TTY_TTY_H__

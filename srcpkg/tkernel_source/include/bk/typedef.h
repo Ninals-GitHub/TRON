@@ -76,8 +76,11 @@ typedef long			ssize_t;
 
 typedef int			pid_t;
 
-typedef unsigned long long	cputime_t;
-typedef unsigned long long	clock_t;
+//typedef unsigned long long	cputime_t;
+//typedef unsigned long long	clock_t;
+
+typedef long			cputime_t;
+typedef long			clock_t;
 
 typedef unsigned long		pte_t;
 typedef unsigned long		pde_t;

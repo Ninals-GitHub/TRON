@@ -222,6 +222,20 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL int restart_syscall(void);
 
 /*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:times
+ Input		:struct tms *buf
+ 		 < times buffer to out put >
+ Output		:struct tms *buf
+ 		 < times buffer to out put >
+ Return		:clock_t
+ 		 < result >
+ Description	:get proces times
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL clock_t times(struct tms *buf);
+
+/*
 ----------------------------------------------------------------------------------
 	kernel internal operations
 ----------------------------------------------------------------------------------

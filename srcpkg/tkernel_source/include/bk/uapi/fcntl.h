@@ -141,12 +141,19 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:void
- Input		:void
+ Funtion	:fcntl64
+ Input		:int fd
+ 		 < opne file descriptor >
+ 		 int cmd
+ 		 < command >
+ 		 unsigned long arg
+ 		 < argument >
  Output		:void
- Return		:void
- Description	:void
+ Return		:int
+ 		 < result >
+ Description	:manipulate file descriptor
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
+SYSCALL int fcntl64(int fd, int cmd, unsigned long arg);
 
 #endif	// __BK_UAPI_FCNTL_H__

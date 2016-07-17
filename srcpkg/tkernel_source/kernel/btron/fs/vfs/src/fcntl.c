@@ -40,6 +40,8 @@
  * representation of each source header.
  */
 
+#include <bk/fs/vfs.h>
+#include <bk/uapi/fcntl.h>
 
 /*
 ==================================================================================
@@ -48,6 +50,7 @@
 
 ==================================================================================
 */
+LOCAL int xfcntl(int fd, int cmd, unsigned long arg);
 
 /*
 ==================================================================================
@@ -75,6 +78,27 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:fcntl64
+ Input		:int fd
+ 		 < opne file descriptor >
+ 		 int cmd
+ 		 < command >
+ 		 unsigned long arg
+ 		 < argument >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:manipulate file descriptor
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int fcntl64(int fd, int cmd, unsigned long arg)
+{
+	return(xfcntl(fd, cmd, arg));
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -91,6 +115,78 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 */
+/*
+==================================================================================
+ Funtion	:xfcntl
+ Input		:int fd
+ 		 < opne file descriptor >
+ 		 int cmd
+ 		 < command >
+ 		 unsigned long arg
+ 		 < argument > 
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:manipulate file descriptor
+==================================================================================
+*/
+LOCAL int xfcntl(int fd, int cmd, unsigned long arg)
+{
+	struct file *filp;
+	int err;
+	
+	err = is_open_file(fd);
+	
+	if (UNLIKELY(err)) {
+		return(-EBADF);
+	}
+	
+	filp = get_open_file(fd);
+
+	if (UNLIKELY(!filp)) {
+		return(-EBADF);
+	}
+	
+	switch (cmd) {
+	case	F_DUPFD:
+		printf("fcntl:not implemented F_DUPFD\n");
+		for(;;);
+		break;
+	case	F_GETFD:
+		printf("fcntl:not implemented F_GETFD\n");
+		for(;;);
+		break;
+	case	F_SETFD:
+		printf("fcntl:not implemented F_SETFD\n");
+		for(;;);
+		break;
+	case	F_GETFL:
+		return(filp->f_flags);
+	case	F_SETFL:
+		filp->f_flags = (unsigned int)arg;
+		break;
+	case	F_GETLK:
+	case	F_SETLK:
+	case	F_SETLKW:
+	case	F_SETOWN:
+	case	F_GETOWN:
+	case	F_SETSIG:
+	case	F_GETSIG:
+	case	F_GETLK64:
+	case	F_SETLK64:
+	case	F_SETLKW64:
+	case	F_SETOWN_EX:
+	case	F_GETOWN_EX:
+	case	F_GETOWNER_UIDS:
+	default:
+		printf("fcntl:not implemented cmd[%d]\n", cmd);
+		for(;;);
+		break;
+	}
+	
+	return(err);
+}
+
 /*
 ==================================================================================
  Funtion	:void

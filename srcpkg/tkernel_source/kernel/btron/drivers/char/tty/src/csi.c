@@ -40,6 +40,8 @@
  * representation of each source header.
  */
 
+#include <bk/fs/vfs.h>
+
 #include <bk/uapi/ioctl.h>
 #include <bk/uapi/ioctl_tty.h>
 #include <bk/uapi/termios.h>
@@ -122,12 +124,19 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT int
 analyze_csi(const char *buf, struct csi_state *state, struct tty *tty)
 {
-	if ((*buf == ESCAPE) && (state->state == CSI_NONE)) {
+	if (UNLIKELY((*buf == ESCAPE) && (state->state == CSI_NONE))) {
 		state->state = MAY_CSI_ESC;
 		return(1);
 	}
 	
-	if ((*buf == '[') && (state->state == MAY_CSI_ESC)) {
+#if 0
+	if (UNLIKELY((*buf == BACKSPACE))) {
+		state->state = CSI_NONE;
+		return(1);
+	}
+#endif
+	
+	if (UNLIKELY((*buf == '[') && (state->state == MAY_CSI_ESC))) {
 		state->state = CSI_ESC_BR;
 		state->n = 0;
 		state->m = 0;
@@ -246,6 +255,57 @@ EXPORT size_t read_csi_report(char *buf, size_t len, struct tty *tty)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_csi_cursor
+ Input		:struct file *filp
+ 		 < open file >
+ 		 char *buf
+ 		 < user buffer to output >
+ 		 size_t len
+ 		 < length of the buffer >
+ 		 struct tty *tty
+ 		 < tty management >
+ Output		:char *buf
+ 		 < user buffer to output >
+ Return		:size_t
+ 		 < atucal read length >
+ Description	:read tty report
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT size_t
+read_csi_cursor(struct file *filp, char *buf, size_t len, struct tty *tty)
+{
+	switch (filp->f_pos) {
+	case	0:
+		filp->f_pos++;
+		*buf = ESCAPE;
+		return(1);
+	case	1:
+		filp->f_pos++;
+		*buf = '[';
+		return(1);
+	case	2:
+		filp->f_pos = 0;
+		if (tty->arrow_up) {
+			*buf = 'A';
+			tty->arrow_up = 0;
+		} else if (tty->arrow_down) {
+			*buf = 'B';
+			tty->arrow_down = 0;
+		} else if (tty->arrow_right) {
+			*buf = 'C';
+			tty->arrow_right = 0;
+		} else if (tty->arrow_left) {
+			*buf = 'D';
+			tty->arrow_left = 0;
+		}
+		return(1);
+	}
+	
+	return(1);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void
@@ -315,6 +375,12 @@ analyze_csi_esc_br(const char *buf, struct csi_state *state, struct tty *tty)
 		state->n = *buf - '0';
 		
 		return(1);
+	}
+	
+	if (UNLIKELY('A' <= *buf && *buf <= 'm')) {
+		int err = analyze_done(buf, state, tty);
+		
+		return(err);
 	}
 	
 	return(0);
@@ -480,21 +546,30 @@ analyze_q(const char *buf, struct csi_state *state, struct tty *tty)
 */
 LOCAL int analyze_done(const char *buf, struct csi_state *state, struct tty *tty)
 {
+	int com = 0;
 	int n, m;
+	
 	switch (*buf) {
 	case	'A':
+		com = CSI_CUU;
 		break;
 	case	'B':
+		com = CSI_CUD;
 		break;
 	case	'C':
+		com = CSI_CUF;
 		break;
 	case	'D':
+		com = CSI_CUF;
 		break;
 	case	'E':
+		com = CSI_CNL;
 		break;
 	case	'F':
+		com = CSI_CPL;
 		break;
 	case	'G':
+		com = CSI_CHA;
 		break;
 	case	'H':
 		if (state->n) {
@@ -508,37 +583,42 @@ LOCAL int analyze_done(const char *buf, struct csi_state *state, struct tty *tty
 			m = 0;
 		}
 		tty->pos_cur = n * tty->winsize->ws_col + m;
-		goto out;
+		com = CSI_CUP;
+		break;
 	case	'J':
+		com = CSI_ED;
 		break;
 	case	'K':
+		com = CSI_EL;
 		break;
 	case	'S':
+		com = CSI_SU;
 		break;
 	case	'T':
+		com = CSI_SD;
 		break;
 	case	'f':
+		com = CSI_HVP;
 		break;
 	case	'h':
 		tty->hide_cur = 0;
-		goto out;
+		com = CSI_SHOW_CUR;
+		break;
 	case	'm':
+		com = CSI_SGR;
 		break;
 	case	'l':
 		tty->hide_cur = 1;
-		goto out;
+		com = CSI_HIDE_CUR;
+		break;
 	default:
 		state->state = CSI_NONE;
 		state->n = 0;
 		state->m = 0;
+		com = 0;
 	}
 	
-	return(0);
-
-out:
 	state->state = CSI_NONE;
-	state->n = 0;
-	state->m = 0;
 	
-	return(1);
+	return(com);
 }
