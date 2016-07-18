@@ -319,7 +319,7 @@ EXPORT int open_exe_file(const char *filename)
 	int err;
 	int fd;
 	
-	err = vfs_lookup(filename, &fname, LOOKUP_ENTRY);
+	err = vfs_lookup(filename, &fname, LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		return(err);
@@ -1347,8 +1347,8 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	
 	//printf("open [%s]\n", pathname);
 	
-	err = vfs_lookup_at(dir_path, pathname, &fname, LOOKUP_ENTRY);
-	//err = vfs_lookup(pathname, &fname, LOOKUP_TEST);
+	err = vfs_lookup_at(dir_path, pathname, &fname,
+					LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		//printf("failed vfs lookup at %s\n", __func__);
@@ -1382,6 +1382,8 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	
 	//vd_printf("vfs_open:%s\n", pathname);
 	
+	put_file_name(fname);
+	
 	err = vfs_open(dentry->d_vnode, filp);
 	
 	if (err) {
@@ -1401,7 +1403,6 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	}
 	
 	//printf("open file:%s at [%d]\n", dentry->d_iname, fd);
-
 	
 	//printf("opened:fd=%d\n", fd);
 	

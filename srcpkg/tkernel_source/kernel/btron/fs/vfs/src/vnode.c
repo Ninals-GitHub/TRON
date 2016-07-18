@@ -45,11 +45,10 @@
 #include <bk/fs/vfs.h>
 #include <bk/memory/slab.h>
 #include <bk/memory/access.h>
+#include <bk/uapi/fcntl.h>
 #include <bk/uapi/sys/stat.h>
 
 #include <t2ex/limits.h>
-
-#include <tstdlib/round.h>
 
 /*
 ==================================================================================
@@ -202,6 +201,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 EXPORT int
 setup_vnode(struct vnode *dir, struct dentry *dentry, struct vnode *vnode)
 {
+	mode_t umask = get_current()->fs.umask;
 	/* -------------------------------------------------------------------- */
 	/* file attributes							*/
 	/* -------------------------------------------------------------------- */
@@ -209,7 +209,7 @@ setup_vnode(struct vnode *dir, struct dentry *dentry, struct vnode *vnode)
 	vnode->v_gid = dir->v_gid;
 	vnode->v_nlink++;
 	atomic_inc(&vnode->v_count);
-	vnode->v_mode |= dir->v_mode & ~S_IFMT;
+	vnode->v_mode |= dir->v_mode & ~S_IFMT & ~umask;
 	
 	/* -------------------------------------------------------------------- */
 	/* set up vnode								*/
@@ -275,7 +275,7 @@ EXPORT int kmknod(const char *pathname, mode_t mode, dev_t dev)
 	struct vnode *dir;
 	int err;
 	
-	err = vfs_lookup(pathname, &filename, LOOKUP_CREATE);
+	err = vfs_lookup(pathname, &filename, LOOKUP_CREATE | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		put_file_name(filename);
@@ -312,7 +312,7 @@ EXPORT int kmkdir(const char *pathname, mode_t mode)
 	struct vnode *dir;
 	int err;
 	
-	err = vfs_lookup(pathname, &fname, LOOKUP_CREATE);
+	err = vfs_lookup(pathname, &fname, LOOKUP_CREATE | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		put_file_name(fname);
@@ -362,7 +362,8 @@ SYSCALL int mknod(const char *pathname, mode_t mode, dev_t dev)
 		return(-EFAULT);
 	}
 	
-	err = vm_check_access((void*)pathname, sizeof(char), PROT_READ);
+	err = vm_check_access((void*)pathname, sizeof(char),
+						PROT_READ | LOOKUP_FOLLOW_LINK);
 	
 	if (UNLIKELY(err)) {
 		return(-EFAULT);
@@ -371,7 +372,6 @@ SYSCALL int mknod(const char *pathname, mode_t mode, dev_t dev)
 	err = vfs_lookup(pathname, &filename, LOOKUP_CREATE);
 	
 	if (err) {
-		put_file_name(filename);
 		return(err);
 	}
 	
@@ -416,7 +416,7 @@ SYSCALL int mkdir(const char *pathname, mode_t mode)
 		return(-EFAULT);
 	}
 	
-	err = vfs_lookup(pathname, &fname, LOOKUP_CREATE);
+	err = vfs_lookup(pathname, &fname, LOOKUP_CREATE | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		put_file_name(fname);
@@ -478,7 +478,7 @@ SYSCALL int symlink(const char *target, const char *linkpath)
 		return(-EFAULT);
 	}
 	
-	err = vfs_lookup(linkpath, &fname, LOOKUP_CREATE);
+	err = vfs_lookup(linkpath, &fname, LOOKUP_CREATE | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		put_file_name(fname);
@@ -590,148 +590,6 @@ SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
 	return(err);
 }
 
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:stat64
- Input		:const char *path
- 		 < file path to get its status >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64_i386 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int stat64(const char *path, struct stat64_i386 *buf)
-{
-	struct file_name *fname;
-	struct vnode *vnode;
-	int err;
-	
-	//printf("stat64:path[%s] ", path);
-	
-	if (UNLIKELY(!path)) {
-		return(-EFAULT);
-	}
-	
-	err = vm_check_access((void*)buf, sizeof(struct stat64_i386), PROT_WRITE);
-	
-	if (UNLIKELY(err)) {
-		return(-EFAULT);
-	}
-	
-	err = vfs_lookup(path, &fname, LOOKUP_ENTRY);
-	
-	if (err) {
-		//printf("err:%d\n", -err);
-		return(err);
-	} else {
-		//printf("\n");
-	}
-	
-	vnode = fname->dentry->d_vnode;
-	
-	put_file_name(fname);
-	
-	return(vfs_stat64(vnode, buf));
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:lstat64
- Input		:const char *path
- 		 < file path to get its status >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64_i386 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int lstat64(const char *path, struct stat64_i386 *buf)
-{
-	struct file_name *fname;
-	struct vnode *vnode;
-	int err;
-	
-	//printf("lstat64:path[%s] ", path);
-	
-	if (UNLIKELY(!path)) {
-		return(-EFAULT);
-	}
-	
-	err = vm_check_access((void*)buf, sizeof(struct stat64_i386), PROT_WRITE);
-	
-	if (UNLIKELY(err)) {
-		return(-EFAULT);
-	}
-	
-	err = vfs_lookup(path, &fname, LOOKUP_ENTRY);
-	
-	if (err) {
-		//printf("err:%d\n", -err);
-		return(err);
-	}
-	
-	vnode = fname->dentry->d_vnode;
-	
-	put_file_name(fname);
-	
-	
-	err = vfs_stat64(vnode, buf);
-	
-	return(err);
-}
-
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:fstat64
- Input		:int fd
- 		 < open file descriptor >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64_i386 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int fstat64(int fd, struct stat64_i386 *buf)
-{
-	struct file *filp;
-	struct vnode *vnode;
-	int err;
-	
-	//printf("fstat64:fd=%d\n", fd);
-	
-	err = vm_check_access((void*)buf, sizeof(struct stat64_i386), PROT_WRITE);
-	
-	if (UNLIKELY(err)) {
-		return(-EFAULT);
-	}
-	
-	if (UNLIKELY(get_soft_limit(RLIMIT_NOFILE) < fd)) {
-		return(-EBADF);
-	}
-	
-	filp = get_open_file(fd);
-	
-	if (UNLIKELY(!filp)) {
-		return(-EBADF);
-	}
-	
-	vnode = filp->f_vnode;
-	
-	return(vfs_stat64(vnode, buf));
-}
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:access
@@ -764,7 +622,7 @@ SYSCALL int access(const char *pathname, int mode)
 		return(-EFAULT);
 	}
 	
-	err = vfs_lookup(pathname, &fname, LOOKUP_ENTRY);
+	err = vfs_lookup(pathname, &fname, LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
 	
 	if (err) {
 		return(err);
@@ -779,6 +637,56 @@ SYSCALL int access(const char *pathname, int mode)
 	
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:link
+ Input		:const char *oldpath
+ 		 < link from >
+ 		 const char *newpath
+ 		 < link to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int link(const char *oldpath, const char *newpath)
+{
+	int err;
+	
+	err = vfs_linkat(AT_FDCWD, oldpath, AT_FDCWD, newpath, AT_SYMLINK_FOLLOW);
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:linkat
+ Input		:int olddirfd
+ 		 < directory open file descriptor >
+ 		 const char *oldpath
+ 		 < link from >
+ 		 int newdirfd
+ 		 < directory open file descritpor >
+ 		 const char *newpath
+ 		 < link to >
+ 		 int flags
+ 		 < link flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int linkat(int olddirfd, const char *oldpath,
+				int newdirfd, const char *newpath, int flags)
+{
+	int err;
+	
+	err = vfs_linkat(olddirfd, oldpath, newdirfd, newpath, flags);
+	
+	return(err);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -1140,62 +1048,6 @@ out:
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:vfs_stat64
- Input		:struct vnode *vnode
- 		 < vnode to get its file status >
- 		 struct stat64_i386 *buf
- 		 < file status buffer to outpu >
- Output		:struct stat64_i386 *buf
- 		 < file status buffer to outpu >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-EXPORT int vfs_stat64(struct vnode *vnode, struct stat64_i386 *buf)
-{
-	struct super_block *sb = vnode->v_sb;
-	
-	buf->st_dev		= sb->s_dev;
-	buf->st_ino		= (ino_t)vnode->v_ino;
-	buf->_st_ino		= (ino_t)vnode->v_ino;
-	buf->st_mode		= vnode->v_mode;
-	buf->st_nlink		= vnode->v_nlink;
-	buf->st_uid		= vnode->v_uid;
-	buf->st_gid		= vnode->v_gid;
-	buf->st_rdev		= vnode->v_rdev;
-	buf->st_size		= (off64_t)vnode->v_size;
-	buf->st_atime		= vnode->v_atime.tv_sec;
-	buf->st_atime_nsec	= 0;
-	buf->st_mtime		= vnode->v_mtime.tv_sec;
-	buf->st_mtime_nsec	= 0;
-	buf->st_ctime		= vnode->v_ctime.tv_sec;
-	buf->st_ctime_nsec	= 0;
-	buf->st_blocks		= DIV_ROUNDUP(vnode->v_size, S_BLKSIZE);
-	buf->st_blksize		= buf->st_blocks * S_BLKSIZE;
-
-#if 0
-	printf("st_dev:%d ", buf->st_dev);
-	printf("st_ino:%d ", buf->st_ino);
-
-	printf("st_mode:0x%08X ", buf->st_mode);
-	printf("st_nlink:%d\n", buf->st_nlink);
-	printf("st_uid:%d ", buf->st_uid);
-	printf("st_gid:%d ", buf->st_gid);
-	printf("st_rdev:%d\n", buf->st_rdev);
-	printf("st_size:%d ", buf->st_size);
-	printf("st_atime:%d ", buf->st_atime);
-	printf("st_mtime:%d\n", buf->st_mtime);
-	printf("st_ctime:%d ", buf->st_ctime);
-	printf("st_blksize:%d ", buf->st_blksize);
-	printf("st_blocks:%d\n", buf->st_blocks);
-
-#endif
-	return(0);
-}
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:vfs_access
  Input		:struct vnode *vnode
  		 < a vnode for checking permissions >
@@ -1250,6 +1102,112 @@ out:
 	return(err);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_linkat
+ Input		:int olddirfd
+ 		 < directory open file descriptor >
+ 		 const char *oldpath
+ 		 < link from >
+ 		 int newdirfd
+ 		 < directory open file descritpor >
+ 		 const char *newpath
+ 		 < link to >
+ 		 int flags
+ 		 < link flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int vfs_linkat(int olddirfd, const char *oldpath,
+				int newdirfd, const char *newpath, int flags)
+{
+	struct path *olddir_path = NULL;
+	struct path *newdir_path = NULL;
+	struct file_name *old_fname;
+	struct file_name *new_fname;
+	struct vnode *old_dir;
+	struct vnode *old_vnode;
+	struct dentry *old_dir_dentry;
+	struct dentry *old_dentry;
+	struct dentry *new_dentry;
+	int lookup_flags = LOOKUP_ENTRY;
+	int err;
+	
+	if (UNLIKELY(!oldpath)) {
+		return(-EFAULT);
+	}
+	
+	err = vm_check_access((void*)oldpath, sizeof(char), PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	if (UNLIKELY(!newpath)) {
+		return(-EFAULT);
+	}
+	
+	err = vm_check_access((void*)newpath, sizeof(char), PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		return(-EFAULT);
+	}
+	
+	err = get_dirfd_path(olddirfd, &olddir_path);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = get_dirfd_path(newdirfd, &newdir_path);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	if (flags &  AT_SYMLINK_FOLLOW) {
+		lookup_flags |= LOOKUP_FOLLOW_LINK;
+	}
+	
+	err = vfs_lookup_at(olddir_path, oldpath, &old_fname, lookup_flags);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	old_dir_dentry = old_fname->parent;
+	old_dir = old_dir_dentry->d_vnode;
+	old_dentry = old_fname->dentry;
+	old_vnode = old_dentry->d_vnode;
+	
+	put_file_name(old_fname);
+	
+	lookup_flags |= LOOKUP_CREATE;
+	
+	err = vfs_lookup_at(newdir_path, newpath, &new_fname, lookup_flags);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	new_dentry = new_fname->dentry;
+	
+	put_file_name(new_fname);
+	
+	if (old_vnode->v_op && old_vnode->v_op->link) {
+		return(old_vnode->v_op->link(old_dentry, old_dir, new_dentry));
+	}
+	
+	old_vnode->v_nlink++;
+	new_dentry->d_vnode = old_vnode;
+	
+	dentry_add_dir(old_dir_dentry, new_dentry);
+	
+	return(0);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

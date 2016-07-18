@@ -78,13 +78,13 @@
 	_SVC_ENTRY close	 		/* 0006 *//* close		*/
 	_SVC_ENTRY waitpid	 		/* 0007 *//* waitpid		*/
 	_SVC_ENTRY syscall_test 		/* 0008 *//* creat		*/
-	_SVC_ENTRY syscall_test 		/* 0009 *//* link		*/
+	_SVC_ENTRY link		 		/* 0009 *//* link		*/
 	_SVC_ENTRY syscall_test 		/* 0010 *//* unlink		*/
 	_SVC_ENTRY execve	 		/* 0011 *//* execve		*/
 	_SVC_ENTRY chdir	 		/* 0012 *//* chdir		*/
 	_SVC_ENTRY syscall_test 		/* 0013 *//* time		*/
-	_SVC_ENTRY syscall_test 		/* 0014 *//* mknod		*/
-	_SVC_ENTRY syscall_test 		/* 0015 *//* chmod		*/
+	_SVC_ENTRY mknod	 		/* 0014 *//* mknod		*/
+	_SVC_ENTRY chmod	 		/* 0015 *//* chmod		*/
 	_SVC_ENTRY syscall_test 		/* 0016 *//* lchown		*/
 	_SVC_ENTRY syscall_test 		/* 0017 *//* break		*/
 	_SVC_ENTRY syscall_test 		/* 0018 *//* oldstat		*/
@@ -130,7 +130,7 @@
 	_SVC_ENTRY syscall_test 		/* 0058 *//* ulimit		*/
 //	_SVC_ENTRY oldolduname			/* 0059 *//* oldolduname	*/
 	_SVC_ENTRY syscall_test		/* 0059 *//* oldolduname	*/
-	_SVC_ENTRY syscall_test 		/* 0060 *//* umask		*/
+	_SVC_ENTRY umask	 		/* 0060 *//* umask		*/
 	_SVC_ENTRY syscall_test 		/* 0061 *//* chroot		*/
 	_SVC_ENTRY syscall_test 		/* 0062 *//* ustat		*/
 	_SVC_ENTRY syscall_test 		/* 0063 *//* dup2		*/
@@ -165,7 +165,7 @@
 	_SVC_ENTRY munmap	 		/* 0091 *//* munmap		*/
 	_SVC_ENTRY syscall_test 		/* 0092 *//* truncate		*/
 	_SVC_ENTRY syscall_test 		/* 0093 *//* ftruncate		*/
-	_SVC_ENTRY syscall_test 		/* 0094 *//* fchmod		*/
+	_SVC_ENTRY fchmod	 		/* 0094 *//* fchmod		*/
 	_SVC_ENTRY syscall_test 		/* 0095 *//* fchown		*/
 	_SVC_ENTRY syscall_test 		/* 0096 *//* getpriority	*/
 	_SVC_ENTRY syscall_test 		/* 0097 *//* setpriority	*/
@@ -256,7 +256,7 @@
 	_SVC_ENTRY syscall_test			/* 0179 *//* rt_sigsuspend	*/
 	_SVC_ENTRY syscall_test			/* 0180 *//* pread64		*/
 	_SVC_ENTRY syscall_test			/* 0181 *//* pwrite64		*/
-	_SVC_ENTRY syscall_test			/* 0182 *//* chown		*/
+	_SVC_ENTRY chown			/* 0182 *//* chown		*/
 	_SVC_ENTRY getcwd			/* 0183 *//* getcwd		*/
 	_SVC_ENTRY syscall_test			/* 0184 *//* capget		*/
 	_SVC_ENTRY syscall_test			/* 0185 *//* capset		*/
@@ -272,7 +272,7 @@
 	_SVC_ENTRY stat64			/* 0195 *//* stat64		*/
 	_SVC_ENTRY lstat64			/* 0196 *//* lstat64		*/
 	_SVC_ENTRY fstat64			/* 0197 *//* fstat64		*/
-	_SVC_ENTRY syscall_test			/* 0198 *//* lchown32		*/
+	_SVC_ENTRY lchown32			/* 0198 *//* lchown32		*/
 	_SVC_ENTRY getuid32			/* 0199 *//* getuid32		*/
 	_SVC_ENTRY getgid32			/* 0200 *//* getgid32		*/
 	_SVC_ENTRY geteuid32			/* 0201 *//* geteuid32		*/
@@ -281,12 +281,12 @@
 	_SVC_ENTRY syscall_test			/* 0204 *//* setregid32		*/
 	_SVC_ENTRY syscall_test			/* 0205 *//* getgroups32	*/
 	_SVC_ENTRY syscall_test			/* 0206 *//* setgroups32	*/
-	_SVC_ENTRY syscall_test			/* 0207 *//* fchown32		*/
+	_SVC_ENTRY fchown32			/* 0207 *//* fchown32		*/
 	_SVC_ENTRY syscall_test			/* 0208 *//* setresuid32	*/
 	_SVC_ENTRY syscall_test			/* 0209 *//* getresuid32	*/
 	_SVC_ENTRY syscall_test			/* 0210 *//* setresgid32	*/
 	_SVC_ENTRY syscall_test			/* 0211 *//* getresgid32	*/
-	_SVC_ENTRY syscall_test			/* 0212 *//* chown32		*/
+	_SVC_ENTRY chown32			/* 0212 *//* chown32		*/
 	_SVC_ENTRY setuid32			/* 0213 *//* setuid32		*/
 	_SVC_ENTRY setgid32			/* 0214 *//* setgid32		*/
 	_SVC_ENTRY syscall_test			/* 0215 *//* setfsuid32		*/
@@ -328,8 +328,7 @@
 	_SVC_ENTRY syscall_test			/* 0249 *//* io_cancel		*/
 	_SVC_ENTRY syscall_test			/* 0250 *//* fadvise64		*/
 	_SVC_ENTRY syscall_test			/* 0251 *//* reserved		*/
-//	_SVC_ENTRY exit_group			/* 0252 *//* exit_group		*/
-	_SVC_ENTRY exit_group		/* 0252 *//* exit_group		*/
+	_SVC_ENTRY exit_group			/* 0252 *//* exit_group		*/
 	_SVC_ENTRY syscall_test			/* 0253 *//* lookup_dcookie	*/
 	_SVC_ENTRY syscall_test			/* 0254 *//* epoll_create	*/
 	_SVC_ENTRY syscall_test			/* 0255 *//* epoll_ctl		*/
@@ -376,15 +375,15 @@
 	_SVC_ENTRY openat			/* 0295 *//* openat		*/
 	_SVC_ENTRY syscall_test			/* 0296 *//* mkdirat		*/
 	_SVC_ENTRY syscall_test			/* 0297 *//* mknodat		*/
-	_SVC_ENTRY syscall_test			/* 0298 *//* fchownat		*/
+	_SVC_ENTRY fchownat			/* 0298 *//* fchownat		*/
 	_SVC_ENTRY syscall_test			/* 0299 *//* futimesat		*/
 	_SVC_ENTRY syscall_test			/* 0300 *//* fstatat64		*/
 	_SVC_ENTRY syscall_test			/* 0301 *//* unlinkat		*/
 	_SVC_ENTRY syscall_test			/* 0302 *//* renameat		*/
-	_SVC_ENTRY syscall_test			/* 0303 *//* linkat		*/
+	_SVC_ENTRY linkat			/* 0303 *//* linkat		*/
 	_SVC_ENTRY syscall_test			/* 0304 *//* symlinkat		*/
 	_SVC_ENTRY syscall_test			/* 0305 *//* readlinkat		*/
-	_SVC_ENTRY syscall_test			/* 0306 *//* fchmodat		*/
+	_SVC_ENTRY fchmodat			/* 0306 *//* fchmodat		*/
 	_SVC_ENTRY syscall_test			/* 0307 *//* faccessat		*/
 	_SVC_ENTRY syscall_test			/* 0308 *//* pselect6		*/
 	_SVC_ENTRY syscall_test			/* 0309 *//* ppoll		*/

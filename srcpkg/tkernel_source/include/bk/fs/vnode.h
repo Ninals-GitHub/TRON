@@ -416,55 +416,6 @@ SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:stat64
- Input		:const char *path
- 		 < file path to get its status >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64_i386 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int stat64(const char *path, struct stat64_i386 *buf);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:lstat64
- Input		:const char *path
- 		 < file path to get its status >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64_i386 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int lstat64(const char *path, struct stat64_i386 *buf);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:fstat64
- Input		:int fd
- 		 < open file descriptor >
- 		 struct stat64_i386 *buf
- 		 < stat structure >
- Output		:struct stat64 *buf
- 		 < stat structure >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-SYSCALL int fstat64(int fd, struct stat64_i386 *buf);
-
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:access
  Input		:const char *pathname
  		 < file path name to check permissions >
@@ -494,6 +445,44 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL int fcntl(int fd, int cmd, ...);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:linkat
+ Input		:int olddirfd
+ 		 < directory open file descriptor >
+ 		 const char *oldpath
+ 		 < link from >
+ 		 int newdirfd
+ 		 < directory open file descritpor >
+ 		 const char *newpath
+ 		 < link to >
+ 		 int flags
+ 		 < link flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int linkat(int olddirfd, const char *oldpath,
+				int newdirfd, const char *newpath, int flags);
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:link
+ Input		:const char *oldpath
+ 		 < link from >
+ 		 const char *newpath
+ 		 < link to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int link(const char *oldpath, const char *newpath);
 
 /*
 ----------------------------------------------------------------------------------
@@ -637,22 +626,6 @@ vfs_symlink(struct vnode *dir, struct dentry *dentry, const char *symname);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:vfs_stat64
- Input		:struct vnode *vnode
- 		 < vnode to get its file status >
- 		 struct stat64_i386 *buf
- 		 < file status buffer to outpu >
- Output		:struct stat64_i386 *buf
- 		 < file status buffer to outpu >
- Return		:int
- 		 < result >
- Description	:get file status
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
-*/
-IMPORT int vfs_stat64(struct vnode *vnode, struct stat64_i386 *buf);
-
-/*
-_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:vfs_access
  Input		:struct vnode *vnode
  		 < a vnode for checking permissions >
@@ -704,5 +677,27 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 #define vfs_accessX(vnode)	vfs_access(vnode, X_OK)
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_linkat
+ Input		:int olddirfd
+ 		 < directory open file descriptor >
+ 		 const char *oldpath
+ 		 < link from >
+ 		 int newdirfd
+ 		 < directory open file descritpor >
+ 		 const char *newpath
+ 		 < link to >
+ 		 int flags
+ 		 < link flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vfs_linkat(int olddirfd, const char *oldpath,
+				int newdirfd, const char *newpath, int flags);
 
 #endif	// __BK_FS_INODE_H__

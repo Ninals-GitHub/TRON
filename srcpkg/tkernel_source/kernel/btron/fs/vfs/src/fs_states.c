@@ -63,6 +63,7 @@
 
 ==================================================================================
 */
+#define	DEFAULT_UMASK	(S_IWGRP | S_IWOTH)
 
 /*
 ==================================================================================
@@ -96,6 +97,8 @@ EXPORT int alloc_fs_states(struct process *proc)
 	if (UNLIKELY(has_fdtable(proc))) {
 		return(0);
 	}
+	
+	proc->fs.umask = DEFAULT_UMASK;
 	
 	return(extend_fdtable(proc));
 }
@@ -237,6 +240,29 @@ SYSCALL int chdir(const char *path)
 	
 	return(vfs_chdir(mnt, dentry, dir));
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:umask
+ Input		:mode_t mask
+ Output		:void
+ Return		:mode_t
+ 		 < last mask >
+ Description	:set file mode creation mask
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int umask(mode_t mask)
+{
+	struct process *proc = get_current();
+	mode_t before = proc->fs.umask;
+	
+	mask &= 0777;
+	
+	proc->fs.umask = mask;
+	
+	return(before);
+}
+
 
 /*
 ----------------------------------------------------------------------------------

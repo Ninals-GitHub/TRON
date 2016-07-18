@@ -121,7 +121,20 @@
 	special file descriptor
 ----------------------------------------------------------------------------------
 */
-#define	AT_FDCWD 	(-100)
+#define	AT_FDCWD 		(-100)
+
+/*
+----------------------------------------------------------------------------------
+	lookup flags
+----------------------------------------------------------------------------------
+*/
+#define	AT_SYMLINK_NOFOLLOW	0x00000100	/* do not follow symbolic links	*/
+#define	AT_REMOVEDIR		0x00000200	/* remove directory instead of
+						   unlinking file		*/
+#define	AT_SYMLINK_FOLLOW	0x00000400	/* follow symbolic links	*/
+#define	AT_NO_AUTOMOUNT		0x00000800	/* suppress terminal automount
+						   traversal			*/
+#define	AT_EMPTY_PATH		0x00001000	/* allow empty relative pathname*/
 
 /*
 ==================================================================================
