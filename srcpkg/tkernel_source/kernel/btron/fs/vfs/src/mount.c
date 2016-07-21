@@ -188,8 +188,9 @@ EXPORT int mount_root_fs(void)
 	struct dentry *root;
 	struct mount *mnt_root;
 	struct file_system_type *root_fs_type;
+	struct super_block *root_sb;
 	const char root_dev_name[] = "root";
-	int mount_flags = 0;
+	int mount_flags = MNT_NODEV;
 	int err = 0;
 	
 	mnt_root = mount_cache_alloc(root_dev_name);
@@ -216,10 +217,17 @@ EXPORT int mount_root_fs(void)
 	}
 	
 	root->d_parent = root;
+	root->d_flags |= DCACHE_MOUNTED;
+	
+	root_sb = root->d_sb;
 	
 	mnt_root->mnt.mnt_root = root;
 	mnt_root->mnt.mnt_sb = root->d_sb;
 	mnt_root->mnt.mnt_flags = mount_flags;
+	//mnt_root->mnt_parent = mnt_root;
+	//mnt_root->mnt_mountpoint = root;
+	
+	add_list(&mnt_root->mnt_instance, &root_sb->s_mounts);
 	
 	vfs_set_root(get_current(), &mnt_root->mnt, root);
 	vfs_set_cwd(get_current(), &mnt_root->mnt, root);
@@ -259,6 +267,59 @@ mount_bdev(struct file_system_type *fs_type, int flags,
 	return(NULL);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_vfsmount
+ Input		:struct dentry *dentry
+ 		 < dentry which belongs to mount space to get >
+ Output		:void
+ Return		:struct vfsmount*
+ 		 < vfsmount of a mount space to which a dentry belongs >
+ Description	:get vfsmount from dentry
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct vfsmount* get_vfsmount(struct dentry *dentry)
+{
+	struct super_block *sb = dentry->d_sb;
+	struct mount *mnt;
+	struct mount *temp;
+	
+	list_for_each_entry_safe(mnt, temp, &sb->s_mounts, mnt_instance) {
+		if (mnt->mnt.mnt_root == sb->s_root) {
+			return(&mnt->mnt);
+		}
+	}
+	
+	return(NULL);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_mount_nodev
+ Input		:struct super_block *sb
+ 		 < super block object >
+ Output		:void
+ Return		:int
+ 		 < boolean result >
+ Description	:test a file system has been mounted on no device
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int is_mount_nodev(struct super_block *sb)
+{
+	struct vfsmount *mnt;
+	
+	mnt = get_vfsmount(sb->s_root);
+	
+	if (UNLIKELY(!mnt)) {
+		return(0);
+	}
+	
+	if (mnt->mnt_flags & MNT_NODEV) {
+		return(1);
+	}
+	
+	return(0);
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

@@ -439,6 +439,57 @@ SYSCALL ssize_t writev(int fd, const struct iovec *iov, int iovcnt);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:open
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:open a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int open(const char *pathname, int flags, mode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:openat
+ Input		:int dirfd
+ 		 < open directory file descriptor >
+ 		 const char *pathname
+ 		 < path name to open >
+ 		 int falgs
+ 		 < file open flags >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:open a file relative to a directory file descriptor
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int openat(int dirfd, const char *pathname, int flags, mode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:creat
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:create and open a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int creat(const char *pathname, mode_t mode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:close
  Input		:int fd
  		 < open file descriptor to close >

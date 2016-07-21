@@ -54,8 +54,6 @@
 
 ==================================================================================
 */
-LOCAL int
-insert_page_cache_list(struct page_cache *new, struct vnode *vnode);
 LOCAL ssize_t
 generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw);
 
@@ -168,18 +166,18 @@ EXPORT void page_cache_free(struct page_cache *page_cache)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:get_vm_page_cache
+ Funtion	:search_page_cache
  Input		:struct vnode *vnode
  		 < vnode to get its page cache >
  		 loff_t block
  		 < block number in a file >
  Output		:void
- Return		:struct page*
- 		 < a page cached page >
- Description	:get page cache
+ Return		:struct page_cache
+ 		 < a page cached >
+ Description	:search a page cache
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-EXPORT struct page* get_vm_page_cache(struct vnode *vnode, loff_t block)
+EXPORT struct page_cache* search_page_cache(struct vnode *vnode, loff_t block)
 {
 	struct list *pos;
 	
@@ -193,13 +191,42 @@ EXPORT struct page* get_vm_page_cache(struct vnode *vnode, loff_t block)
 		p = get_entry(pos, struct page_cache, link_cache);
 		
 		if (p->index == block) {
-			p->page->count++;
-			return(p->page);
+			//p->page->count++;
+			return(p);
 		}
 	}
 	
 request_io:
-	panic("request io is not implemented at %s\n", __func__);
+	panic("request io[%d] is not implemented at %s\n", block, __func__);
+	return(NULL);
+}
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_vm_page_cache
+ Input		:struct vnode *vnode
+ 		 < vnode to get its page cache >
+ 		 loff_t block
+ 		 < block number in a file >
+ Output		:void
+ Return		:struct page*
+ 		 < a page cached page >
+ Description	:get page cache
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct page* get_vm_page_cache(struct vnode *vnode, loff_t block)
+{
+	struct page_cache *p;
+	
+	p = search_page_cache(vnode, block);
+	
+	if (p) {
+		p->page->count++;
+		
+		return(p->page);
+	}
+	
 	return(NULL);
 }
 
@@ -294,6 +321,94 @@ EXPORT size_t mem_page_cache(struct vnode *vnode, void *mem_from,
 	return(len);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_vnode_page_cache
+ Input		:struct vnode *vnode
+ 		 < vnode to free its page cache >
+ Output		:void
+ Return		:void
+ Description	:free page caches of a vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void free_vnode_page_cache(struct vnode *vnode)
+{
+	struct page_cache *p;
+	struct page_cache *temp;
+	
+	if (UNLIKELY(is_empty_list(&vnode->v_cache))) {
+		return;
+	}
+	
+	list_for_each_entry_safe(p, temp, &vnode->v_cache, link_cache) {
+		if (LIKELY(p->page)) {
+			free_page(p->page);
+		}
+		page_cache_free(p);
+	}
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:insert_page_cache_list
+ Input		:struct page_cache *new
+ 		 < page cache to insert >
+ 		 struct vnode *vnode
+ 		 < vnode to be inserted a page cache >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:insert to vnode's page cache
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int
+insert_page_cache_list(struct page_cache *new, struct vnode *vnode)
+{
+	struct list *pos;
+	
+	if (UNLIKELY(is_empty_list(&vnode->v_cache))) {
+		add_list(&new->link_cache, &vnode->v_cache);
+		return(0);
+	}
+	
+	list_for_each(pos, &vnode->v_cache) {
+		struct page_cache *p;
+		struct page_cache *p_next;
+		
+		p = get_entry(pos, struct page_cache, link_cache);
+		
+		if (UNLIKELY(pos->next == &vnode->v_cache)) {
+			if (new->index < p->index) {
+				add_list(&new->link_cache, pos->prev);
+			} else if (p->index < new->index) {
+				add_list(&new->link_cache, pos);
+			} else {
+				panic("unexpected error occurence %s[1]\n", __func__);
+			}
+			return(0);
+		}
+		
+		p_next = get_entry(pos->next, struct page_cache, link_cache);
+		
+		if (UNLIKELY(p_next->index == new->index)) {
+			panic("unexpected error occurence %s[2]\n", __func__);
+		}
+		
+		if (UNLIKELY(p->index == new->index)) {
+			panic("unexpected error occurence %s[3]\n", __func__);
+		}
+		
+		if ((p->index < new->index) && (new->index < p_next->index)) {
+			add_list(&new->link_cache, pos);
+			return(0);
+		}
+		
+	}
+	
+	return(-1);
+}
+
 
 /*
 ----------------------------------------------------------------------------------
@@ -367,66 +482,6 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 /*
 ==================================================================================
- Funtion	:insert_page_cache_list
- Input		:struct page_cache *new
- 		 < page cache to insert >
- 		 struct vnode *vnode
- 		 < vnode to be inserted a page cache >
- Output		:void
- Return		:int
- 		 < result >
- Description	:insert to vnode's page cache
-==================================================================================
-*/
-LOCAL int
-insert_page_cache_list(struct page_cache *new, struct vnode *vnode)
-{
-	struct list *pos;
-	
-	if (UNLIKELY(is_empty_list(&vnode->v_cache))) {
-		add_list(&new->link_cache, &vnode->v_cache);
-		return(0);
-	}
-	
-	list_for_each(pos, &vnode->v_cache) {
-		struct page_cache *p;
-		struct page_cache *p_next;
-		
-		p = get_entry(pos, struct page_cache, link_cache);
-		
-		if (UNLIKELY(pos->next == &vnode->v_cache)) {
-			if (new->index < p->index) {
-				add_list(&new->link_cache, pos->prev);
-			} else if (p->index < new->index) {
-				add_list(&new->link_cache, pos);
-			} else {
-				panic("unexpected error occurence %s[1]\n", __func__);
-			}
-			return(0);
-		}
-		
-		p_next = get_entry(pos->next, struct page_cache, link_cache);
-		
-		if (UNLIKELY(p_next->index == new->index)) {
-			panic("unexpected error occurence %s[2]\n", __func__);
-		}
-		
-		if (UNLIKELY(p->index == new->index)) {
-			panic("unexpected error occurence %s[3]\n", __func__);
-		}
-		
-		if ((p->index < new->index) && (new->index < p_next->index)) {
-			add_list(&new->link_cache, pos);
-			return(0);
-		}
-		
-	}
-	
-	return(-1);
-}
-
-/*
-==================================================================================
  Funtion	:generic_rw
  Input		:struct file *filp
  		 < open file object >
@@ -458,18 +513,32 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	loff_t index = *ppos / blocksize;
 	loff_t offset = *ppos & PAGE_UMASK;
 	loff_t block_len = PageCount(len + offset);
+	loff_t size = vnode->v_size;
+	int err;
 	
 	//vd_printf("len:%d *ppos:%d rw:%d\n", len, *ppos, rw);
 	//vd_printf("index:0x%08X ", index);
 	//vd_printf("offset:0x%08X", offset);
 	//vd_printf("block_len:0x%08X\n", block_len);
 	
+	if (rw) {
+		if (size < len) {
+			size = len;
+		}
+	}
+	
 	if (UNLIKELY(is_empty_list(&vnode->v_cache))) {
-		printf("block i/o request is not implemented %s[1]\n", __func__);
-		printf("file:%s\n", dentry_name(filp->f_path.dentry));
-		printf("buf:%s\n", buf);
-		panic("");
-		//return(rw_len);
+		//printf("block i/o request is not implemented %s[1]\n", __func__);
+		//printf("file:%s\n", dentry_name(filp->f_path.dentry));
+		//printf("buf:%s\n", buf);
+		//panic("");
+		err = pages_rw_request(vnode, index, block_len, rw);
+		
+		if (UNLIKELY(err)) {
+			printf("unexpected error at %s [1]\n", __func__);
+			panic("");
+		}
+		//printf("extend page cache\n");
 	}
 	
 	list_for_each(pos, &vnode->v_cache) {
@@ -483,8 +552,16 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	}
 	
 	if (UNLIKELY(!p)) {
-		panic("block i/o request is not implemented %s[2]\n", __func__);
+		//panic("block i/o request is not implemented %s[2]\n", __func__);
 		//return(rw_len);
+		err = pages_rw_request(vnode, index, block_len, rw);
+		
+		if (UNLIKELY(err)) {
+			printf("unexpected error at %s [2]\n", __func__);
+			panic("");
+		}
+		
+		p = search_page_cache(vnode, index);
 	}
 	
 	/* -------------------------------------------------------------------- */
@@ -493,10 +570,10 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	addr = (char*)page_to_address(p->page);
 	addr += offset;
 	
-	if (blocksize <= vnode->v_size) {
+	if (blocksize <= size) {
 		copy_len = blocksize - offset;
 	} else {
-		copy_len = vnode->v_size - offset;
+		copy_len = size - offset;
 	}
 	
 	if (len < copy_len) {
@@ -513,6 +590,10 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	
 	*ppos += rw_len;
 	
+	if (rw) {
+		vnode->v_size += rw_len;
+	}
+	
 	if (block_len == 1) {
 		return(rw_len);
 	}
@@ -528,7 +609,19 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 		p = get_entry(p->link_cache.next, struct page_cache, link_cache);
 		
 		if (UNLIKELY(p->index != count)) {
-			panic("block i/o request is not implemented %s[3]\n", __func__);
+			//panic("block i/o request is not implemented %s[3]\n", __func__);
+			err = pages_rw_request(vnode, count, 1, rw);
+			
+			if (UNLIKELY(err)) {
+				printf("unexpected error at %s [3]\n", __func__);
+				panic("");
+			}
+			
+			p = search_page_cache(vnode, count);
+			
+			if (UNLIKELY(!p)) {
+				panic("unexpected error at %s[4]\n", __func__);
+			}
 		}
 		
 		addr = (char*)page_to_address(p->page);
@@ -541,9 +634,14 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 		
 		rw_len += blocksize;
 		*ppos += rw_len;
+		
+		if (rw) {
+			vnode->v_size += rw_len;
+		}
 	}
 	
 	if (UNLIKELY(p->link_cache.next == &vnode->v_cache)) {
+		printf("unexpected behavior? at %s\n", __func__);
 		return(rw_len);
 	}
 	
@@ -553,10 +651,16 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	p = get_entry(p->link_cache.next, struct page_cache, link_cache);
 	
 	if (UNLIKELY(p->index != (index + block_len - 1))) {
-		vd_printf("p->index:%ld ", p->index);
-		vd_printf("index:%ld ", index);
-		vd_printf("block_len:%ld\n", block_len);
-		panic("block i/o request is not implemented %s[4]\n", __func__);
+		//vd_printf("p->index:%ld ", p->index);
+		//vd_printf("index:%ld ", index);
+		//vd_printf("block_len:%ld\n", block_len);
+		//panic("block i/o request is not implemented %s[4]\n", __func__);
+		err = pages_rw_request(vnode, index + block_len - 1, 1, rw);
+		
+		if (UNLIKELY(err)) {
+			printf("unexpected error at %s [3]\n", __func__);
+			panic("");
+		}
 	}
 	
 	addr = (char*)page_to_address(p->page);
@@ -578,6 +682,10 @@ generic_rw(struct file *filp, char *buf, size_t len, loff_t *ppos, int rw)
 	}
 	rw_len += copy_len;
 	*ppos += rw_len;
+	
+	if (rw) {
+		vnode->v_size += rw_len;
+	}
 	
 	//vd_printf("+rw_len:%ld ", rw_len);
 	//vd_printf("*ppos:%ld\n", *ppos);

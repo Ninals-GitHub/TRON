@@ -292,6 +292,18 @@ IMPORT void init_special_vnode(struct vnode *vnode, umode_t mode, dev_t dev);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:put_vnode
+ Input		:struct vnode *vnode
+ 		 < vnode to put >
+ Output		:void
+ Return		:void
+ Description	:put vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void put_vnode(struct vnode *vnode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:kmknod
  Input		:const char *pathname
  		 < pathname to create a special file >
@@ -448,6 +460,21 @@ SYSCALL int fcntl(int fd, int cmd, ...);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:link
+ Input		:const char *oldpath
+ 		 < link from >
+ 		 const char *newpath
+ 		 < link to >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:make a new name for a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int link(const char *oldpath, const char *newpath);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:linkat
  Input		:int olddirfd
  		 < directory open file descriptor >
@@ -468,21 +495,36 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL int linkat(int olddirfd, const char *oldpath,
 				int newdirfd, const char *newpath, int flags);
 
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:link
- Input		:const char *oldpath
+ Funtion	:unlink
+ Input		:const char *pathname
  		 < link from >
- 		 const char *newpath
- 		 < link to >
  Output		:void
  Return		:int
  		 < result >
- Description	:make a new name for a file
+ Description	:delete a name and possibly the file it referes to
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-SYSCALL int link(const char *oldpath, const char *newpath);
+SYSCALL int unlink(const char *pathname);
+
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unlinkat
+ Input		:int dirfd
+ 		 < directory open file descriptor >
+ 		 const char *pathname
+ 		 < link from >
+ 		 int flags
+ 		 < unlink flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:delete a name and possibly the file it referes to
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int unlinkat(int dirfd, const char *pathname, int flags);
 
 /*
 ----------------------------------------------------------------------------------
@@ -699,5 +741,22 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int vfs_linkat(int olddirfd, const char *oldpath,
 				int newdirfd, const char *newpath, int flags);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_unlinkat
+ Input		:int dirfd
+ 		 < directory open file descriptor >
+ 		 const char *pathname
+ 		 < link from >
+ 		 int flags
+ 		 < unlink flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:delete a name and possibly the file it referes to
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int vfs_unlinkat(int dirfd, const char *pathname, int flags);
 
 #endif	// __BK_FS_INODE_H__

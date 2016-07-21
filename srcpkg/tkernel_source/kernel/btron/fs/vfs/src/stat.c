@@ -176,7 +176,6 @@ SYSCALL int lstat64(const char *path, struct stat64_i386 *buf)
 	
 	put_file_name(fname);
 	
-	
 	err = vfs_stat64(vnode, buf);
 	
 	return(err);

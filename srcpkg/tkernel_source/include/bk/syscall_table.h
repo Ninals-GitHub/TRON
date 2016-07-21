@@ -77,9 +77,9 @@
 	_SVC_ENTRY open		 		/* 0005 *//* open		*/
 	_SVC_ENTRY close	 		/* 0006 *//* close		*/
 	_SVC_ENTRY waitpid	 		/* 0007 *//* waitpid		*/
-	_SVC_ENTRY syscall_test 		/* 0008 *//* creat		*/
+	_SVC_ENTRY creat	 		/* 0008 *//* creat		*/
 	_SVC_ENTRY link		 		/* 0009 *//* link		*/
-	_SVC_ENTRY syscall_test 		/* 0010 *//* unlink		*/
+	_SVC_ENTRY unlink	 		/* 0010 *//* unlink		*/
 	_SVC_ENTRY execve	 		/* 0011 *//* execve		*/
 	_SVC_ENTRY chdir	 		/* 0012 *//* chdir		*/
 	_SVC_ENTRY syscall_test 		/* 0013 *//* time		*/
@@ -131,7 +131,7 @@
 //	_SVC_ENTRY oldolduname			/* 0059 *//* oldolduname	*/
 	_SVC_ENTRY syscall_test		/* 0059 *//* oldolduname	*/
 	_SVC_ENTRY umask	 		/* 0060 *//* umask		*/
-	_SVC_ENTRY syscall_test 		/* 0061 *//* chroot		*/
+	_SVC_ENTRY chroot	 		/* 0061 *//* chroot		*/
 	_SVC_ENTRY syscall_test 		/* 0062 *//* ustat		*/
 	_SVC_ENTRY syscall_test 		/* 0063 *//* dup2		*/
 	_SVC_ENTRY getppid	 		/* 0064 *//* getppid		*/
@@ -378,7 +378,7 @@
 	_SVC_ENTRY fchownat			/* 0298 *//* fchownat		*/
 	_SVC_ENTRY syscall_test			/* 0299 *//* futimesat		*/
 	_SVC_ENTRY syscall_test			/* 0300 *//* fstatat64		*/
-	_SVC_ENTRY syscall_test			/* 0301 *//* unlinkat		*/
+	_SVC_ENTRY unlinkat			/* 0301 *//* unlinkat		*/
 	_SVC_ENTRY syscall_test			/* 0302 *//* renameat		*/
 	_SVC_ENTRY linkat			/* 0303 *//* linkat		*/
 	_SVC_ENTRY syscall_test			/* 0304 *//* symlinkat		*/

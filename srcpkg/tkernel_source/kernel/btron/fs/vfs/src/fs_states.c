@@ -222,11 +222,11 @@ SYSCALL int chdir(const char *path)
 	struct dentry *dentry;
 	int err;
 	
-	if (UNLIKELY(vm_check_accessR((void*)path, PATH_MAX))) {
+	if (UNLIKELY(vm_check_accessR((void*)path, sizeof(char)))) {
 		return(-EFAULT);
 	}
 	
-	err = vfs_lookup(path, &fname, LOOKUP_ENTRY);
+	err = vfs_lookup(path, &fname, LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
 	
 	if (UNLIKELY(err)) {
 		return(err);
@@ -240,6 +240,68 @@ SYSCALL int chdir(const char *path)
 	
 	return(vfs_chdir(mnt, dentry, dir));
 }
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:chroot
+ Input		:cont char *path
+ 		 < new root >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:change root directory
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int chroot(const char *path)
+{
+	struct process *proc = get_current();
+	struct file_name *fname;
+	struct vnode *new_root;
+	struct dentry *new_dentry;
+	struct vfsmount *vfsmnt;
+	int err;
+	
+	if (proc->euid != ROOT_EUID) {
+		return(-EPERM);
+	}
+	
+	if (UNLIKELY(!path)) {
+		return(-EFAULT);
+	}
+	
+	err = vm_check_accessR((void*)path, sizeof(char));
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	err = vfs_lookup(path, &fname, LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
+	
+	if (UNLIKELY(err)) {
+		return(err);
+	}
+	
+	new_root = fname->dentry->d_vnode;
+	new_dentry = fname->dentry;
+	
+	put_file_name(fname);
+	
+	if (UNLIKELY(!S_ISDIR(new_root->v_mode))) {
+		return(-ENOTDIR);
+	}
+	
+	vfsmnt = get_vfsmount(new_dentry);
+	
+	if (UNLIKELY(!vfsmnt)) {
+		return(-EACCES);
+	}
+	
+	vfs_set_root(proc, vfsmnt, new_dentry);
+	vfs_set_cwd(proc, vfsmnt, new_dentry);
+	
+	return(0);
+}
+
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

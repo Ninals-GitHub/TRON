@@ -85,7 +85,7 @@ SRC	+=	block_device.c character_device.c dentry.c \
 		file.c  file_system_type.c fs_states.c mount.c \
 		path.c super_block.c vnode.c page_cache.c \
 		exec.c load_elf.c ioctl.c poll.c dir.c fdtable.c \
-		fcntl.c utime.c stat.c attr.c
+		fcntl.c utime.c stat.c attr.c page_rw.c
 
 # object files
 OBJ	= $(addsuffix .o, $(basename $(SRC)))

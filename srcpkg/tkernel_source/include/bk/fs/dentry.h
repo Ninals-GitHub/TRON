@@ -135,6 +135,56 @@ struct dentry {
 };
 
 /*
+----------------------------------------------------------------------------------
+	d_flags
+----------------------------------------------------------------------------------
+*/
+#define	DCACHE_OP_HASH		0x00000001
+#define	DCACHE_OP_COMPARE	0x00000002
+#define	DCACHE_OP_REVALIDATE	0x00000004
+#define	DCACHE_OP_DELETE	0x00000008
+#define	DCACHE_OP_PUNE		0x00000010
+
+#define	DCACHE_DISCONNECTED	0x00000020	/* the dentry may not be connected
+						   to the dentry cache treee	*/
+#define	DCACHE_REFERENCED	0x00000040	/* recently used, don't discard	*/
+#define	DCACHE_RCUACCESS	0x00000080	/* ever has been rcu-visible	*/
+#define	DCACHE_CANT_MOUNT	0x00000100
+#define	DCACHE_GENOCIDE		0x00000200
+#define	DCACHE_SHRINK_LIST	0x00000400
+#define	DCACHE_OP_WEAK_REVALIDATE						\
+				0x00000800
+#define	DCACHE_NFSFS_RENAMED	0x00001000
+#define	DCACHE_COOKIE		0x00002000
+#define	DCACHE_FSNOTIFYPARENT_WATCHED						\
+				0x00004000
+#define	DCACHE_DENTRY_KILLED	0x00008000
+#define	DCACHE_MOUNTED		0x00010000
+#define	DCACHE_NEED_AUTOMOUNT	0x00020000
+#define	DCACHE_MANAGE_TRANSIT	0x00040000
+#define	DCACHE_MANAGED_DENTRY	(DCACHE_MOUNTED | DCACHE_NEED_AUTOMOUNT |	\
+				 DCACHE_MANAGE_TRANSIT)
+#define	DCACHE_LRU_LIST		0x00080000
+
+#define	DCACHE_ENTRY_TYPE	0x00700000
+#define	DCACHE_MISS_TYPE	0x00000000	/* negative dentry		*/
+#define	DCACHE_WHITEOUT_TYPE	0x00100000	/* whiteout (stop pathwalk)	*/
+#define	DCACHE_DIRECTORY_TYPE	0x00200000	/* normal directory		*/
+#define	DCACHE_AUTODIR_TYPE	0x00300000	/* lookupless directory		*/
+#define	DCACHE_REGULAR_TYPE	0x00400000	/* regular file			*/
+#define	DCACHE_SPECIAL_TYPE	0x00500000	/* other file			*/
+#define	DCACHE_SYMLINK_TYPE	0x00600000	/* symlink or faullthru to such	*/
+
+#define	DCACHE_MAY_FREE		0x00800000
+#define	DCACHE_FALLTHRU		0x01000000	/* fall through to lower layer	*/
+#define	DCACHE_OP_SELECT_INODE	0x02000000	/* unioned entry		*/
+
+#define	DCACHE_ENCRYPTED_WITH_KEY						\
+				0x04000000	/* dir is encrypted with a key	*/
+#define	DCACHE_OP_REAL		0x08000000
+
+
+/*
 ==================================================================================
 
 	Management 
@@ -264,6 +314,20 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void dentry_associated(struct dentry *dentry, struct vnode *vnode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:dentry_unassociated
+ Input		:struct dentry *dentry
+ 		 < dentry to associate with its vnode >
+ 		 struct vnode *vnode
+ 		 < vnode to be associted with >
+ Output		:void
+ Return		:void
+ Description	:associate dentry with its vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void dentry_unassociated(struct dentry *dentry, struct vnode *vnode);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

@@ -213,4 +213,30 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int mount_root_fs(void);
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:get_vfsmount
+ Input		:struct dentry *dentry
+ 		 < dentry which belongs to mount space to get >
+ Output		:void
+ Return		:struct vfsmount*
+ 		 < vfsmount of a mount space to which a dentry belongs >
+ Description	:get vfsmount from dentry
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct vfsmount* get_vfsmount(struct dentry *dentry);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:is_mount_nodev
+ Input		:struct super_block *sb
+ 		 < super block object >
+ Output		:void
+ Return		:int
+ 		 < boolean result >
+ Description	:test a file system has been mounted on no device
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int is_mount_nodev(struct super_block *sb);
+
 #endif	// __BK_FS_MOUNT_H__

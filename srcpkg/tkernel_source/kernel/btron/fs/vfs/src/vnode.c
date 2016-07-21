@@ -255,6 +255,37 @@ EXPORT void init_special_vnode(struct vnode *vnode, umode_t mode, dev_t dev)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:put_vnode
+ Input		:struct vnode *vnode
+ 		 < vnode to put >
+ Output		:void
+ Return		:void
+ Description	:put vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void put_vnode(struct vnode *vnode)
+{
+	struct super_block *sb = vnode->v_sb;
+	
+	if (LIKELY(vnode->v_nlink)) {
+		vnode->v_nlink--;
+		
+		if (vnode->v_nlink) {
+			return;
+		}
+	}
+	
+	if (sb->s_op && sb->s_op->evict_vnode) {
+		sb->s_op->evict_vnode(vnode);
+		
+		return;
+	}
+	
+	vnode_cache_free(vnode);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:kmknod
  Input		:const char *pathname
  		 < pathname to create a special file >
@@ -356,7 +387,7 @@ SYSCALL int mknod(const char *pathname, mode_t mode, dev_t dev)
 	struct vnode *dir;
 	int err;
 	
-	//printf("mknod:%s\n", pathname);
+	printf("mknod:%s\n", pathname);
 	
 	if (UNLIKELY(!pathname)) {
 		return(-EFAULT);
@@ -585,7 +616,7 @@ SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
 	
 	err = xreadlinkat(NULL, pathname, buf, bufsiz);
 	
-	printf("buf:%s\n", buf);
+	printf("readlink pathname:%s buf:%s\n", buf);
 	
 	return(err);
 }
@@ -684,6 +715,50 @@ SYSCALL int linkat(int olddirfd, const char *oldpath,
 	int err;
 	
 	err = vfs_linkat(olddirfd, oldpath, newdirfd, newpath, flags);
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unlink
+ Input		:const char *pathname
+ 		 < link from >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:delete a name and possibly the file it referes to
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int unlink(const char *pathname)
+{
+	int err;
+	
+	err = vfs_unlinkat(AT_FDCWD, pathname, AT_SYMLINK_FOLLOW);
+	
+	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unlinkat
+ Input		:int dirfd
+ 		 < directory open file descriptor >
+ 		 const char *pathname
+ 		 < link from >
+ 		 int flags
+ 		 < unlink flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:delete a name and possibly the file it referes to
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int unlinkat(int dirfd, const char *pathname, int flags)
+{
+	int err;
+	
+	err = vfs_unlinkat(dirfd, pathname, flags | AT_SYMLINK_FOLLOW);
 	
 	return(err);
 }
@@ -1185,6 +1260,10 @@ EXPORT int vfs_linkat(int olddirfd, const char *oldpath,
 	
 	put_file_name(old_fname);
 	
+	if (UNLIKELY(S_ISDIR(old_vnode->v_mode))) {
+		return(-EISDIR);
+	}
+	
 	lookup_flags |= LOOKUP_CREATE;
 	
 	err = vfs_lookup_at(newdir_path, newpath, &new_fname, lookup_flags);
@@ -1197,6 +1276,14 @@ EXPORT int vfs_linkat(int olddirfd, const char *oldpath,
 	
 	put_file_name(new_fname);
 	
+	if (UNLIKELY(new_dentry->d_sb != old_dentry->d_sb)) {
+		return(-EXDEV);
+	}
+	
+	if (UNLIKELY(new_dentry->d_sb->s_dev != old_dentry->d_sb->s_dev)) {
+		return(-EXDEV);
+	}
+	
 	if (old_vnode->v_op && old_vnode->v_op->link) {
 		return(old_vnode->v_op->link(old_dentry, old_dir, new_dentry));
 	}
@@ -1205,6 +1292,95 @@ EXPORT int vfs_linkat(int olddirfd, const char *oldpath,
 	new_dentry->d_vnode = old_vnode;
 	
 	dentry_add_dir(old_dir_dentry, new_dentry);
+	
+	return(0);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:vfs_unlinkat
+ Input		:int dirfd
+ 		 < directory open file descriptor >
+ 		 const char *pathname
+ 		 < link from >
+ 		 int flags
+ 		 < unlink flags >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:delete a name and possibly the file it referes to
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int vfs_unlinkat(int dirfd, const char *pathname, int flags)
+{
+	struct path *unlink_path;
+	struct file_name *fname;
+	struct vnode *vnode;
+	struct vnode *dir;
+	struct dentry *dentry;
+	int lookup_flags = LOOKUP_ENTRY;
+	int err;
+	
+	printf("unlink:%s\n", pathname);
+	
+	if (UNLIKELY(!pathname)) {
+		return(-EFAULT);
+	}
+	
+	err = vm_check_access((void*)pathname, sizeof(char), PROT_READ);
+	
+	if (UNLIKELY(err)) {
+		printf("unlink err[0]:%d\n", -err);
+		return(-EFAULT);
+	}
+	
+	err = get_dirfd_path(dirfd, &unlink_path);
+	
+	if (UNLIKELY(err)) {
+		printf("unlink err[1]:%d\n", -err);
+		return(err);
+	}
+	
+	if (flags & AT_SYMLINK_FOLLOW) {
+		lookup_flags |= LOOKUP_FOLLOW_LINK;
+	}
+	
+	err = vfs_lookup_at(unlink_path, pathname, &fname, lookup_flags);
+	
+	if (UNLIKELY(err)) {
+		printf("unlink err[2]:%d\n", -err);
+		return(err);
+	}
+	
+	dir = fname->parent->d_vnode;
+	dentry = fname->dentry;
+	vnode = dentry->d_vnode;
+	
+	put_file_name(fname);
+	
+	if (!(flags & AT_REMOVEDIR)) {
+		if (UNLIKELY(S_ISDIR(vnode->v_mode))) {
+			return(-EISDIR);
+		}
+	}
+	
+	if (vnode->v_op && vnode->v_op->unlink) {
+		err = vnode->v_op->unlink(dir, dentry);
+		
+		if (UNLIKELY(err)) {
+			return(err);
+		}
+	} else {
+		put_vnode(vnode);
+	}
+	
+	del_list(&dentry->d_child);
+	
+	dentry_associated(dentry, vnode);
+	
+	free_vnode_page_cache(vnode);
+	
+	vnode_cache_free(vnode);
 	
 	return(0);
 }

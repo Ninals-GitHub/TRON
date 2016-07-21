@@ -87,7 +87,7 @@ LOCAL struct super_block *root_sb;
 LOCAL struct file_system_type rootfs_fs_type =
 {
 	.name		= "rootfs",
-	.fs_flags	= FS_REQUIRES_DEV,
+	.fs_flags	= 0,
 	.mount		= ramfs_mount,
 	.kill_sb	= ramfs_kill_sb,
 };
@@ -289,6 +289,7 @@ LOCAL int ramfs_fill_super(struct super_block *sb, void *data, int silent)
 	}
 	
 	sb->s_root = root;
+	sb->s_flags = MS_ACTIVE;
 	
 	return(0);
 }

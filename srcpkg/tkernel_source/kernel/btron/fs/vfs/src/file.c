@@ -691,7 +691,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 {
 	struct file *filp;
-	int err;
+	ssize_t err;
 	
 	if (UNLIKELY(!buf)) {
 		return(-EFAULT);
@@ -712,16 +712,22 @@ SYSCALL ssize_t write(int fd, const void *buf, size_t count)
 	err = vm_check_access((void*)buf, count, PROT_READ);
 	
 	if (UNLIKELY(err)) {
+		printf("write:err[1]:%d\n", -err);
 		return(-EFAULT);
 	}
 	
 	filp = get_open_file(fd);
 	
 	if (UNLIKELY(!filp)) {
+		printf("write:err[2]\n");
 		return(-EBADF);
 	}
 	
-	return(vfs_write(filp, buf, count, &filp->f_pos));
+	err = vfs_write(filp, buf, count, &filp->f_pos);
+	
+	//printf("write:%d\n", err);
+	
+	return(err);
 }
 
 /*
@@ -891,6 +897,24 @@ SYSCALL int openat(int dirfd, const char *pathname, int flags, mode_t mode)
 	
 	
 	return(err);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:creat
+ Input		:const char *pathname
+ 		 < path name to open >
+ 		 mode_t mode
+ 		 < file open mode >
+ Output		:void
+ Return		:int
+ 		 < open file descriptor >
+ Description	:create and open a file
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+SYSCALL int creat(const char *pathname, mode_t mode)
+{
+	return(open(pathname, O_CREAT|O_WRONLY|O_TRUNC, mode));
 }
 
 /*
@@ -1342,13 +1366,21 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	struct file *filp;
 	struct process *proc;
 	struct dentry *dentry;
+	struct dentry *dir_dentry;
+	struct vnode *dir;
+	int lookup_flags = LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK;
 	int err;
 	int fd;
 	
-	//printf("open [%s]\n", pathname);
+	//printf("open [%s]0x%08X\n", pathname, flags);
 	
-	err = vfs_lookup_at(dir_path, pathname, &fname,
-					LOOKUP_ENTRY | LOOKUP_FOLLOW_LINK);
+	if (flags & O_CREAT) {
+		//printf("open [%s]\n", pathname);
+	
+		lookup_flags |= LOOKUP_CREATE;
+	}
+	
+	err = vfs_lookup_at(dir_path, pathname, &fname, lookup_flags);
 	
 	if (err) {
 		//printf("failed vfs lookup at %s\n", __func__);
@@ -1356,12 +1388,28 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	}
 	
 	dentry = fname->dentry;
+	dir_dentry = fname->parent;
+	dir = fname->parent->d_vnode;
 	
 	put_file_name(fname);
 	
 	if (UNLIKELY(!dentry->d_vnode)) {
-		//printf("open:negative dentry?\n");
-		return(-ENOENT);
+		struct vnode *vnode;
+		if (!(flags & O_CREAT)) {
+			printf("open:negative dentry?\n");
+			return(-ENOENT);
+		}
+		vnode = vfs_alloc_vnode(dir->v_sb);
+		
+		if (UNLIKELY(!vnode)) {
+			return(-ENOMEM);
+		}
+		
+		setup_vnode(dir, dentry, vnode);
+		
+		vnode->v_mode = S_IFREG | (mode & ~S_IFMT);
+		
+		dentry_add_dir(dir_dentry, dentry);
 	}
 	
 	proc = get_current();
@@ -1404,7 +1452,7 @@ xopenat(struct path *dir_path, const char *pathname, int flags, mode_t mode)
 	
 	//printf("open file:%s at [%d]\n", dentry->d_iname, fd);
 	
-	//printf("opened:fd=%d\n", fd);
+	//printf("opened:%s[fd=%d]\n", pathname, fd);
 	
 	return(fd);
 

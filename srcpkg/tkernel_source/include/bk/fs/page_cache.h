@@ -133,6 +133,21 @@ IMPORT void page_cache_free(struct page_cache *page_cache);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:search_page_cache
+ Input		:struct vnode *vnode
+ 		 < vnode to get its page cache >
+ 		 loff_t block
+ 		 < block number in a file >
+ Output		:void
+ Return		:struct page_cache
+ 		 < a page cached >
+ Description	:search a page cache
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct page_cache* search_page_cache(struct vnode *vnode, loff_t block);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:get_vm_page_cache
  Input		:struct vnode *vnode
  		 < vnode to get its page cache >
@@ -167,6 +182,35 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT size_t mem_page_cache(struct vnode *vnode, void *mem_from,
 				loff_t pos, loff_t offset, loff_t size);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:free_vnode_page_cache
+ Input		:struct vnode *vnode
+ 		 < vnode to free its page cache >
+ Output		:void
+ Return		:void
+ Description	:free page caches of a vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void free_vnode_page_cache(struct vnode *vnode);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:insert_page_cache_list
+ Input		:struct page_cache *new
+ 		 < page cache to insert >
+ 		 struct vnode *vnode
+ 		 < vnode to be inserted a page cache >
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:insert to vnode's page cache
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int
+insert_page_cache_list(struct page_cache *new, struct vnode *vnode);
 
 /*
 ----------------------------------------------------------------------------------

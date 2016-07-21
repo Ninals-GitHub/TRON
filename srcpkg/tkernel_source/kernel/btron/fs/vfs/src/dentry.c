@@ -295,6 +295,24 @@ EXPORT void dentry_associated(struct dentry *dentry, struct vnode *vnode)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:dentry_unassociated
+ Input		:struct dentry *dentry
+ 		 < dentry to associate with its vnode >
+ 		 struct vnode *vnode
+ 		 < vnode to be associted with >
+ Output		:void
+ Return		:void
+ Description	:associate dentry with its vnode
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void dentry_unassociated(struct dentry *dentry, struct vnode *vnode)
+{
+	dentry->d_vnode = NULL;
+	del_list(&vnode->v_dentry);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:dentry_add_dir
  Input		:struct dentry *dir
  		 < parent directory to which add the new entry >

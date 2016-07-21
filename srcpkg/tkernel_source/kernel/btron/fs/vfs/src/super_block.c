@@ -215,6 +215,7 @@ EXPORT struct vnode* vfs_alloc_vnode(struct super_block *sb)
 	atomic_inc(&vnode->v_count);
 	
 	vnode->v_sb = sb;
+	vnode->v_blkbits = sb->s_blocksize_bits;
 	
 	return(vnode);
 }
