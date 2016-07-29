@@ -175,6 +175,7 @@ struct task_context_block {
 	unsigned long		sp;
 	unsigned long		ip;
 	unsigned long		sysenter_cs;
+	unsigned long		tss;
 	unsigned long		flags;
 	uint16_t		ds;
 	uint16_t		es;

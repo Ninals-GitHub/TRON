@@ -317,6 +317,7 @@ SYSCALL unsigned long brk(unsigned long addr)
 	
 	if (UNLIKELY(addr < mspace->start_brk)) {
 		//printf("<1:new addr=0x%08X>\n", mspace->end_brk);
+		//printf("<1:new start=0x%08X end=0x%08X>\n", mspace->start_brk, mspace->end_brk);
 		return(mspace->end_brk);
 	}
 	

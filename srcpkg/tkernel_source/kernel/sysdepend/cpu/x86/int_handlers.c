@@ -483,8 +483,13 @@ LOCAL void handle_simd_fp(struct ctx_reg *reg)
 */
 LOCAL void handle_double_fault(struct ctx_reg *reg, uint32_t error_code)
 {
+#if 1
+	printf("error code:%u\n", error_code);
+	printf("double fault[0x%08X]\n", error_code);
+#else
 	vd_printf("error code:%u\n", error_code);
 	vd_printf("double fault[0x%08X]\n", error_code);
+#endif
 }
 
 /*
@@ -504,8 +509,13 @@ LOCAL void handle_tss_error(struct ctx_reg *reg, uint32_t error_code)
 	static int tss_error = 0;
 	
 	if (tss_error++) {
+#if 1
+		printf("error code:%u\n", error_code);
+		printf("tss error[0x%08X]\n", error_code);
+#else
 		vd_printf("error code:%u\n", error_code);
 		vd_printf("tss error[0x%08X]\n", error_code);
+#endif
 		for (;;);
 	}
 }
@@ -524,8 +534,13 @@ LOCAL void handle_tss_error(struct ctx_reg *reg, uint32_t error_code)
 */
 LOCAL void handle_segment_not_present(struct ctx_reg *reg, uint32_t error_code)
 {
+#if 1
+	printf("error code:%u\n", error_code);
+	printf("segment not present[0x%08X]\n", error_code);
+#else
 	vd_printf("error code:%u\n", error_code);
 	vd_printf("segment not present[0x%08X]\n", error_code);
+#endif
 }
 
 /*
@@ -542,8 +557,13 @@ LOCAL void handle_segment_not_present(struct ctx_reg *reg, uint32_t error_code)
 */
 LOCAL void handle_stack_fault(struct ctx_reg *reg, uint32_t error_code)
 {
+#if 1
+	printf("error code:%u\n", error_code);
+	printf("stack fault[0x%08X]\n", error_code);
+#else
 	vd_printf("error code:%u\n", error_code);
 	vd_printf("stack fault[0x%08X]\n", error_code);
+#endif
 }
 
 /*
@@ -565,6 +585,17 @@ LOCAL void handle_gfp(struct ctx_reg *reg, uint32_t error_code)
 	if (1 < count) {
 		
 	} else {
+#if 1
+		printf("general protection fault[0x%08X]\n", error_code);
+		printf("eax:0x%08X ", reg->eax);
+		printf("ebx:0x%08X ", reg->ebx);
+		printf("ecx:0x%08X\n", reg->ecx);
+		printf("eip:0x%08X ", reg->eip);
+		printf("eflags:0x%08X ", reg->eflags);
+		printf("cs:0x%08X\n", reg->cs);
+		printf("esp:0x%08X ", reg->esp);
+		printf("ss:0x%08X\n", reg->ss);
+#else
 		vd_printf("general protection fault[0x%08X]\n", error_code);
 		vd_printf("eax:0x%08X ", reg->eax);
 		vd_printf("ebx:0x%08X ", reg->ebx);
@@ -574,7 +605,7 @@ LOCAL void handle_gfp(struct ctx_reg *reg, uint32_t error_code)
 		vd_printf("cs:0x%08X\n", reg->cs);
 		vd_printf("esp:0x%08X ", reg->esp);
 		vd_printf("ss:0x%08X\n", reg->ss);
-
+#endif
 		count++;
 		for(;;);
 	}

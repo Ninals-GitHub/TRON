@@ -412,13 +412,15 @@ wake_up_from_low_power:
 		if (current_proc->mspace != next_proc->mspace) {
 			//printf("switched ms. pid=%d -> pid=%d\n", current_proc->pid, next_proc->pid);
 			switch_ms(current_proc, next_proc);
+			
 		}
 		
 		if (UNLIKELY(next_ctxb->need_iret)) {
 			/* ---------------------------------------------------- */
 			/* update tss						*/
 			/* ---------------------------------------------------- */
-			update_tss_esp0((uint32_t)next_ctxb->ssp);
+			next_ctxb->tss = next_ctxb->ssp;
+			update_tss_esp0((uint32_t)next_ctxb->tss);
 			
 			//printf("iret next : %s cur_esp:0x%08X nxt_esp:0x%08X\n", schedtsk->name, current_ctxb->ssp, next_ctxb->ssp);
 			ASM (
@@ -449,8 +451,7 @@ wake_up_from_low_power:
 		/* ------------------------------------------------------------ */
 		/* switch sp context and prepare to switch ip context		*/
 		/* ------------------------------------------------------------ */
-		//update_tss_esp0((uint32_t)ctxtsk->tskctxb.ssp);
-		//update_tss_esp0((uint32_t)schedtsk->tskctxb.ssp);
+		update_tss_esp0((uint32_t)next_ctxb->tss);
 		
 		ASM (
 		"pushfl					\n\t"
@@ -469,8 +470,6 @@ wake_up_from_low_power:
 		:[next_sp]"m"(schedtsk->tskctxb.ssp), [next_ip]"m"(schedtsk->tskctxb.ip)
 		:"esp", "memory"
 		);
-		update_tss_esp0((uint32_t)ctxtsk->tskctxb.ssp);
-		//update_tss_esp0(getEsp());
 		
 		ctxtsk = schedtsk;
 		
@@ -562,6 +561,7 @@ EXPORT void setup_stacd( struct task *tcb, INT stacd )
 	//} else {
 		tcb->tskctxb.ssp -= sizeof(unsigned long) * 2;
 	//}
+	tcb->tskctxb.tss = tcb->tskctxb.ssp;
 }
 
 /*

@@ -50,7 +50,7 @@
 #
 #
 
-#	ramfs
+#	pci
 
 # T-Engine type
 MACHINE = x86

@@ -96,6 +96,7 @@ EXPORT int register_filesystem(struct file_system_type *fs_type)
 	
 	if (UNLIKELY(!root_fs_type)) {
 		root_fs_type = fs_type;
+		root_fs_type->next = NULL;
 	}
 	
 	last_type = find_get_last_fs_type(fs_type);
@@ -189,10 +190,15 @@ find_get_last_fs_type(struct file_system_type *fs_type)
 		if (UNLIKELY(fs_type == fs_element)) {
 			return(NULL);
 		}
+		
+		if (UNLIKELY(!fs_element->next)) {
+			return(fs_element);
+		}
+		
 		fs_element = fs_element->next;
 	}
 	
-	return(fs_element);
+	return(NULL);
 }
 
 /*

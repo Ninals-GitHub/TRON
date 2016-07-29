@@ -1107,6 +1107,7 @@ EXPORT void* vm_extend_brk(struct process *proc, unsigned long new_brk)
 	
 	for (i = 0;i < vm_brk->nr_pages;i++) {
 		new_pages[i] = vm_brk->pages[i];
+		new_pages[i]->count++;
 	}
 	
 	for (i = vm_brk->nr_pages;i < vm_brk->nr_pages + nr_ex_pages;i++) {
@@ -1169,8 +1170,8 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 	
 	vm_stack = get_address_vm(proc, mspace->start_stack, mspace->start_stack);
 	
-	printf("vm_stack->start:0x%08X ", vm_stack->start);
-	printf("vm_statck->end:0x%08X\n", vm_stack->end);
+	//printf("vm_stack->start:0x%08X ", vm_stack->start);
+	//printf("vm_statck->end:0x%08X\n", vm_stack->end);
 	
 	if (!vm_stack) {
 		return(-ENOMEM);
@@ -1218,8 +1219,8 @@ EXPORT int vm_extend_stack(struct process *proc, unsigned long new_extend)
 	vm_stack->nr_pages = nr_ex_pages;
 	
 	mspace->start_stack = vm_stack->start;
-	printf("new vm_stack->start:0x%08X ", vm_stack->start);
-	printf("new vm_statck->end:0x%08X\n", vm_stack->end);
+	//printf("new vm_stack->start:0x%08X ", vm_stack->start);
+	//printf("new vm_statck->end:0x%08X\n", vm_stack->end);
 	
 	return(0);
 }

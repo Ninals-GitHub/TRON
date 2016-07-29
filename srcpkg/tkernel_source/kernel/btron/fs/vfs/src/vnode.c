@@ -553,6 +553,8 @@ SYSCALL int symlink(const char *target, const char *linkpath)
 	
 	dentry->d_vnode->v_size = len;
 	
+	return(0);
+	
 out:
 	kfree(target_path);
 	return(err);
@@ -612,11 +614,17 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
 {
-	int err;
+	ssize_t err;
+	
+	buf[0] = 'b';
+	buf[1] = '\0';
+	
+	return(1);
 	
 	err = xreadlinkat(NULL, pathname, buf, bufsiz);
 	
-	printf("readlink pathname:%s buf:%s\n", buf);
+	//printf("readlink pathname:%s buf:%s\n", pathname, buf);
+	printf("bufsiz:%d\n", bufsiz);
 	
 	return(err);
 }
@@ -1540,7 +1548,7 @@ xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsi
 		return(err);
 	}
 	
-	err = vm_check_accessR((void*)pathname, PATH_MAX);
+	err = vm_check_accessR((void*)pathname, sizeof(char));
 	
 	if (UNLIKELY(err)) {
 		return(err);
@@ -1566,8 +1574,17 @@ xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsi
 		return(-EINVAL);
 	}
 	
-	printf("vnode->v_link:%s\n", vnode->v_link);
+	if (UNLIKELY(!vnode->v_link)) {
+		printf("unexpected error at %s : v_link is null\n", __func__);
+	}
 	
+	if (UNLIKELY(bufsiz < vnode->v_size)) {
+		return(-EINVAL);
+	}
+	
+	printf("vnode->v_link:%s %d\n", vnode->v_link, vnode->v_size);
+	
+#if 0
 	err = copy_to_user((void*)buf, (void*)vnode->v_link, vnode->v_size);
 	
 	if (UNLIKELY(err)) {
@@ -1576,7 +1593,12 @@ xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsi
 	
 	buf[vnode->v_size] = '\0';
 	
-	return(0);
+	return(vnode->v_size);
+#endif
+	//buf[0] = 'b';
+	//buf[1] = '\0';
+	
+	return(1);
 }
 
 /*

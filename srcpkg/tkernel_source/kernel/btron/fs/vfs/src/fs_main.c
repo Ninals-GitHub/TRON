@@ -378,6 +378,8 @@ EXPORT int make_init_fs(void)
 	
 	init_mm_lately();
 	
+	init_pci_device();
+	
 	err = execve("/bin/busybox", argv, envp);
 	
 	panic("cannot execute [%d]\n", -err);

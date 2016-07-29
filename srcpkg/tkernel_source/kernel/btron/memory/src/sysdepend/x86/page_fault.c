@@ -105,8 +105,8 @@ static int count = 0;
 	static unsigned long before = 0;
 	
 	if (before == fault_address) {
-		printf("same page fault address!!!\n");
-		show_regs(reg, error_code, fault_address);
+		printf("same page fault address!!![pid=%d]\n", current->pid);
+		//show_regs(reg, error_code, fault_address);
 		show_pagetables(get_current(), fault_address, fault_address + 0x1000);
 		show_vm_list(current);
 		for(;;);
@@ -176,7 +176,9 @@ static int count = 0;
 		
 		if (mspace->start_stack < fault_address) {
 			show_regs(reg, error_code, fault_address);
-			panic("5:unexpected error %s[0x%08X]\n", __func__, fault_address);
+			printf("5:unexpected error\n");
+			panic("5:unexpected error %s[0x%08X] 0x%08X\n", __func__, fault_address, mspace->start_stack);
+			for(;;);
 		}
 		
 activate_page:
@@ -267,6 +269,19 @@ LOCAL void show_regs(struct ctx_reg *reg, uint32_t error_code,
 	printf("ss:0x%08X ", reg->ss);
 	
 	printf("*eip:0x%08X\n", *(unsigned long*)(reg->eip));
+#else
+	vd_printf("error code:%u\n", error_code);
+	vd_printf("eax:0x%08X ", reg->eax);
+	vd_printf("ebx:0x%08X ", reg->ebx);
+	vd_printf("ecx:0x%08X ", reg->ecx);
+	vd_printf("edx:0x%08X\n", reg->edx);
+	vd_printf("eip:0x%08X ", reg->eip);
+	vd_printf("eflags:0x%08X ", reg->eflags);
+	vd_printf("cs:0x%08X ", reg->cs);
+	vd_printf("esp:0x%08X\n", reg->esp);
+	vd_printf("ss:0x%08X ", reg->ss);
+	
+	vd_printf("*eip:0x%08X\n", *(unsigned long*)(reg->eip));
 #endif
 }
 

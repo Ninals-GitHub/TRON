@@ -638,7 +638,7 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 LOCAL INLINE void out_w(uint16_t port, uint32_t data)
 {
 	ASM (
-	"outl  %l[data], %w[port]		\n\t"
+	"outl  %[data], %w[port]		\n\t"
 	:
 	:[data]"a"(data), [port]"d"(port)
 	:);
@@ -708,7 +708,7 @@ LOCAL INLINE uint32_t in_w(uint16_t port)
 	uint32_t data;
 	
 	ASM (
-	"inl  %w[port], %l[data]		\n\t"
+	"inl  %w[port], %[data]		\n\t"
 	:[data]"=a"(data)
 	:[port]"d"(port)
 	:);

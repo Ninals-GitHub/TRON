@@ -71,7 +71,7 @@ TARGET	= init_driver.o
 S	= .
 
 # common source files
-SRC	+=	init_driver.c
+SRC	+=	init_driver.c bus_type.c
 
 VPATH	+= $(S)
 HEADER	+= $(S)
