@@ -176,6 +176,8 @@ EXPORT int make_initramfs(void *cpio)
 			const char *f_target;
 			size_t size = cpio_ope->get_filesize(header);
 			
+			vd_printf("symlink:");
+			
 			/* ---------------------------------------------------- */
 			/* symbolic link					*/
 			/* ---------------------------------------------------- */
@@ -191,7 +193,7 @@ EXPORT int make_initramfs(void *cpio)
 			
 			f_target = (const char*)cpio_ope->get_file(header);
 			
-			if (UNLIKELY(f_target)) {
+			if (UNLIKELY(!f_target)) {
 				goto goto_next;
 			}
 			
@@ -202,8 +204,6 @@ EXPORT int make_initramfs(void *cpio)
 			}
 			
 			target = strncpy(target, f_target, size);
-			
-			vd_printf("symlink a target:%s linkpath:%s\n", target, linkpath);
 			
 			target[size] = '\0';
 			
@@ -246,17 +246,7 @@ goto_next:
 	
 	//vd_printf("cpio finished\n");
 	
-	show_dir_path("/bin");
-#if 0
-	{
-		struct stat64_i386 buf;
-		ret = lstat64("/bin/dmesg", &buf);
-		
-		printf("ret:%d\n", -ret);
-	}
-	for(;;);
-#endif
-	//show_dir_path("/etc");
+	//show_dir_path("/bin");
 	
 	return(0);
 }

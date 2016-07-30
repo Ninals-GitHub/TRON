@@ -248,6 +248,23 @@ syscall_test(int ebx, int ecx, int edx, int esi, int edi, int ebp, int eax)
 	for(;;);
 }
 
+INTHANDLER int
+syscall_test2(struct pt_regs *reg)
+{
+		printf("eax:0x%08X ", reg->ax);
+		printf("ebx:0x%08X ", reg->bx);
+		printf("ecx:0x%08X\n", reg->cx);
+		printf("eip:0x%08X ", reg->ip);
+		printf("eflags:0x%08X ", reg->flags);
+		printf("cs:0x%08X\n", reg->cs);
+		printf("esp:0x%08X ", reg->sp);
+		printf("ss:0x%08X\n", reg->ss);
+	printf("\nsyscall!!!!!!!!!!!\n");
+	printf("int number = %d\n", reg->ax);
+	
+	return(0);
+}
+
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void

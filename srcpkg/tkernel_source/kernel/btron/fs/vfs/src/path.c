@@ -284,6 +284,7 @@ next_parse:
 	} else if (dentry && dentry->d_vnode) {
 		mode_t mode = dentry->d_vnode->v_mode;
 		
+#if 0	// caused gfp, must be fixed later
 		if (UNLIKELY(S_ISLNK(mode)) && is_lookup_followlink(flags)) {
 			int i = 0;
 			int err;
@@ -349,6 +350,9 @@ next_parse:
 			/* found, go to next path element			*/
 			dir = dentry;
 		}
+#else
+		dir = dentry;
+#endif
 		
 		goto next_parse;
 	}

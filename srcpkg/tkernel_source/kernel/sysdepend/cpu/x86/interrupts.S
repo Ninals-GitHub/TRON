@@ -182,6 +182,7 @@ int_syscall_\int_num:
 	movw	$SEG_KERNEL_DS, %cx		# set up kernel data segment
 	movw	%cx, %ds
 	movw	%cx, %es
+	
 	cld
 	call	*_syscall_table(,%eax,4)	# systemcall dispatch
 int_syscall_return_\int_num:

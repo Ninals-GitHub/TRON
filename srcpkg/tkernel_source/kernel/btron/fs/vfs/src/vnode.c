@@ -616,15 +616,10 @@ SYSCALL ssize_t readlink(const char *pathname, char *buf, size_t bufsiz)
 {
 	ssize_t err;
 	
-	buf[0] = 'b';
-	buf[1] = '\0';
-	
-	return(1);
-	
 	err = xreadlinkat(NULL, pathname, buf, bufsiz);
 	
 	//printf("readlink pathname:%s buf:%s\n", pathname, buf);
-	printf("bufsiz:%d\n", bufsiz);
+	//printf("bufsiz:%d\n", bufsiz);
 	
 	return(err);
 }
@@ -1119,7 +1114,7 @@ vfs_symlink(struct vnode *dir, struct dentry *dentry, const char *symname)
 	
 	vnode->v_link = (char*)symname;
 	
-	printf("symname:%s\n", vnode->v_link);
+	//printf("symname:%s\n", vnode->v_link);
 	
 	return(0);
 
@@ -1582,9 +1577,8 @@ xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsi
 		return(-EINVAL);
 	}
 	
-	printf("vnode->v_link:%s %d\n", vnode->v_link, vnode->v_size);
+	//printf("vnode->v_link:%s %d\n", vnode->v_link, vnode->v_size);
 	
-#if 0
 	err = copy_to_user((void*)buf, (void*)vnode->v_link, vnode->v_size);
 	
 	if (UNLIKELY(err)) {
@@ -1594,9 +1588,6 @@ xreadlinkat(struct path *dir_path, const char *pathname, char *buf, size_t bufsi
 	buf[vnode->v_size] = '\0';
 	
 	return(vnode->v_size);
-#endif
-	//buf[0] = 'b';
-	//buf[1] = '\0';
 	
 	return(1);
 }
