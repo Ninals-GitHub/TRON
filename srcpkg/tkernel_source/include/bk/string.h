@@ -40,9 +40,11 @@
  * representation of each source header.
  */
 
-#ifndef	__BK_EXIT_H__
-#define	__BK_EXIT_H__
+#ifndef	__BK_STRING_H__
+#define	__BK_STRING_H__
 
+#include <stdarg.h>
+#include <t2ex/string.h>
 
 /*
 ==================================================================================
@@ -78,14 +80,12 @@
 */
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
- Funtion	:wakeup4
- Input		:struct process *child
- 		 < child process about to exit >
+ Funtion	:void
+ Input		:void
  Output		:void
  Return		:void
- Description	:wake up slept parent by wait4
+ Description	:void
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void wakeup4(struct process *child);
 
-#endif	// __FORMAT_H__
+#endif	// __BK_STRING_H__

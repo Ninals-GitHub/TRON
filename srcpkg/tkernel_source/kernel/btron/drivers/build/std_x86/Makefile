@@ -59,6 +59,7 @@ OBJ = ../../init_driver.o
 OBJ += ../../block/$(BUILD_PATH)/block.o
 OBJ += ../../char/$(BUILD_PATH)/char.o
 OBJ += ../../pci/$(BUILD_PATH)/pci.o
+OBJ += ../../acpi/$(BUILD_PATH)/acpi.o
 
 # ----------------------------------------------------------------------------
 
@@ -74,18 +75,21 @@ $(OBJ):
 	( cd ../../block/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../char/$(BUILD_PATH) ; $(MAKE) )
 	( cd ../../pci/$(BUILD_PATH) ; $(MAKE) )
+	( cd ../../acpi/$(BUILD_PATH) ; $(MAKE) )
 
 clean:
 	( cd ../../ ; $(MAKE) clean )
 	( cd ../../char/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../block/$(BUILD_PATH) ; $(MAKE) clean )
 	( cd ../../pci/$(BUILD_PATH) ; $(MAKE) clean )
+	( cd ../../acpi/$(BUILD_PATH) ; $(MAKE) clean )
 	$(RM) $(DRV_TARGET)
 
 ready_for_rebuild:
 	( cd ../../char/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../block/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild )
 	( cd ../../pci/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild );
+	( cd ../../acpi/$(BUILD_PATH) ; $(MAKE) ready_for_rebuild );
 	( cd ../../ ; $(MAKE) ready_for_rebuild )
 	$(RM) $(DRV_TARGET)
 

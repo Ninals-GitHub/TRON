@@ -691,6 +691,35 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 IMPORT pte_t* get_address_pte(struct process *proc, unsigned long address);
 
 /*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:map_paddr_pages
+ Input		:unsigned long start
+ 		 < start physical address to map >
+ 		 unsinged long size
+ 		 < size of physcal address memory to map >
+ Output		:void
+ Return		:struct page*
+ 		 < mapped start page >
+ Description	:map physical address space to pages for acpica
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT struct page* map_paddr_pages(unsigned long start, unsigned long size);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unmap_paddr_pages
+ Input		:unsigned long start
+ 		 < start physical address to map >
+ 		 unsinged long size
+ 		 < size of physcal address memory to map >
+ Output		:void
+ Return		:void
+ Description	:unmap physical address space to pages for acpica
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void unmap_paddr_pages(unsigned long start, unsigned long size);
+
+/*
 ----------------------------------------------------------------------------------
 	T-Kernel Interface
 ----------------------------------------------------------------------------------

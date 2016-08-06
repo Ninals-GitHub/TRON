@@ -1,0 +1,1110 @@
+init_driver.c: In function 'init_drivers':
+init_driver.c:128:4: warning: implicit declaration of function 'vd_printf' [-Wimplicit-function-declaration]
+    vd_printf("driver_init_func:error:%d\n", i);
+    ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/uterror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/uterror.c:118:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/uteval.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utexcep.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utexcep.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utexcep.c:165:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiFormatException)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utexcep.c:165:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiFormatException)
+ ^
+../../src/utilities/utexcep.c:165:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utexcep.c:119:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:311:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGbl_FADT)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:311:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGbl_FADT)
+ ^
+../../src/utilities/utglobal.c:311:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:312:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDbgLevel)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:312:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDbgLevel)
+ ^
+../../src/utilities/utglobal.c:312:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:313:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDbgLayer)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:313:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDbgLayer)
+ ^
+../../src/utilities/utglobal.c:313:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:314:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGpeCount)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:314:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGpeCount)
+ ^
+../../src/utilities/utglobal.c:314:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:315:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiCurrentGpeCount)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utglobal.c:315:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiCurrentGpeCount)
+ ^
+../../src/utilities/utglobal.c:315:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utglobal.c:119:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/uthex.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utids.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utinit.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utlock.c: In function 'AcpiUtCreateRwLock':
+../../src/utilities/utlock.c:145:5: warning: implicit declaration of function 'AcpiOsCreateSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsCreateMutex (&Lock->ReaderMutex);
+     ^
+../../src/utilities/utlock.c: In function 'AcpiUtDeleteRwLock':
+../../src/utilities/utlock.c:161:5: warning: implicit declaration of function 'AcpiOsDeleteSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsDeleteMutex (Lock->ReaderMutex);
+     ^
+../../src/utilities/utlock.c: In function 'AcpiUtAcquireReadLock':
+../../src/utilities/utlock.c:195:5: warning: implicit declaration of function 'AcpiOsWaitSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsAcquireMutex (Lock->ReaderMutex, ACPI_WAIT_FOREVER);
+     ^
+../../src/utilities/utlock.c:209:5: warning: implicit declaration of function 'AcpiOsSignalSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsReleaseMutex (Lock->ReaderMutex);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utlock.c:116:
+../../src/utilities/utlock.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utmath.c: In function 'AcpiUtShortDivide':
+../../src/utilities/utmath.c:196:5: warning: implicit declaration of function 'do_div' [-Wimplicit-function-declaration]
+     ACPI_DIV_64_BY_32 (0, DividendOvl.Part.Hi, Divisor,
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utmath.c:116:
+../../src/utilities/utmath.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utmisc.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utmutex.c: In function 'AcpiUtMutexInitialize':
+../../src/utilities/utmutex.c:170:5: warning: implicit declaration of function 'spin_lock_init' [-Wimplicit-function-declaration]
+     Status = AcpiOsCreateLock (&AcpiGbl_GpeLock);
+     ^
+../../src/utilities/utmutex.c:190:5: warning: implicit declaration of function 'AcpiOsCreateSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsCreateMutex (&AcpiGbl_OsiMutex);
+     ^
+../../src/utilities/utmutex.c: In function 'AcpiUtMutexTerminate':
+../../src/utilities/utmutex.c:251:5: warning: implicit declaration of function 'AcpiOsDeleteSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsDeleteMutex (AcpiGbl_OsiMutex);
+     ^
+../../src/utilities/utmutex.c:255:5: warning: implicit declaration of function 'AcpiOsDeleteLock' [-Wimplicit-function-declaration]
+     AcpiOsDeleteLock (AcpiGbl_GpeLock);
+     ^
+../../src/utilities/utmutex.c: In function 'AcpiUtAcquireMutex':
+../../src/utilities/utmutex.c:404:5: warning: implicit declaration of function 'AcpiOsWaitSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsAcquireMutex (
+     ^
+../../src/utilities/utmutex.c: In function 'AcpiUtReleaseMutex':
+../../src/utilities/utmutex.c:498:5: warning: implicit declaration of function 'AcpiOsSignalSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsReleaseMutex (AcpiGbl_MutexInfo[MutexId].Mutex);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utmutex.c:116:
+../../src/utilities/utmutex.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utnonansi.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utobject.c: In function 'AcpiUtDeleteObjectDesc':
+../../src/utilities/utobject.c:561:5: warning: implicit declaration of function 'AcpiOsReleaseObject' [-Wimplicit-function-declaration]
+     (void) AcpiOsReleaseObject (AcpiGbl_OperandCache, Object);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utobject.c:116:
+../../src/utilities/utobject.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utosi.c: In function 'AcpiUtInitializeInterfaces':
+../../src/utilities/utosi.c:221:5: warning: implicit declaration of function 'AcpiOsWaitSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsAcquireMutex (AcpiGbl_OsiMutex, ACPI_WAIT_FOREVER);
+     ^
+../../src/utilities/utosi.c:239:5: warning: implicit declaration of function 'AcpiOsSignalSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsReleaseMutex (AcpiGbl_OsiMutex);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utosi.c:116:
+../../src/utilities/utosi.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utownerid.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utpredef.c: In function 'AcpiUtMatchPredefinedMethod':
+../../src/utilities/utpredef.c:204:9: warning: dereferencing type-punned pointer will break strict-aliasing rules [-Wstrict-aliasing]
+         if (ACPI_COMPARE_NAME (Name, ThisName->Info.Name))
+         ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utpredef.c:116:
+../../src/utilities/utpredef.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utprint.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utresrc.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utstate.c: In function 'AcpiUtDeleteGenericState':
+../../src/utilities/utstate.c:422:9: warning: implicit declaration of function 'AcpiOsReleaseObject' [-Wimplicit-function-declaration]
+         (void) AcpiOsReleaseObject (AcpiGbl_StateCache, State);
+         ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utstate.c:116:
+../../src/utilities/utstate.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utstring.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/uttrack.c:127:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utuuid.c:116:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:195:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiSubsystemStatus)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:195:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiSubsystemStatus)
+ ^
+../../src/utilities/utxface.c:195:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:277:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGetSystemInfo)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:277:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGetSystemInfo)
+ ^
+../../src/utilities/utxface.c:277:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:320:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGetStatistics)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:320:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiGetStatistics)
+ ^
+../../src/utilities/utxface.c:320:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:358:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInitializationHandler)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:358:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInitializationHandler)
+ ^
+../../src/utilities/utxface.c:358:1: warning: parameter names (without types) in function declaration [enabled by default]
+../../src/utilities/utxface.c: In function 'AcpiPurgeCachedObjects':
+../../src/utilities/utxface.c:380:5: warning: implicit declaration of function 'AcpiOsPurgeCache' [-Wimplicit-function-declaration]
+     (void) AcpiOsPurgeCache (AcpiGbl_StateCache);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../src/utilities/utxface.c: At top level:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:388:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiPurgeCachedObjects)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:388:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiPurgeCachedObjects)
+ ^
+../../src/utilities/utxface.c:388:1: warning: parameter names (without types) in function declaration [enabled by default]
+../../src/utilities/utxface.c: In function 'AcpiInstallInterface':
+../../src/utilities/utxface.c:418:5: warning: implicit declaration of function 'AcpiOsWaitSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsAcquireMutex (AcpiGbl_OsiMutex, ACPI_WAIT_FOREVER);
+     ^
+../../src/utilities/utxface.c:450:5: warning: implicit declaration of function 'AcpiOsSignalSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsReleaseMutex (AcpiGbl_OsiMutex);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../src/utilities/utxface.c: At top level:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:454:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInterface)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:454:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInterface)
+ ^
+../../src/utilities/utxface.c:454:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:495:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiRemoveInterface)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:495:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiRemoveInterface)
+ ^
+../../src/utilities/utxface.c:495:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:539:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInterfaceHandler)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:539:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInstallInterfaceHandler)
+ ^
+../../src/utilities/utxface.c:539:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:616:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiCheckAddressRange)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:616:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiCheckAddressRange)
+ ^
+../../src/utilities/utxface.c:616:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:715:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDecodePldBuffer)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxface.c:715:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiDecodePldBuffer)
+ ^
+../../src/utilities/utxface.c:715:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utxface.c:118:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:168:1: warning: 'AcpiDbSingleStep' defined but not used [-Wunused-function]
+ AcpiDbSingleStep (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:477:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_OK'
+     static ACPI_INLINE Prototype {return(AE_OK);}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:175:1: warning: 'AcpiDbSignalBreakPoint' defined but not used [-Wunused-function]
+ AcpiDbSignalBreakPoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:373:1: warning: 'AcpiDbDisplayResultObject' defined but not used [-Wunused-function]
+ AcpiDbDisplayResultObject (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:403:1: warning: 'AcpiDbDisplayArgumentObject' defined but not used [-Wunused-function]
+ AcpiDbDisplayArgumentObject (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:167:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiError)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:167:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiError)
+ ^
+../../src/utilities/utxferror.c:167:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:220:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiException)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:220:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiException)
+ ^
+../../src/utilities/utxferror.c:220:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:258:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiWarning)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:258:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiWarning)
+ ^
+../../src/utilities/utxferror.c:258:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:297:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInfo)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:297:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiInfo)
+ ^
+../../src/utilities/utxferror.c:297:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:336:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiBiosError)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:336:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiBiosError)
+ ^
+../../src/utilities/utxferror.c:336:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: data definition has no type or storage class [enabled by default]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:375:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiBiosWarning)
+ ^
+../../../../../../include/bk/drivers/acpica/platform/actron.h:191:37: warning: type defaults to 'int' in declaration of 'EXPORT_SYMBOL' [-Wimplicit-int]
+ #define ACPI_EXPORT_SYMBOL(symbol)  EXPORT_SYMBOL(symbol);
+                                     ^
+../../src/utilities/utxferror.c:375:1: note: in expansion of macro 'ACPI_EXPORT_SYMBOL'
+ ACPI_EXPORT_SYMBOL (AcpiBiosWarning)
+ ^
+../../src/utilities/utxferror.c:375:1: warning: parameter names (without types) in function declaration [enabled by default]
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utxferror.c:118:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+In file included from ../../../../../../include/bk/drivers/acpica/platform/acenv.h:245:0,
+                 from ../../../../../../include/bk/drivers/acpica/acpi.h:128,
+                 from ../../src/utilities/utxfinit.c:118:
+../../../../../../include/bk/drivers/acpica/platform/actron.h:148:28: warning: bk/linux/kenel.h: No such file or directory [enabled by default]
+ #include <bk/linux/kenel.h>
+                            ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utxfinit.c:118:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:168:1: warning: 'AcpiDbSingleStep' defined but not used [-Wunused-function]
+ AcpiDbSingleStep (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:477:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_OK'
+     static ACPI_INLINE Prototype {return(AE_OK);}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:175:1: warning: 'AcpiDbSignalBreakPoint' defined but not used [-Wunused-function]
+ AcpiDbSignalBreakPoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:373:1: warning: 'AcpiDbDisplayResultObject' defined but not used [-Wunused-function]
+ AcpiDbDisplayResultObject (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acdebug.h:403:1: warning: 'AcpiDbDisplayArgumentObject' defined but not used [-Wunused-function]
+ AcpiDbDisplayArgumentObject (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:480:24: note: in definition of macro 'ACPI_DBR_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../src/utilities/utxfmutex.c: In function 'AcpiAcquireMutex':
+../../src/utilities/utxfmutex.c:240:5: warning: implicit declaration of function 'AcpiOsWaitSemaphore' [-Wimplicit-function-declaration]
+     Status = AcpiOsAcquireMutex (MutexObj->Mutex.OsMutex, Timeout);
+     ^
+../../src/utilities/utxfmutex.c: In function 'AcpiReleaseMutex':
+../../src/utilities/utxfmutex.c:281:5: warning: implicit declaration of function 'AcpiOsSignalSemaphore' [-Wimplicit-function-declaration]
+     AcpiOsReleaseMutex (MutexObj->Mutex.OsMutex);
+     ^
+In file included from ../../../../../../include/bk/drivers/acpica/acpi.h:136:0,
+                 from ../../src/utilities/utxfmutex.c:116:
+../../src/utilities/utxfmutex.c: At top level:
+../../../../../../include/bk/drivers/acpica/acpixf.h:1278:1: warning: 'AcpiDebugPrint' defined but not used [-Wunused-function]
+ AcpiDebugPrint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1290:1: warning: 'AcpiDebugPrintRaw' defined but not used [-Wunused-function]
+ AcpiDebugPrintRaw (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:1301:1: warning: 'AcpiTracePoint' defined but not used [-Wunused-function]
+ AcpiTracePoint (
+ ^
+../../../../../../include/bk/drivers/acpica/acpixf.h:438:24: note: in definition of macro 'ACPI_DBG_DEPENDENT_RETURN_VOID'
+     static ACPI_INLINE Prototype {return;}
+                        ^
+bprocess.c: In function 'init_proc_management':
+bprocess.c:145:3: warning: implicit declaration of function 'vd_printf' [-Wimplicit-function-declaration]
+   vd_printf("init_proc_management:%d\n", err);
+   ^
+bprocess.c: In function 'alloc_process':
+bprocess.c:287:3: warning: implicit declaration of function 'init_signal' [-Wimplicit-function-declaration]
+   init_signal(new_proc);
+   ^
+fork.c: In function 'xfork':
+fork.c:372:3: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+   printf("fork:failed copy_process\n");
+   ^
+sys.c: In function 'gettid':
+sys.c:305:2: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+  printf("gettid");
+  ^
+signal.c: In function 'rt_sigprocmask':
+signal.c:128:4: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+    printf("rt_sigprocmask:error:oldset is NULL\n");
+    ^
+tls.c: In function 'get_thread_area':
+tls.c:196:2: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+  printf("get_thread_area:\n");
+  ^
+futex.c: In function 'init_futex':
+futex.c:136:3: warning: implicit declaration of function 'vd_printf' [-Wimplicit-function-declaration]
+   vd_printf("cannot alloc futex hlist\n");
+   ^
+futex.c: In function 'futex':
+futex.c:183:2: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+  printf("*uaddr=0x%08X, ", uaddr);
+  ^
+futex.c:177:6: warning: variable 'val2' set but not used [-Wunused-but-set-variable]
+  int val2;
+      ^
+futex.c:173:18: warning: variable 'current' set but not used [-Wunused-but-set-variable]
+  struct process *current;
+                  ^
+In file included from /cygdrive/c/Users/Nina/Documents/SoftwareDevelopment/tron/T-Kernel2.0/srcpkg/tkernel_source/include/bk/fs/vfs.h:55:0,
+                 from bk.c:47:
+/cygdrive/c/Users/Nina/Documents/SoftwareDevelopment/tron/T-Kernel2.0/srcpkg/tkernel_source/include/bk/fs/page_cache.h:209:1: warning: "/*" within comment [-Wcomment]
+ /*
+ ^
+bk.c: In function 'init_bk_early':
+bk.c:99:3: warning: implicit declaration of function 'vd_printf' [-Wimplicit-function-declaration]
+   vd_printf("error init_proc_management\n");
+   ^
+exit.c: In function 'exit_group':
+exit.c:208:2: warning: implicit declaration of function 'printf' [-Wimplicit-function-declaration]
+  printf("exit_group[status=%d]\n", status);
+  ^
+In file included from spinlock.c:43:0:
+/cygdrive/c/Users/Nina/Documents/SoftwareDevelopment/tron/T-Kernel2.0/srcpkg/tkernel_source/include/bk/spinlock.h:90:8: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'void'
+ IMPORT void spin_lock_init(spinlock_t lock);
+        ^
+spinlock.c:87:8: error: expected '=', ',', ';', 'asm' or '__attribute__' before 'void'
+ EXPORT void spin_lock_init(spinlock_t lock)
+        ^
+make[2]: *** [spinlock.o] Error 1
+make[1]: *** [../../memory/build/std_x86/memory.o] Error 2
+make: *** [bkernel] Error 2

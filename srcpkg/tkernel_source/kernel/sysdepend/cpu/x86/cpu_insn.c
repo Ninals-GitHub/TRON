@@ -142,6 +142,23 @@ EXPORT void restoreFlags(uint32_t flags)
 }
 
 /*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:irqs_disabled
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < boolean result >
+ Description	:check whether irqs are disabled or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int irqs_disabled(void)
+{
+	uint32_t flags = saveFlags();
+	
+	return(!(flags & EFLAGS_IF));
+}
+
+/*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:getCr0
  Input		:void

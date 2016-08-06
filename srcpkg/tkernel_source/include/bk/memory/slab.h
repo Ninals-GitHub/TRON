@@ -44,6 +44,7 @@
 #define	__BK_SLAB_H__
 
 #include <tstdlib/list.h>
+#include <bk/gfp.h>
 
 
 /*
@@ -168,7 +169,26 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Description	:allocate an object from a cache
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
-IMPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flgas);
+IMPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kmem_cache_zalloc
+ Input		:struct kmem_cache *cache
+ 		 < a cache to allocate from >
+ 		 unsigne int flags
+ 		 < cache flags >
+ Output		:void
+ Return		:void*
+ 		 < an allocated object >
+ Description	:allocate a zero cleared-object from a cache
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL ALWAYS_INLINE
+void* kmem_cache_zalloc(struct kmem_cache *cache, unsigned int flags)
+{
+	return(kmem_cache_alloc(cache, flags | __GFP_ZERO));
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
@@ -223,6 +243,24 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT void* kmalloc(size_t size, unsigned int flags);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:kzalloc
+ Input		:size_t size
+ 		 < memory allocation size >
+ 		 unsigned int flags
+ 		 < flags to allocate memory >
+ Output		:void
+ Return		:void*
+ 		 < allocated memory address >
+ Description	:allocate a 0-clreared buffer 
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+LOCAL ALWAYS_INLINE void* kzalloc(size_t size, unsigned int flags)
+{
+	return(kmalloc(size, flags | __GFP_ZERO));
+}
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/

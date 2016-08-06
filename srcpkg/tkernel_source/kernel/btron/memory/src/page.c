@@ -332,7 +332,6 @@ EXPORT struct page* alloc_slab_pages(int num)
 	return(page);
 }
 
-
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:free_pages
@@ -1286,6 +1285,97 @@ EXPORT pte_t* get_address_pte(struct process *proc, unsigned long address)
 	return(pte + PAGE_INDEX(address));
 }
 
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:map_paddr_pages
+ Input		:unsigned long start
+ 		 < start physical address to map >
+ 		 unsinged long size
+ 		 < size of physcal address memory to map >
+ Output		:void
+ Return		:struct page*
+ 		 < mapped start page >
+ Description	:map physical address space to pages for acpica
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT struct page* map_paddr_pages(unsigned long start, unsigned long size)
+{
+	struct page *map_pages;
+	int nr_map = PageCount(size);
+	int index;
+	int i;
+	unsigned long org = start;
+	struct boot_info *info = getBootInfo();
+	
+	if (UNLIKELY(info->lowmem_limit < start)) {
+		printf("unexpected physical address 0x%08X\n", start);
+		return(NULL);
+	}
+	
+	
+	start = toLogicalAddress(start);
+	
+	index = get_page_index(start);
+	
+	if (UNLIKELY(nr_pages < index + nr_map)) {
+		panic("unexpected error at %s: nr_pages = %d, index = %d\n", __func__, nr_pages, index);
+	}
+	
+	map_pages = &pages[index];
+	
+	i = index;
+	
+	do {
+		pages[i].count++;
+		i++;
+	} while (i < index + nr_map);
+	
+	//printf("%s:0x%08X 0x%08X -> 0x%08X\n", __func__, org, size, page_to_address(map_pages));
+	
+	return(map_pages);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:unmap_paddr_pages
+ Input		:unsigned long start
+ 		 < start logical address to unmap >
+ 		 unsinged long size
+ 		 < size of logical address memory to unmap >
+ Output		:void
+ Return		:void
+ Description	:unmap physical address space to pages for acpica
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void unmap_paddr_pages(unsigned long start, unsigned long size)
+{
+	int index;
+	int i;
+	int nr_unmap = PageCount(size);
+	struct boot_info *info = getBootInfo();
+	
+	//printf("%s:0x%08X 0x%08X\n", __func__, start, size);
+	
+	if (UNLIKELY(KERNEL_BASE_ADDR + info->lowmem_limit < start)) {
+		printf("unexpected logical address 0x%08X\n", start);
+		return;
+	}
+	
+	index = get_page_index(start);
+	
+	if (UNLIKELY(nr_pages < index + nr_unmap)) {
+		panic("unexpected error at %s: nr_pages = %d, index = %d\n", __func__, nr_pages, index);
+	}
+	
+	i = index;
+	
+	do {
+		free_page(&pages[i]);
+		i++;
+	} while (i < index + nr_unmap);
+}
+
 /*
 ----------------------------------------------------------------------------------
 	T-Kernel Interface
@@ -1415,9 +1505,7 @@ LOCAL void init_page_allocator(void)
 	pages = (struct page*)allocLowMemory(nr_pages * sizeof(struct page));
 	
 	page_bitmap_bit_size = nr_pages;
-	//page_bitmap_size = page_bitmap_bit_size / (sizeof(unsigned long) * 8);
 	page_bitmap_size = page_bitmap_bit_size / 8;
-	
 	
 	vd_printf("nr_pages:%d pages:%d bitmap_size:%d\n", nr_pages, nr_pages * sizeof(struct page), page_bitmap_size);
 	
@@ -1426,6 +1514,7 @@ LOCAL void init_page_allocator(void)
 	memset((void*)page_bitmap, 0x00, page_bitmap_size);
 	
 	nr_end_page = PTBL_NUM(info->lowmem_top);
+	vd_printf("lowmem_top:0x%08X\n", nr_pages);
 	
 	/* -------------------------------------------------------------------- */
 	/* set flags for system memory						*/
@@ -1453,6 +1542,32 @@ LOCAL void init_page_allocator(void)
 		pages[i].slab_page = NULL;
 		pages[i].slab_cache = NULL;
 	}
+	
+	/* -------------------------------------------------------------------- */
+	/* set flags for acpi reclaims memory					*/
+	/* -------------------------------------------------------------------- */
+	for (i = 0;i < info->num_mmap_entries;i++) {
+		if (info->mmap2[i].type == MULTIBOOT_MEMORY_ACPI_RECLAIMABLE) {
+			long acpi_pages = PTBL_NUM(info->mmap2[i].len);
+			long index = get_page_index(info->mmap2[i].addr +
+							KERNEL_BASE_ADDR);
+			int nr;
+			
+			for (nr = index;nr < index + acpi_pages;nr++) {
+				pages[nr].flags = PAGE_UNEVICTABLE;
+				pages[nr].count = 1;
+				//pages[nr].s_mem = NULL;
+				pages[nr].slab_page = NULL;
+				pages[nr].slab_cache = NULL;
+				
+				/* -------------------------------------------- */
+				/* set bitmap					*/
+				/* -------------------------------------------- */
+				tstdlib_bitset((void*)page_bitmap, nr);
+			}
+		}
+	}
+	
 	
 	nr_free_pages = nr_pages - nr_end_page;
 }

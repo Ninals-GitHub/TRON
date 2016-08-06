@@ -772,7 +772,7 @@ EXPORT ER InitLogicalSpace( void )
 	/* -------------------------------------------------------------------- */
 	for (laddr = (void*)KERNEL_BASE_ADDR,
 		paddr = (unsigned long)PageAlignU(REALMEMORY_TOP);
-		paddr <= (REALMEMORY_TOP + SysRamLimit) ;
+		paddr < (REALMEMORY_TOP + SysRamLimit) ;
 		paddr += PAGESIZE, laddr = (void*)((char*)laddr + PAGESIZE)) {
 		pte = GetPTE(laddr);
 		

@@ -88,6 +88,8 @@ IMPORT	size_t	strxfrm(char *dst, const char *src, size_t n);
 IMPORT	int	strerror_r(errno_t errnum, char *buf, size_t buflen);
 IMPORT	int	strercd_r(ER ercd, char *buf, size_t buflen);
 
+IMPORT long int strtol( const char *nptr, char **endptr, int base );
+
 #ifdef __cplusplus
 }
 #endif

@@ -53,6 +53,7 @@
 #include <bk/panic.h>
 #include <bk/typedef.h>
 #include <bk/signal.h>
+#include <bk/init.h>
 #include <bk/memory/access.h>
 #include <bk/uapi/errno.h>
 #include <bk/uapi/errcode.h>

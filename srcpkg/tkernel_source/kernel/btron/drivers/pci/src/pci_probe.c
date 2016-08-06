@@ -196,6 +196,70 @@ EXPORT int init_pci_device(void)
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_pci_config
+ Input		:uint16_t segment
+ 		 < segment number >
+ 		 uint16_t bus
+ 		 < bus number >
+ 		 uint16_t device
+ 		 < device number >
+ 		 uint16_t func
+ 		 < function number >
+ 		 uint32_t reg
+ 		 < register >
+ Output		:void
+ Return		:uint64_t
+ 		 < configuration data >
+ Description	:read pci configuration data
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT uint64_t read_pci_config(uint16_t segment, uint16_t bus,
+					uint16_t device, uint16_t func,
+					uint32_t reg)
+{
+	uint8_t bus8 = (uint8_t)bus;
+	uint8_t device8 = (uint8_t)device;
+	uint8_t func8 = (uint8_t)func;
+	uint8_t reg8 = (uint8_t)reg;
+	
+	return((uint64_t)read_config(bus8, device8, func8, reg8));
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_pci_config
+ Input		:uint16_t segment
+ 		 < segment number >
+ 		 uint16_t bus
+ 		 < bus number >
+ 		 uint16_t device
+ 		 < device number >
+ 		 uint16_t func
+ 		 < function number >
+ 		 uint32_t reg
+ 		 < register >
+ 		 uint64_t value
+ 		 < value to write >
+ Output		:void
+ Return		:void
+ Description	:write pci configuration data
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT void write_pci_config(uint16_t segment, uint16_t bus,
+					uint16_t device, uint16_t func,
+					uint32_t reg, uint64_t value)
+{
+	uint8_t bus8 = (uint8_t)bus;
+	uint8_t device8 = (uint8_t)device;
+	uint8_t func8 = (uint8_t)func;
+	uint8_t reg8 = (uint8_t)reg;
+	uint32_t value32 = (uint32_t)value;
+	
+	write_config(bus8, device8, func8, reg8, value32);
+}
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:void
  Input		:void
  Output		:void

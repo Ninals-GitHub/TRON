@@ -42,6 +42,7 @@
 #  include <cpu/x86/dispatch.h>
 #  include <cpu/x86/cpu_status.h>
 #  include <cpu/x86/break.h>
+#  include <cpu/x86/bitsperlong.h>
 #endif
 
 /*

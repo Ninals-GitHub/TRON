@@ -241,6 +241,18 @@ IMPORT void restoreFlags(uint32_t flags);
 
 /*
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:irqs_disabled
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < boolean result >
+ Description	:check whether irqs are disabled or not
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT int irqs_disabled(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
  Funtion	:set_gs
  Input		:uint16_t value
  		 < value to set to gs register >

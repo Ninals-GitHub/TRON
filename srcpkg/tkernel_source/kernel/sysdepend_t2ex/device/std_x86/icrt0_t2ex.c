@@ -202,20 +202,37 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 		boot_info.mem_upper = 0;
 	}
 	/* -------------------------------------------------------------------- */
+	/* count memory map							*/
+	/* -------------------------------------------------------------------- */
+	if (info->flags & MULTIBOOT_INFO_MEM_MAP) {
+		struct multiboot_entry *mmap;
+		boot_info.num_mmap_entries = 0;
+		
+		for (mmap = (struct multiboot_entry*)info->mmap_addr;
+			(unsigned long)mmap <
+			((unsigned long)info->mmap_addr + info->mmap_length) ;
+			mmap = (struct multiboot_entry*)((unsigned long)mmap
+			+ mmap->size + sizeof(mmap->size))) {
+			boot_info.num_mmap_entries++;
+		}
+	}
+	/* -------------------------------------------------------------------- */
 	/* full memory map?							*/
 	/* -------------------------------------------------------------------- */
+	boot_info.lowmem_top = (unsigned long)&end_bss - KERNEL_BASE_ADDR;
 	if (info->flags & MULTIBOOT_INFO_MEM_MAP) {
 		struct multiboot_entry *mmap;
 		unsigned long len = 0;
 		int mmap_len;
+		int i = 0;
 		
 		vd_printf("mmap_addr = 0x%08X, mmap_length = 0x%X\n",
 			info->mmap_addr, info->mmap_length );
-
-		boot_info.num_mmap_entries = 0;
-		boot_info.mmap = (struct multiboot_entry*)
-			(info->mmap_addr | KERNEL_BASE_ADDR);
-		boot_info.lowmem_top = 0;
+		
+		//boot_info.mmap = (struct multiboot_entry*)
+		//	(info->mmap_addr | KERNEL_BASE_ADDR);
+		boot_info.mmap2 = allocLowMemory(sizeof(struct multiboot_mmap_entry) *
+						boot_info.num_mmap_entries);
 		boot_info.lowmem_limit = 0;
 		
 		mmap_len = info->mmap_length / (0x14 + sizeof(mmap->size));
@@ -234,31 +251,27 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 				(uint32_t)(mmap->len >> 32),
 				(uint32_t)(mmap->len & 0xFFFFFFFF),
 				mmap->type );
-
-			if (mmap->type == 1) {
+			boot_info.mmap2[i].addr = mmap->addr;
+			boot_info.mmap2[i].len = mmap->len;
+			boot_info.mmap2[i].type = mmap->type;
+			if (mmap->type == MULTIBOOT_MEMORY_AVAILABLE
+				|| mmap->type == MULTIBOOT_MEMORY_ACPI_RECLAIMABLE) {
 				unsigned long mem_addr;
 				unsigned long limit;
-				unsigned long end = (unsigned long)&end_bss;
 
 				mem_addr = (unsigned long)mmap->addr;
 				limit = mem_addr + (unsigned long)mmap->len;
 
-				end -= KERNEL_BASE_ADDR;
-
-				if ((boot_info.lowmem_limit < limit) &&
-					len < mmap->len) {
+				if (boot_info.lowmem_limit < limit) {
+					if (mmap->type == 1 && !(len < mmap->len)) {
+						continue;
+					}
 					len = mmap->len;
-					boot_info.lowmem_top = mem_addr;
 					boot_info.lowmem_limit = limit;
 					boot_info.lowmem_base = mem_addr;
-					if ((mem_addr <= end) &&
-						( end < (mem_addr + mmap->len))) {
-						boot_info.lowmem_top = end;
-					}
 				}
 			}
-
-			boot_info.num_mmap_entries++;
+			i++;
 		}
 	} else {
 		vd_printf("Unknown memory area. Cannot boot the kernel\n");
@@ -266,6 +279,8 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 		boot_info.mmap = NULL;
 	}
 	vd_printf("---------------------------------------------\n");
+	vd_printf("lowmem_top:0x%08X\n", boot_info.lowmem_top);
+	vd_printf("lowmem_limit:0x%08X\n", boot_info.lowmem_limit);
 	/* -------------------------------------------------------------------- */
 	/* is there a boot device set?						*/
 	/* -------------------------------------------------------------------- */
@@ -406,9 +421,6 @@ LOCAL void handle_multiboot1(struct multiboot_info *info)
 	} else {
 		boot_info.vbe_info = NULL;
 	}
-	
-	vd_printf("lowmem_top:0x%08X\n", boot_info.lowmem_top);
-	vd_printf("lowmem_limit:0x%08X\n", boot_info.lowmem_limit);
 }
 
 /*

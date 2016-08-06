@@ -51,24 +51,22 @@
 */
 /*
 ----------------------------------------------------------------------------------
-	block devices
+	driver init early
 ----------------------------------------------------------------------------------
 */
+/* block devices								*/
 INITCALL_DEFINE(init_ramdisk);
-
-/*
-----------------------------------------------------------------------------------
-	file systems
-----------------------------------------------------------------------------------
-*/
+/* file systems									*/
 INITCALL_DEFINE(init_rootfs);
+/* character devices								*/
+INITCALL_DEFINE(init_tty);
 
 /*
 ----------------------------------------------------------------------------------
-	character devices
+	driver init lately
 ----------------------------------------------------------------------------------
 */
-INITCALL_DEFINE(init_tty);
+INITCALL_DEFINE(init_acpi);
 
 /*
 ==================================================================================
@@ -98,6 +96,13 @@ LOCAL INITCALL driver_init_func[] = {
 	/* character devices							*/
 	/* -------------------------------------------------------------------- */
 	init_tty,
+};
+
+LOCAL INITCALL driver_init_func_lately[] = {
+	/* -------------------------------------------------------------------- */
+	/* acpi									*/
+	/* -------------------------------------------------------------------- */
+	init_acpi,
 };
 
 /*
@@ -133,6 +138,31 @@ EXPORT int _INIT_ init_drivers(void)
 	return(0);
 }
 
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:init_drivers_lately
+ Input		:void
+ Output		:void
+ Return		:int
+ 		 < result >
+ Description	:initialize drivers after file system is start uped
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+EXPORT int _INIT_ init_drivers_lately(void)
+{
+	int i;
+	int err;
+	
+	for (i = 0;i < sizeof(driver_init_func_lately) / sizeof(INITCALL);i++) {
+		err = driver_init_func_lately[i]();
+		if (err) {
+			vd_printf("driver_init_func:error:%d\n", i);
+			return(err);
+		}
+	}
+	
+	return(0);
+}
 
 /*
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

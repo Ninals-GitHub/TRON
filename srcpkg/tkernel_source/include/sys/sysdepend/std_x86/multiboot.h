@@ -18,6 +18,9 @@
 #include <typedef.h>
 #include <sys/sysdepend/std_x86/multiboot_def.h>
 
+
+struct multiboot_mmap_entry;
+
 /*
 =================================================================================
 

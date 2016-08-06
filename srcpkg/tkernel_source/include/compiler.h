@@ -26,6 +26,26 @@
 
 ==================================================================================
 */
+#define	__user
+#define	__kernel
+#define	__safe
+#define	__force
+#define	__nocast
+#define	__iomem
+#define	__chk_user_ptr(x)		(void)0
+#define	__chk_io_ptr(x)			(void)0
+#define	__builtin_warning(x, y...)	(1)
+#define	__must_hold(x)
+#define	__acquires(x)
+#define	__releases(x)
+#define	__acquire(x)			(void)0
+#define	__release(x)			(void)0
+#define	__cond_lock(x,c)		(c)
+#define	__percpu
+#define	__rcu
+#define	__pmem
+#define	__private
+#define	ACCESS_PRIVATE(p, member)	((p)->member)
 
 /*
 ==================================================================================

@@ -73,7 +73,7 @@ S	= .
 
 # common source files
 SRC	+=	bprocess.c fork.c sys.c signal.c tls.c futex.c wait.c bk.c	\
-		panic.c exit.c
+		panic.c exit.c spinlock.c
 
 VPATH	+= $(S)
 HEADER	+= $(S)

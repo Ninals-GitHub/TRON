@@ -269,7 +269,7 @@ EXPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags)
 				move_list(&slab->list_slab, &cache->list_full);
 			}
 			
-			return(allocated);
+			goto object_allocated;
 		}
 		if (!allocated) {
 			/* ---------------------------------------------------- */
@@ -305,6 +305,12 @@ EXPORT void* kmem_cache_alloc(struct kmem_cache *cache, unsigned int flags)
 			/* ---------------------------------------------------- */
 			move_list(&slab->list_slab, &cache->list_partial);
 		}
+	}
+	
+object_allocated:
+	
+	if (UNLIKELY(flags & __GFP_ZERO)) {
+		memset(allocated, 0x00, cache->obj_size);
 	}
 	
 	return(allocated);

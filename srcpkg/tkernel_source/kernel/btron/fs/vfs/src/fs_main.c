@@ -54,6 +54,7 @@
 #include <bk/fs/ramfs/initramfs.h>
 #include <bk/fs/exec.h>
 #include <bk/drivers/major.h>
+#include <bk/drivers/drivers.h>
 #include "fsdefs.h"
 
 /* Default "console" file system */
@@ -378,11 +379,18 @@ EXPORT int make_init_fs(void)
 	
 	init_mm_lately();
 	
+	init_drivers_lately();
+	
 	init_pci_device();
 	
 	err = execve("/bin/busybox", argv, envp);
 	
-	panic("cannot execute [%d]\n", -err);
+	
+	//printf("shutdown the system\n");
+	//acpi_power_off();
+	
+	for(;;);
+	//panic("cannot execute [%d]\n", -err);
 	
 	return(err);
 }

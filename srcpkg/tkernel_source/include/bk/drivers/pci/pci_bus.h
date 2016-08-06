@@ -43,6 +43,8 @@
 #ifndef	__BK_DRIVERS_PCI_BUS_H__
 #define	__BK_DRIVERS_PCI_BUS_H__
 
+#include <stdint.h>
+
 /*
 ==================================================================================
 
@@ -86,5 +88,52 @@ _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 _/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
 */
 IMPORT int init_pci_device(void);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_pci_config
+ Input		:uint16_t segment
+ 		 < segment number >
+ 		 uint16_t bus
+ 		 < bus number >
+ 		 uint16_t device
+ 		 < device number >
+ 		 uint16_t func
+ 		 < function number >
+ 		 uint32_t reg
+ 		 < register >
+ Output		:void
+ Return		:uint64_t
+ 		 < configuration data >
+ Description	:read pci configuration data
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT uint64_t read_pci_config(uint16_t segment, uint16_t bus,
+					uint16_t device, uint16_t func,
+					uint32_t reg);
+
+/*
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+ Funtion	:read_pci_config
+ Input		:uint16_t segment
+ 		 < segment number >
+ 		 uint16_t bus
+ 		 < bus number >
+ 		 uint16_t device
+ 		 < device number >
+ 		 uint16_t func
+ 		 < function number >
+ 		 uint32_t reg
+ 		 < register >
+ 		 uint64_t value
+ 		 < value to write >
+ Output		:void
+ Return		:void
+ Description	:write pci configuration data
+_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/_/
+*/
+IMPORT void write_pci_config(uint16_t segment, uint16_t bus,
+					uint16_t device, uint16_t func,
+					uint32_t reg, uint64_t value);
 
 #endif	// __BK_DRIVERS_PCI_BUS_H__

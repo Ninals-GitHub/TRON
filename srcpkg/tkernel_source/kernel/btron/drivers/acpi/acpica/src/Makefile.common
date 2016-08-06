@@ -1,0 +1,183 @@
+#
+# ----------------------------------------------------------------------
+#    T2EX Software Package
+#
+#    Copyright 2012 by Ken Sakamura.
+#    This software is distributed under the latest version of T-License 2.x.
+# ----------------------------------------------------------------------
+#
+#    Released by T-Engine Forum(http://www.t-engine.org/) at 2012/12/12.
+#    Modified by T-Engine Forum at 2013/02/20.
+#    Modified by TRON Forum(http://www.tron.org/) at 2015/06/04.
+#    Modified by Nina Petipa at 2015/07/28
+#
+# ----------------------------------------------------------------------
+#
+
+#
+# This software package is available for use, modification, 
+# and redistribution in accordance with the terms of the attached 
+# T-License 2.x.
+# If you want to redistribute the source code, you need to attach 
+# the T-License 2.x document.
+# There's no obligation to publish the content, and no obligation 
+# to disclose it to the TRON Forum if you have modified the 
+# software package.
+# You can also distribute the modified source code. In this case, 
+# please register the modification to T-Kernel traceability service.
+# People can know the history of modifications by the service, 
+# and can be sure that the version you have inherited some 
+# modification of a particular version or not.
+#
+#    http://trace.tron.org/tk/?lang=en
+#    http://trace.tron.org/tk/?lang=ja
+#
+# As per the provisions of the T-License 2.x, TRON Forum ensures that 
+# the portion of the software that is copyrighted by Ken Sakamura or 
+# the TRON Forum does not infringe the copyrights of a third party.
+# However, it does not make any warranty other than this.
+# DISCLAIMER: TRON Forum and Ken Sakamura shall not be held
+# responsible for any consequences or damages caused directly or
+# indirectly by the use of this software package.
+#
+# The source codes in bsd_source.tar.gz in this software package are 
+# derived from NetBSD or OpenBSD and not covered under T-License 2.x.
+# They need to be changed or redistributed according to the 
+# representation of each source header.
+#
+
+#
+#	@(#)Makefile.common
+#
+#
+
+#	acpica
+
+# source file dependencies (generated automatically)
+DEPS = Dependencies
+DEPENDENCIES_OUTPUT := $(DEPS)
+
+# ----------------------------------------------------------------------------
+
+# target object
+TARGET	= acpica.o
+
+# source file path
+S	= ../../src
+
+VPATH	= $(S)
+HEADER := $(S) $(BD)/include/t2ex $(HEADER)
+
+# source files
+SRC_OSDEP	= ostron.c
+SRC_DEBUGGER	= dbcmds.c dbconvert.c dbdisply.c dbexec.c dbfileio.c		\
+		dbhistry.c dbinput.c dbmethod.c dbnames.c dbobject.c dbstats.c	\
+		dbtest.c dbutils.c dbxface.c
+SRC_RES_DUMP	= rsdump.c rsdumpinfo.c
+SRC_DISASSEMBLER	= dmbuffer.c dmcstyle.c dmdeferred.c dmnames.c		\
+		dmopcode.c dmresrc.c dmresrcl.c dmresrcl2.c dmresrcs.c		\
+		dmutils.c dmwalk.c
+SRC_DISPATCHER	= dsargs.c dscontrol.c dsdebug.c dsfield.c dsinit.c dsmethod.c	\
+		dsmthdat.c dsobject.c dsopcode.c dsutils.c dswexec.c dswload.c	\
+		dswload2.c dswscope.c dswstate.c
+SRC_EVENTS	= evevent.c evglock.c evgpe.c evgpeblk.c evgpeinit.c		\
+		evgpeutil.c evhandler.c evmisc.c evregion.c evrgnini.c		\
+		evsci.c evxface.c evxfevnt.c evxfgpe.c evxfregn.c
+SRC_EXECUTER	= exconcat.c exconfig.c exconvrt.c excreate.c exdebug.c		\
+		exdump.c exfield.c exfldio.c exmisc.c exmutex.c exnames.c	\
+		exoparg1.c exoparg2.c exoparg3.c exoparg6.c exprep.c		\
+		exregion.c exresnte.c exresolv.c exresop.c exstore.c exstoren.c	\
+		exstorob.c exsystem.c extrace.c exutils.c
+SRC_HARDWARE	= hwacpi.c hwesleep.c hwgpe.c hwpci.c hwregs.c hwsleep.c	\
+		hwtimer.c hwvalid.c hwxface.c hwxfsleep.c
+SRC_NAMESPACE	= nsaccess.c nsalloc.c nsarguments.c nsconvert.c nsdump.c	\
+		nsdumpdv.c nseval.c nsinit.c nsload.c nsnames.c nsobject.c	\
+		nsparse.c nspredef.c nsprepkg.c nsrepair.c nsrepair2.c		\
+		nssearch.c nsutils.c nswalk.c nsxfeval.c nsxfname.c nsxfobj.c
+SRC_PARSER	= psargs.c psloop.c psobject.c psopcode.c psopinfo.c psparse.c	\
+		psscope.c pstree.c psutils.c pswalk.c psxface.c
+SRC_RESOURCES	= rsaddr.c rscalc.c rscreate.c rsinfo.c	\
+		rsio.c rsirq.c rslist.c rsmemory.c rsmisc.c rsserial.c		\
+		rsutils.c rsxface.c
+SRC_TABLES	= tbdata.c tbfadt.c tbfind.c tbinstal.c tbprint.c tbutils.c	\
+		tbxface.c tbxfload.c tbxfroot.c
+SRC_UTILITIES	= utaddress.c utalloc.c utascii.c utbuffer.c utcache.c		\
+		utclib.c utcopy.c utdebug.c utdecode.c utdelete.c uterror.c	\
+		uteval.c utexcep.c utglobal.c uthex.c utids.c utinit.c		\
+		utlock.c utmath.c utmisc.c utmutex.c utnonansi.c utobject.c	\
+		utosi.c utownerid.c utpredef.c utprint.c utresrc.c		\
+		utstate.c utstring.c uttrack.c utuuid.c utxface.c utxferror.c	\
+		utxfinit.c utxfmutex.c
+#SRC	= $(SRC_OSDEP) $(SRC_DEBUGGER) $(SRC_DISASSEMBLER) $(SRC_DISPATCHER)	\
+		$(SRC_EVENTS) $(SRC_EXECUTER) $(SRC_HARDWARE) $(SRC_NAMESPACE)	\
+		$(SRC_PARSER) $(SRC_RESOURCES) $(SRC_TABLES) $(SRC_UTILITIES)
+
+SRC	= $(SRC_OSDEP) $(SRC_DISPATCHER)					\
+		$(SRC_EVENTS) $(SRC_EXECUTER) $(SRC_HARDWARE) $(SRC_NAMESPACE)	\
+		$(SRC_PARSER) $(SRC_RESOURCES) $(SRC_TABLES) $(SRC_UTILITIES)
+
+
+# object files
+OBJ	= $(addsuffix .o, $(basename $(SRC)))
+#OBJ_OS_DEP = ostron.o
+
+# additional include files
+VPATH	+= ../../../../../../../include/bk/drivers/acpica/
+HEADER	+= ../../../../../../../include/bk/drivers/acpica/
+
+VPATH	+= ../../src/osdepend/$(TRON_TYPE)/
+VPATH	+= ../../src/debugger
+VPATH	+= ../../src/disassembler
+VPATH	+= ../../src/dispatcher
+VPATH	+= ../../src/events
+VPATH	+= ../../src/executer
+VPATH	+= ../../src/hardware
+VPATH	+= ../../src/namespace
+VPATH	+= ../../src/parser
+VPATH	+= ../../src/resources
+VPATH	+= ../../src/tables
+VPATH	+= ../../src/utilities
+
+# compiler options
+CFLAGS	+= $(CFLAGS_WARNING)
+CFLAGS += -DCONFIG_ACPI
+#CFLAGS	+= -DACPI_ASL_COMPILER
+
+# Set if use only ASCII characters as path name.
+#CFLAGS	+= -DFAT_ASCII_FN_ONLY
+
+# Set if character case of current directory path name is not care.
+#CFLAGS += -DFAT_CURDIR_CASE_NOCARE -DCONFIG_ACPI
+
+# T2EX object module install directory
+T2EX_INSTALLDIR = $(BD)/t2ex/build/$(TETYPE)_$(MACHINE)
+
+# ----------------------------------------------------------------------------
+
+.PHONY: all clean install clean_install ready_for_rebuild
+
+ALL = $(TARGET)
+
+all: $(ALL)
+
+$(TARGET): $(OBJ)
+	$(LINK_R.o) $^ $(OUTPUT_OPTION)
+
+install: 
+
+ready_for_rebuild:
+	$(RM) $(TARGET)
+
+clean:
+	$(RM) $(OBJ) $(ALL) $(DEPS)
+
+clean_install:
+
+# generate dependencies
+ifdef DEPENDENCIES_OUTPUT
+  $(DEPS): ; touch $(DEPS)
+else
+  $(DEPS): $(SRC) ; $(MAKEDEPS) $@ $?
+endif
+-include $(DEPS)
+
